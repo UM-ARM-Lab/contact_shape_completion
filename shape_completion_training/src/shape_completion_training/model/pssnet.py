@@ -142,7 +142,7 @@ class PSSNet(MyKerasModel):
             predicted_occ = self.decode(latent)
             loss = -tf.reduce_sum(known_output * predicted_occ)
 
-        print(f'loss: {loss}')
+        print('loss: {}'.format(loss))
         variables = [latent]
         gradients = tape.gradient(loss, variables)
         self.contact_optimizer.apply_gradients(zip(gradients, variables))
