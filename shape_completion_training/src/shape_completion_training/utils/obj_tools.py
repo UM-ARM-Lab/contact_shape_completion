@@ -32,14 +32,15 @@ def augment(filename):
     savepath = os.path.dirname(filename)
 
     # Shapenet
-    # x_rotations = [0]
-    # y_rotations = range(0, 360, 5)
+    x_rotations = [0]
+    y_rotations = range(0, 360, 5)
+    z_rotations = [0]
     # z_rotations = [-150, -120, -90, -60, -45, -30, 0, 30, 45, 60, 90, 120, 150, 180]
 
     # YCB
-    x_rotations = [-90]
-    y_rotations = [0, 90]
-    z_rotations = range(0, 360, 30)
+    # x_rotations = [-90]
+    # y_rotations = [0, 90]
+    # z_rotations = range(0, 360, 30)
 
     for xr in x_rotations:
         for yr in y_rotations:
