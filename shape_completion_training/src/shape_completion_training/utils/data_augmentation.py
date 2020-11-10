@@ -1,13 +1,14 @@
 from __future__ import print_function
-from queue import Queue
 import multiprocessing as mp
 import os
 import subprocess
 import sys
 try:
     from itertools import zip_longest
+    from queue import Queue
 except ImportError:
     from itertools import izip_longest as zip_longest
+    import Queue
 
 from shape_completion_training.utils import dataset_storage, obj_tools
 
