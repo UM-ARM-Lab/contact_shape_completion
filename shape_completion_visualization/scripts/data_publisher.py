@@ -309,6 +309,7 @@ def parse_command_line_args():
     parser.add_argument('--trial')
     parser.add_argument('--publish_closest_train', action='store_true')
     parser.add_argument('--enforce_contact', action='store_true')
+    parser.add_argument('--training_set', action='store_true', help='display training set instead of test set')
 
     return parser.parse_args()
 
@@ -338,7 +339,9 @@ if __name__ == "__main__":
 
     VG_PUB = VoxelgridPublisher()
 
-    # selection_sub = send_display_names_from_metadata(train_records, publish_selection)
-    selection_sub = send_display_names_from_metadata(test_records, publish_selection)
+    if ARGS.training_set:
+        selection_sub = send_display_names_from_metadata(train_records, publish_selection)
+    else:
+        selection_sub = send_display_names_from_metadata(test_records, publish_selection)
 
     rospy.spin()
