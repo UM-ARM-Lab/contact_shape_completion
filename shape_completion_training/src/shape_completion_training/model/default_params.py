@@ -166,6 +166,13 @@ def get_default_params(group_name=None):
                 'use_flow_during_inference': False,
                 'apply_depth_sensor_noise': True,
             },
+        "PSSNet_table":
+            {
+                'num_latent_layers': 200,
+                'flow': 'November_29_16-22-59_5a71a4dcac',
+                'network': 'PSSNet',
+                'use_flow_during_inference': False
+            },
     }
 
     if group_name not in group_defaults:
