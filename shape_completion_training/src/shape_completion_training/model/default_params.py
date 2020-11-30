@@ -169,7 +169,7 @@ def get_default_params(group_name=None):
         "PSSNet_table":
             {
                 'num_latent_layers': 200,
-                'flow': 'November_29_16-22-59_5a71a4dcac',
+                'flow': 'Flow/November_29_16-22-59_5a71a4dcac',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False
             },
