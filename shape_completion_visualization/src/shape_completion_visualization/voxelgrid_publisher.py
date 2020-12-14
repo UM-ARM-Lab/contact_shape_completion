@@ -3,8 +3,12 @@ from rviz_voxelgrid_visuals import conversions
 from rviz_voxelgrid_visuals_msgs.msg import VoxelgridStamped
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
+from sensor_msgs.msg import PointCloud2
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import tensorflow as tf
 import numpy as np
+from arc_utilities.tf2wrapper import TF2Wrapper
+from gpu_voxel_planning_msgs.srv import RequestShape, RequestShapeResponse
 
 
 def to_msg(voxelgrid, frame, scale, origin):
@@ -16,7 +20,7 @@ def to_msg(voxelgrid, frame, scale, origin):
 
 
 class VoxelgridPublisher:
-    def __init__(self, frame="object", scale=0.01, origin=(0,0,0)):
+    def __init__(self, frame="object", scale=0.01, origin=(0, 0, 0)):
         self.pubs = {}
         pub_names = ["gt", "known_occ", "known_free", "predicted_occ", "predicted_free", "sampled_occ",
                      "conditioned_occ", "mismatch", "aux", "plausible"]
@@ -72,9 +76,9 @@ class VoxelgridPublisher:
             corners = corners.numpy()
         corner_markers = MarkerArray()
 
-        edges = [(0,1), (1,3), (3,2), (2,0),
-                 (4,5), (5,7), (7,6), (6,4),
-                 (0,4), (1,5), (2,6), (3,7)]
+        edges = [(0, 1), (1, 3), (3, 2), (2, 0),
+                 (4, 5), (5, 7), (7, 6), (6, 4),
+                 (0, 4), (1, 5), (2, 6), (3, 7)]
 
         for i, pt in enumerate(corners):
             marker = Marker()
@@ -135,3 +139,35 @@ class VoxelgridPublisher:
         self.publish("predicted_free", inference["predicted_free"])
         if 'aux_occ' in inference:
             self.publish("aux_occ", inference("aux_occ"))
+
+
+class PointcloudPublisher:
+    def __init__(self, frame="object", scale=0.01, origin=(0, 0, 0)):
+        self.pubs = {}
+        pub_names = ["gt", "known_occ", "known_free", "predicted_occ", "predicted_free", "sampled_occ",
+                     "conditioned_occ", "mismatch", "aux", "plausible"]
+        for name in pub_names:
+            self.add(name, name + "_pointcloud")
+        self.bb_pub = rospy.Publisher("bounding_box", MarkerArray, queue_size=1)
+        self.frame = frame
+        self.origin = origin
+        self.scale = scale
+        self.transformer = TF2Wrapper()
+        self.request_srv = rospy.Service("get_shape", RequestShape, self.handle_request_shape)
+        self.last_pt_cloud = None
+
+    def add(self, short_name, topic):
+        self.pubs[short_name] = rospy.Publisher(topic, PointCloud2, queue_size=1)
+
+    def publish(self, name, voxelgrid):
+        if tf.is_tensor(voxelgrid):
+            voxelgrid = voxelgrid.numpy()
+        msg = conversions.vox_to_pointcloud2_msg(voxelgrid, frame=self.frame, scale=self.scale, origin=self.origin,
+                                                 density_factor=3)
+        msg = self.transformer.transform_to_frame(msg, "gpu_voxel_world")
+        self.pubs[name].publish(msg)
+        self.last_pt_cloud = msg
+
+    def handle_request_shape(self, req):
+        return RequestShapeResponse(self.last_pt_cloud)
+
