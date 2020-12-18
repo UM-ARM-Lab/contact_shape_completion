@@ -7,16 +7,18 @@ import random
 import rospy
 import numpy as np
 
+from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
 from shape_completion_training.utils import data_tools
 from shape_completion_training.voxelgrid import metrics
 from shape_completion_training.model.other_model_architectures import sampling_tools
-from shape_completion_training.voxelgrid import conversions
+# from shape_completion_training.voxelgrid import conversions
+from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.voxelgrid.metrics import chamfer_distance
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher, PointcloudPublisher
 from shape_completion_visualization.shape_selection import send_display_names_from_metadata
-from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse
+from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest
 
 
 import tensorflow as tf
@@ -50,25 +52,44 @@ def wip_enforce_contact(elem):
     latent = tf.Variable(pssnet.sample_latent(elem))
     VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
     known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+    known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
     known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
     VG_PUB.publish('aux', known_contact)
 
     rospy.sleep(2)
 
     for i in range(100):
-        pssnet.grad_step_towards_output(latent, known_contact)
+        pssnet.grad_step_towards_output(latent, known_contact, known_free)
         VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
     return pssnet.decode(latent, apply_sigmoid=True)
 
 
-def complete_shape(req):
+def complete_shape(req: CompleteShapeRequest):
     pssnet = model_runner.model
-    for i in range(100):
-        latent = tf.Variable(tf.random.normal(shape=[1, pssnet.hparams["num_latent_layers"]]))
+    elem = get_elem(test_records, 90)
+
+    # Sample random latent tables
+    # for i in range(100):
+    #     # latent = tf.Variable(tf.random.normal(shape=[1, pssnet.hparams["num_latent_layers"]]))
+    #     latent = tf.Variable(pssnet.sample_latent(elem))
+    #     vg = pssnet.decode(latent, apply_sigmoid=True)
+    #     VG_PUB.publish('predicted_occ', vg)
+    #     # PT_PUB.publish('predicted_occ', vg)
+    #     rospy.sleep(0.1)
+
+    # latent = tf.Variable(tf.random.normal(shape=[1, pssnet.hparams["num_latent_layers"]]))
+    latent = tf.Variable(pssnet.sample_latent(elem))
+    known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+    # known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+    transformed_free = PT_PUB.transformer.transform_to_frame(req.known_free, "object")
+    known_free = pointcloud2_msg_to_vox(transformed_free, scale=0.05)
+    for i in range(10):
         vg = pssnet.decode(latent, apply_sigmoid=True)
         VG_PUB.publish('predicted_occ', vg)
+        VG_PUB.publish('known_free', known_free)
         # PT_PUB.publish('predicted_occ', vg)
-        rospy.sleep(0.3)
+        pssnet.grad_step_towards_output(latent, known_contact, known_free)
+        rospy.sleep(0.1)
     return CompleteShapeResponse()
 
 
@@ -100,6 +121,17 @@ def run_inference(elem):
     return inference
 
 
+def get_elem(metadata, ind):
+    ds = metadata.skip(ind).take(1)
+    ds = data_tools.load_voxelgrids(ds)
+    ds = data_tools.preprocess_test_dataset(ds, dataset_params)
+
+    elem_raw = next(ds.__iter__())
+    for k in elem_raw.keys():
+        elem_raw[k] = tf.expand_dims(elem_raw[k], axis=0)
+    return elem_raw
+
+
 def publish_selection(metadata, ind, str_msg):
     if ind == 0:
         print("Skipping first display")
@@ -107,16 +139,17 @@ def publish_selection(metadata, ind, str_msg):
 
     # translation = 0
 
-    ds = metadata.skip(ind).take(1)
-    ds = data_tools.load_voxelgrids(ds)
-    ds = data_tools.preprocess_test_dataset(ds, dataset_params)
-
-    elem_raw = next(ds.__iter__())
+    # ds = metadata.skip(ind).take(1)
+    # ds = data_tools.load_voxelgrids(ds)
+    # ds = data_tools.preprocess_test_dataset(ds, dataset_params)
+    #
+    # elem_raw = next(ds.__iter__())
+    # elem = {}
+    #
+    # for k in elem_raw.keys():
+    #     elem_raw[k] = tf.expand_dims(elem_raw[k], axis=0)
+    elem_raw = get_elem(metadata, ind)
     elem = {}
-
-    for k in elem_raw.keys():
-        elem_raw[k] = tf.expand_dims(elem_raw[k], axis=0)
-
     for k in elem_raw.keys():
         elem[k] = elem_raw[k].numpy()
     VG_PUB.publish_elem(elem)
@@ -197,6 +230,6 @@ if __name__ == "__main__":
     # selection_sub = send_display_names_from_metadata(train_records, publish_selection)
     selection_sub = send_display_names_from_metadata(test_records, publish_selection)
 
-    complete_shape(None)
+    # complete_shape(None)
 
     rospy.spin()

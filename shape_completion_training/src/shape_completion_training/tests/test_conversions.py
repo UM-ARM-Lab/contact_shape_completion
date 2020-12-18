@@ -86,7 +86,7 @@ class TestTransforms(TestCase):
         T = make_transform(thetas=[0.0, 0, np.pi / 2], translation=[1, 2, 3])
         T_inv = np.linalg.inv(T)
         scale = 0.5
-        origin=(32,32,32)
+        origin = (32, 32, 32)
         self.assertTrue((np.dot(T, T_inv) == np.eye(4)).all())
         vg_orig = load_test_files()[0]
         vg_rot = transform_voxelgrid(vg_orig, T, scale=scale, origin=origin)
@@ -139,7 +139,7 @@ class TestUtils(TestCase):
     def test_downsample_with_extra_dims(self):
         vg_orig = np.zeros((1, 4, 4, 4))
         vg_orig[0, 0, 0, 0] = 1.0
-        self.assertEqual((1,2,2,2), downsample(vg_orig).shape)
+        self.assertEqual((1, 2, 2, 2), downsample(vg_orig).shape)
 
         vg_orig = np.zeros((1, 4, 4, 4, 1))
         vg_orig[0, 0, 0, 0] = 1.0

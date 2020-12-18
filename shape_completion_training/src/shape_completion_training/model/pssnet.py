@@ -133,14 +133,14 @@ class PSSNet(MyKerasModel):
             sampled_features = self.apply_flow_to_latent_box(sampled_features)
         return sampled_features
 
-    def grad_step_towards_output(self, latent, known_output):
+    def grad_step_towards_output(self, latent, known_occ, known_free):
 
         with tf.GradientTape() as tape:
             # predicted_occ = self.decode(latent, apply_sigmoid=True)
             # loss = tf.reduce_sum(known_output - known_output * predicted_occ)
             # loss = tf.exp(loss)
             predicted_occ = self.decode(latent)
-            loss = -tf.reduce_sum(known_output * predicted_occ)
+            loss = -tf.reduce_sum(known_occ * predicted_occ) + tf.reduce_sum(known_free * predicted_occ)
 
         print('loss: {}'.format(loss))
         variables = [latent]
