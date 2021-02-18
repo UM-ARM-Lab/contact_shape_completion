@@ -67,8 +67,24 @@ def wip_enforce_contact(elem):
     return pssnet.decode(latent, apply_sigmoid=True)
 
 
+def sample_random_shape():
+    print("Sampling Random Shapes")
+    pssnet = model_runner.model  # type: PSSNet
+    elem = get_elem(test_records, 90)
+    for i in range(100):
+        latent = tf.Variable(
+            pssnet.apply_flow_to_latent_box(tf.random.normal(shape=[1, pssnet.hparams["num_latent_layers"]])))
+        # latent = tf.Variable(pssnet.sample_latent(elem))
+
+        vg = pssnet.decode(latent, apply_sigmoid=True)
+        VG_PUB.publish('predicted_occ', vg)
+        # PT_PUB.publish('predicted_occ', vg)
+        rospy.sleep(0.1)
+
+
 def complete_shape(req: CompleteShapeRequest):
-    pssnet = model_runner.model
+    print("Complete Shape Request Received")
+    pssnet = model_runner.model  # type: PSSNet
     elem = get_elem(test_records, 90)
 
     # Sample random latent tables
@@ -82,14 +98,24 @@ def complete_shape(req: CompleteShapeRequest):
 
     # latent = tf.Variable(tf.random.normal(shape=[1, pssnet.hparams["num_latent_layers"]]))
     latent = tf.Variable(pssnet.sample_latent(elem))
+    mean, logvar = pssnet.encode(stack_known(elem))
+    latent = tf.Variable(pssnet.apply_flow_to_latent_box(sample_gaussian(mean, logvar)))
+    log_normal_pdf(latent, mean, logvar)
+
+    p = lambda v: np.exp(log_normal_pdf(v, mean, logvar).numpy()[0])
+
     known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
     # known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
     transformed_free = PT_PUB.transformer.transform_to_frame(req.known_free, "object")
     known_free = pointcloud2_msg_to_vox(transformed_free, scale=0.05)
+    # VG_PUB.publish('known_free', known_free)
+    # time.sleep(3)
     for i in range(10):
         vg = pssnet.decode(latent, apply_sigmoid=True)
         VG_PUB.publish('predicted_occ', vg)
         VG_PUB.publish('known_free', known_free)
+        if i == 0:
+            rospy.sleep(3)
         # PT_PUB.publish('predicted_occ', vg)
         pssnet.grad_step_towards_output(latent, known_contact, known_free)
         rospy.sleep(0.1)
@@ -114,7 +140,6 @@ def run_inference(elem):
                 min_cd = cd
                 closest_train = train_elem['gt_occ']
             VG_PUB.publish("plausible", closest_train)
-
 
     # raw_input("Ready to display best?")
 
@@ -234,5 +259,6 @@ if __name__ == "__main__":
     selection_sub = send_display_names_from_metadata(test_records, publish_selection)
 
     # complete_shape(None)
+    sample_random_shape()
 
     rospy.spin()
