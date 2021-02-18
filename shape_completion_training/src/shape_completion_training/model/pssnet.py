@@ -2,7 +2,7 @@ import tensorflow as tf
 from shape_completion_training.model.mykerasmodel import MyKerasModel
 import tensorflow.keras.layers as tfl
 
-from shape_completion_training.utils.tf_utils import stack_known, log_normal_pdf
+from shape_completion_training.utils.tf_utils import stack_known, log_normal_pdf, sample_gaussian
 
 """
 This implements PSSNet, as described in the CoRL paper
@@ -38,7 +38,7 @@ class PSSNet(MyKerasModel):
     def call(self, dataset_element, training=False, **kwargs):
         known = stack_known(dataset_element)
         mean, logvar = self.encode(known)
-        sampled_features = self.sample_gaussian(mean, logvar)
+        sampled_features = sample_gaussian(mean, logvar)
 
         if self.hparams['use_flow_during_inference']:
             sampled_features = self.apply_flow_to_latent_box(sampled_features)
@@ -47,11 +47,6 @@ class PSSNet(MyKerasModel):
         output = {'predicted_occ': predicted_occ, 'predicted_free': 1 - predicted_occ,
                   'latent_mean': mean, 'latent_logvar': logvar, 'sampled_latent': sampled_features}
         return output
-
-    def sample_gaussian(self, mean, logvar):
-        eps = tf.random.normal(shape=mean.shape)
-        features = eps * tf.exp(logvar * 0.5) + mean
-        return features
 
     def split_box(self, inp):
         features, box = tf.split(inp, num_or_size_splits=[self.hparams['num_latent_layers'] - self.box_latent_size,
@@ -96,7 +91,7 @@ class PSSNet(MyKerasModel):
             # train_losses = self.compute_loss(gt_latent_box, train_outputs)
             known = stack_known(train_element)
             mean, logvar = self.encode(known)
-            sampled_latent = self.sample_gaussian(mean, logvar)
+            sampled_latent = sample_gaussian(mean, logvar)
             corrected_latent = self.replace_true_box(sampled_latent, gt_latent_box)
 
             if self.hparams['use_flow_during_inference']:
@@ -127,7 +122,7 @@ class PSSNet(MyKerasModel):
     def sample_latent(self, elem):
         known = stack_known(elem)
         mean, logvar = self.encode(known)
-        sampled_features = self.sample_gaussian(mean, logvar)
+        sampled_features = sample_gaussian(mean, logvar)
 
         if self.hparams['use_flow_during_inference']:
             sampled_features = self.apply_flow_to_latent_box(sampled_features)

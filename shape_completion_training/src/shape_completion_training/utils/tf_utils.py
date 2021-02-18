@@ -141,6 +141,12 @@ def log_normal_pdf(sample, mean, logvar, raxis=1):
         axis=raxis)
 
 
+def sample_gaussian(mean, logvar):
+    eps = tf.random.normal(shape=mean.shape)
+    features = eps * tf.exp(logvar * 0.5) + mean
+    return features
+
+
 @tf.function
 def p_x_given_y(x, y):
     """

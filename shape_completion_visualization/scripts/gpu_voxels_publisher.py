@@ -2,7 +2,9 @@
 from __future__ import print_function
 
 import argparse
+import math
 import random
+import time
 
 import rospy
 import numpy as np
@@ -11,6 +13,7 @@ from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
 from shape_completion_training.utils import data_tools
+from shape_completion_training.model.pssnet import PSSNet
 from shape_completion_training.voxelgrid import metrics
 from shape_completion_training.model.other_model_architectures import sampling_tools
 # from shape_completion_training.voxelgrid import conversions
@@ -19,7 +22,7 @@ from shape_completion_training.voxelgrid.metrics import chamfer_distance
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher, PointcloudPublisher
 from shape_completion_visualization.shape_selection import send_display_names_from_metadata
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest
-
+from shape_completion_training.utils.tf_utils import log_normal_pdf, stack_known, sample_gaussian
 
 import tensorflow as tf
 
