@@ -9,6 +9,7 @@ import time
 import rospy
 import numpy as np
 
+from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
@@ -23,6 +24,7 @@ from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublishe
 from shape_completion_visualization.shape_selection import send_display_names_from_metadata
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest
 from shape_completion_training.utils.tf_utils import log_normal_pdf, stack_known, sample_gaussian
+from contact_shape_completion.kinect_listener import DepthCameraListener
 
 import tensorflow as tf
 
@@ -214,17 +216,7 @@ def load_network():
 
 def parse_command_line_args():
     parser = argparse.ArgumentParser(description='Publish shape data to RViz for viewing')
-    parser.add_argument('--sample', help='foo help', action='store_true')
-    parser.add_argument('--use_best_iou', help='foo help', action='store_true')
-    parser.add_argument('--publish_each_sample', help='foo help', action='store_true')
-    parser.add_argument('--fit_to_particles', help='foo help', action='store_true')
-    parser.add_argument('--publish_nearest_plausible', help='foo help', action='store_true')
-    parser.add_argument('--publish_nearest_sample', help='foo help', action='store_true')
-    parser.add_argument('--multistep', action='store_true')
     parser.add_argument('--trial')
-    parser.add_argument('--publish_closest_train', action='store_true')
-    parser.add_argument('--enforce_contact', action='store_true')
-
     return parser.parse_args()
 
 
@@ -236,24 +228,13 @@ if __name__ == "__main__":
 
     load_network()
 
-    dataset_params = default_dataset_params
-    if model_runner is not None:
-        dataset_params.update(model_runner.params)
-        dataset_params.update({
-            "slit_start": 32,
-            "slit_width": 32,
-        })
-    # dataset_params.update({
-    #     "apply_depth_sensor_noise": True,
-    # })
-
-    dataset_params.update(default_translations)
-    # train_records, test_records = data_tools.load_dataset(dataset_name=dataset_params['dataset'],
-    #                                                       metadata_only=True, shuffle=False)
-
-    VG_PUB = VoxelgridPublisher(scale=0.05)
-    PT_PUB = PointcloudPublisher(scale=0.05)
+    # VG_PUB = VoxelgridPublisher(scale=0.05)
+    # PT_PUB = PointcloudPublisher(scale=0.05)
     # COMPLETE_SHAPE_SRV = rospy.Service("complete_shape", CompleteShape, complete_shape)
+    #     robot_view = DepthCameraListener()
+    contact_shape_completer = ContactShapeCompleter()
+
+    contact_shape_completer.robot_view.get_visible_element()
 
     # selection_sub = send_display_names_from_metadata(train_records, publish_selection)
     # selection_sub = send_display_names_from_metadata(test_records, publish_selection)

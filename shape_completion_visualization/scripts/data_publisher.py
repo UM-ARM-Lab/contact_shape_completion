@@ -18,6 +18,7 @@ from shape_completion_training.voxelgrid import conversions
 from shape_completion_training.voxelgrid.metrics import chamfer_distance
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 from shape_completion_visualization.shape_selection import send_display_names_from_metadata
+from shape_completion_training.voxelgrid.utils import sample_from_voxelgrid
 
 import threading
 import tensorflow as tf
@@ -39,28 +40,54 @@ default_translations = {
     'translation_pixel_range_z': 0,
 }
 
+
 def wip_enforce_contact(elem):
     inference = model_runner.model(elem)
     VG_PUB.publish_inference(inference)
+    mismatch = tf.abs(elem['gt_occ'] - inference['predicted_occ'])
+    VG_PUB.publish("mismatch", mismatch)
     pssnet = model_runner.model
     latent = tf.Variable(pssnet.sample_latent(elem))
-    VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
+    pred = pssnet.decode(latent, apply_sigmoid=True)
+    VG_PUB.publish('predicted_occ', pred)
+
     known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-    known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
+    known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+
+
+
+    # known_free = known_free + sample_from_voxelgrid((pred - elem['gt_occ']) > 0.5)
+    # known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
+
+    # known_contact = (elem['gt_occ'] - pred) > 0.5
+    # known_contact = tf.cast(known_contact, tf.float32)
+    # known_free = (pred - elem['gt_occ']) > 0.5
+    # known_free = tf.cast(known_free, tf.float32)
+    known_contact = known_contact + sample_from_voxelgrid((elem['gt_occ'] - pred) > 0.5)
+
     VG_PUB.publish('aux', known_contact)
 
     rospy.sleep(2)
 
-    for i in range(100):
-        pssnet.grad_step_towards_output(latent, known_contact)
-        VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
+    # for i in range(100):
+    #     pssnet.grad_step_towards_output(latent, known_contact, known_free)
+    #     VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
+    i = 0
+    while tf.reduce_min(tf.boolean_mask(pred, known_contact)) < 0.5:
+        i += 1
+        if i > 1000:
+            print("Failed to satisfy contact")
+            break
+        pssnet.grad_step_towards_output(latent, known_contact, known_free)
+        pred = pssnet.decode(latent, apply_sigmoid=True)
+        VG_PUB.publish('predicted_occ', pred)
+    print("Finished update")
     return pssnet.decode(latent, apply_sigmoid=True)
 
 
 def run_inference(elem):
     if ARGS.enforce_contact:
         return wip_enforce_contact(elem)
-
 
     if ARGS.publish_closest_train:
         # Computes and publishes the closest element in the training set to the test shape
@@ -76,7 +103,6 @@ def run_inference(elem):
                 min_cd = cd
                 closest_train = train_elem['gt_occ']
             VG_PUB.publish("plausible", closest_train)
-
 
     if ARGS.publish_each_sample:
         for particle in model_evaluator.sample_particles(model_runner.model, elem, 20):

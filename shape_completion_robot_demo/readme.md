@@ -9,5 +9,5 @@ To run this on Victor (The armlab robot) you will need:
 - On the openrave VM `rosrun arm_or_robots grasp_listener[1,2].py`
 2. `rviz` open `kinect_shape_completion.rviz`
 3. Start the object segmentation algorithm (I used Armada)
-- `cd catkin_ws/src/object_segmentation/scripts`, `./republish_segmentedinect_img.py`
+- `cd catkin_ws/src/object_segmentation/scripts`, `./republish_segmented_kinect_img.py`
 4. Run the `demox` scripts.
