@@ -3,6 +3,17 @@
 This package provides a neural network that takes in a grid of visible occupied voxels from a single view and outputs a grid of the estimated 3D voxels, thus "completing the shape". Running multiple inference passes with the same input will generate different, yet plausible completions. Depending on the ambiguity of the input the completions may all be quite similar, or vary noticably.
 
 
+## Notes to self
+These are notes to myself (Brad) for the current work-in-progress code
+
+Launch latest version by
+- `roslaunch shape_completion_visualization shape_completion.launch`
+- `roslaunch gpu_voxel_planning fake_victor_setup.launch`
+- `rosrun shape_completion_visualization gpu_voxels_publisher.py --trial PSSNet_table/November_29_20-45-22_a91f6803c3`
+- Cycle through a few shapes on RViz to find one that is not in collision
+- `rosrun gpu_voxel_planning wip_shape_completion` (rerun if start or goal config in collision)
+
+
 ### Prerequisites
 The code is developed and tested on
 - [`CUDA`](https://developer.nvidia.com/cuda-toolkit) 10.2 
