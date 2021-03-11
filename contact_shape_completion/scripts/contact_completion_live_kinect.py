@@ -124,33 +124,6 @@ def complete_shape(req: CompleteShapeRequest):
     return CompleteShapeResponse()
 
 
-def run_inference(elem):
-    if ARGS.enforce_contact:
-        return wip_enforce_contact(elem)
-
-    if ARGS.publish_closest_train:
-        # Computes and publishes the closest element in the training set to the test shape
-        train_in_correct_augmentation = train_records.filter(lambda x: x['augmentation'] == elem['augmentation'][0])
-        train_in_correct_augmentation = data_tools.load_voxelgrids(train_in_correct_augmentation)
-        min_cd = np.inf
-        closest_train = None
-        for train_elem in train_in_correct_augmentation:
-            VG_PUB.publish("plausible", train_elem['gt_occ'])
-            cd = chamfer_distance(elem['gt_occ'], train_elem['gt_occ'],
-                                  scale=0.01, downsample=4)
-            if cd < min_cd:
-                min_cd = cd
-                closest_train = train_elem['gt_occ']
-            VG_PUB.publish("plausible", closest_train)
-
-    # raw_input("Ready to display best?")
-
-    inference = model_runner.model(elem)
-    VG_PUB.publish_inference(inference)
-
-    return inference
-
-
 def get_elem(metadata, ind):
     ds = metadata.skip(ind).take(1)
     ds = data_tools.load_voxelgrids(ds)
@@ -233,8 +206,10 @@ if __name__ == "__main__":
     # COMPLETE_SHAPE_SRV = rospy.Service("complete_shape", CompleteShape, complete_shape)
     #     robot_view = DepthCameraListener()
     contact_shape_completer = ContactShapeCompleter()
+    contact_shape_completer.load_network(ARGS.trial)
 
-    contact_shape_completer.robot_view.get_visible_element()
+    contact_shape_completer.get_visible_vg()
+    contact_shape_completer.infer_completion()
 
     # selection_sub = send_display_names_from_metadata(train_records, publish_selection)
     # selection_sub = send_display_names_from_metadata(test_records, publish_selection)
