@@ -1,0 +1,4 @@
+{
+  "shapenet_path": "/fast/bradsaund/datasets/shapenet/ShapeNetCore.v2_augmented",
+  # "shapenet_path": "data/ShapeNetCore.v2_augmented"
+}
