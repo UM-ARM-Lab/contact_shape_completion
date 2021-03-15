@@ -135,7 +135,7 @@ class PSSNet(MyKerasModel):
             # loss = tf.reduce_sum(known_output - known_output * predicted_occ)
             # loss = tf.exp(loss)
             predicted_occ = self.decode(latent)
-            loss = -tf.reduce_sum(known_occ * predicted_occ) + tf.reduce_sum(known_free * predicted_occ)
+            loss = -tf.reduce_sum(known_occ * predicted_occ)/1000 + tf.reduce_sum(known_free * predicted_occ) / 1000
 
         print('loss: {}'.format(loss))
         variables = [latent]

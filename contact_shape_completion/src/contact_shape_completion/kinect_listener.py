@@ -34,7 +34,7 @@ class DepthCameraListener:
 
         target_frame = "victor_root"
 
-        self.point_cloud_creator = PointcloudCreator([i for i in range(1, 25)],
+        self.point_cloud_creator = PointcloudCreator([i for i in range(1, 3)],
                                                      topic_prefix="/kinect2_victor_head/qhd/")
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)

@@ -6,9 +6,9 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Active Robot1
-        - /Robot Swept Freespace 1
-        - /Kinect Victor Head1
+        - /Kinect Victor Head2
+        - /Kinect Victor Head2/Auto Size1
+        - /Kinect Victor Head2/Occlusion Compensation1
       Splitter Ratio: 0.550000011920929
     Tree Height: 550
   - Class: rviz/Selection
@@ -104,13 +104,13 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
       Color: 204; 51; 204
-      Enabled: true
+      Enabled: false
       Hide: false
       Name: Known Free
       Queue Size: 10
       Threshold: 0.5
       Topic: /known_free_voxel_grid
-      Value: true
+      Value: false
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
@@ -142,24 +142,24 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 252; 175; 62
-      Enabled: true
+      Enabled: false
       Hide: false
       Name: Active Robot
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/active_robot
-      Value: true
+      Value: false
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 252; 175; 62
-      Enabled: true
+      Enabled: false
       Hide: false
       Name: Passive Robot
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/passive_robot
-      Value: true
+      Value: false
     - Alpha Multiple: 0.15000000596046448
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -171,7 +171,7 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /voxelgrid/known_free
       Value: true
-    - Alpha: 0.03999999910593033
+    - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -183,7 +183,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -194,314 +194,28 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.0024999999441206455
       Style: Flat Squares
       Topic: /kinect2_victor_head/qhd/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
-      Enabled: true
+      Enabled: false
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        gpu_voxel_world:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        l_finger_1_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_1_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_1_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_1_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_2_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_2_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_2_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_2_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_middle_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_middle_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_middle_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_finger_middle_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        l_palm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        left_tool:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_1_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_1_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_1_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_1_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_2_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_2_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_2_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_2_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_middle_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_middle_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_middle_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_finger_middle_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        r_palm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        right_tool:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_base_plate:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_base_plate_mount:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_left_arm_flange:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_left_arm_flange_kuka:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_left_arm_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_4:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_5:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_6:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_link_7:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_mount:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_left_arm_world_frame_kuka:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_left_gripper_mounting_bracket:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_pedestal:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_flange:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_right_arm_flange_kuka:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_right_arm_link_0:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_4:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_5:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_6:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_link_7:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_mount:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_right_arm_world_frame_kuka:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        victor_right_gripper_mounting_bracket:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        victor_root:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
       Update Interval: 0
-      Value: true
+      Value: false
       Visual Enabled: true
     - Class: rviz/Image
       Enabled: true
@@ -527,7 +241,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -544,7 +258,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -575,6 +289,44 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
+    - Alpha: 1
+      Auto Size:
+        Auto Size Factor: 1.5
+        Value: true
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 3.327814817428589
+        Min Value: -5.550484657287598
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/DepthCloud
+      Color: 255; 255; 255
+      Color Image Topic: /kinect2_victor_head/qhd/image_color_rect
+      Color Transformer: RGB8
+      Color Transport Hint: compressed
+      Decay Time: 0
+      Depth Map Topic: /kinect2_victor_head/qhd/image_depth_rect
+      Depth Map Transport Hint: compressed
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: Kinect Victor Head
+      Occlusion Compensation:
+        Occlusion Time-Out: 30
+        Value: false
+      Position Transformer: XYZ
+      Queue Size: 5
+      Selectable: false
+      Size (Pixels): 3
+      Style: Flat Squares
+      Topic Filter: true
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -603,7 +355,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.0502973794937134
+      Distance: 3.9651641845703125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -611,17 +363,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.7673521041870117
-        Y: -0.028482258319854736
-        Z: 1.0595864057540894
+        X: 3.4877500534057617
+        Y: -0.9671638607978821
+        Z: 0.6269806623458862
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.03979884088039398
+      Pitch: 0.26520344614982605
       Target Frame: <Fixed Frame>
-      Yaw: 1.7611994743347168
+      Yaw: 2.6212329864501953
     Saved: ~
 Window Geometry:
   Displays:
