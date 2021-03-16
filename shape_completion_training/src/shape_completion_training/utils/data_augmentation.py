@@ -16,8 +16,8 @@ except ImportError:
 
 from shape_completion_training.utils import dataset_storage, obj_tools
 
-NUM_THREADS_PER_CATEGORY = 1
-NUM_THREADS_PER_OBJECT = 1
+NUM_THREADS_PER_CATEGORY = 5
+NUM_THREADS_PER_OBJECT = 6
 HARDCODED_BOUNDARY = '-bb -1.0 -1.0 -1.0 1.0 1.0 1.0'
 NUM_THREADS = NUM_THREADS_PER_CATEGORY * NUM_THREADS_PER_OBJECT
 
