@@ -9,9 +9,10 @@ import shape_completion_training.utils.shapenet_storage
 
 test_dataset_filepath = "voxel_grid_test_data.npy"
 
+
 def create_tests_dataset():
     train_data_shapenet, test_data_shapenet = data_tools.load_shapenet([
-                                                                           shape_completion_training.utils.shapenet_storage.shape_map["mug"]])
+        shape_completion_training.utils.shapenet_storage.get_shape_map()["mug"]])
     data_shapenet = train_data_shapenet.shuffle(1000)
 
     test_shapes = []
@@ -36,4 +37,3 @@ def load_test_files():
 if __name__ == "__main__":
     create_tests_dataset()
     mat = load_test_files()
-

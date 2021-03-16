@@ -43,12 +43,13 @@ def _load_compressed(filepath, compression):
         return pickle.load(f, encoding='latin1')
 
 
-def save_gt_voxels(filepath, gt, compression="gzip"):
+def save_gt_voxels(filepath, gt, ds_path, compression="gzip"):
     """
     @param filepath: pathlib.Path full file path of save location.
     This needs to be in the proper place in the shapenet folder structure, as parameters are inferred from
     the folder name. The extension is replaced with .pkl
     @param gt: The ground truth voxelgrid
+    @param ds_path: Path to dataset root. Saves filename relative to this path
     @param compression: "gzip", "bz2", or None
     @return:
     """
@@ -63,8 +64,9 @@ def save_gt_voxels(filepath, gt, compression="gzip"):
     z_angle = int(augmentation.split("_")[-1])
     bb = bounding_box.get_bounding_box_for_elem(gt, x_angle, y_angle, z_angle,
                                                 scale=scale, degrees=True)
+
     data = {"gt_occ_packed": packed, "shape": tf.TensorShape(shape), "augmentation": augmentation,
-            "filepath": filepath.relative_to(package_path).as_posix(),
+            "filepath": filepath.relative_to(ds_path).as_posix(),
             "category": parts[-4], "id": parts[-3],
             # "angle": angle,
             "x_angle": x_angle, "y_angle": y_angle, "z_angle": z_angle,
@@ -117,11 +119,11 @@ def load_gt_voxels_from_binvox(filepath, augmentation):
     augmentation: string identifying the augmentation
     """
     binvox_wire_fp = join(filepath, 'model_augmented_' + augmentation + '.wire.binvox')
-    with open(binvox_wire_fp) as f:
+    with open(binvox_wire_fp, 'rb') as f:
         wire_vox = binvox_rw.read_as_3d_array(f).data
 
     binvox_mesh_fp = join(filepath, 'model_augmented_' + augmentation + '.mesh.binvox')
-    with open(binvox_mesh_fp) as f:
+    with open(binvox_mesh_fp, 'rb') as f:
         mesh_vox = binvox_rw.read_as_3d_array(f).data
 
     # cuda_binvox_fp = join(filepath, 'model_augmented_' + augmentation + '.obj_64.binvox')
@@ -131,7 +133,7 @@ def load_gt_voxels_from_binvox(filepath, augmentation):
     gt = wire_vox * 1.0 + mesh_vox * 1.0
     gt = np.clip(gt, 0, 1)
     gt = np.array(gt, dtype=np.float32)
-    gt = np.expand_dims(gt, axis=4)
+    gt = np.expand_dims(gt, axis=3)
     return gt
 
 

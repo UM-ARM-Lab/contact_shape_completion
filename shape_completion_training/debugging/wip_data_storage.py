@@ -3,7 +3,7 @@ from shape_completion_training.model import filepath_tools
 from shape_completion_training.utils import data_tools, shapenet_storage
 import datetime
 
-shapenet_load_path = filepath_tools.get_shape_completion_package_path() / "data" / "ShapeNetCore.v2_augmented"
+shapenet_load_path = shapenet_storage.get_shapenet_path()
 
 
 def store_shapenet_augmentations_in_multiple_formats(shape_ids):

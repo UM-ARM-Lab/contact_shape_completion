@@ -46,30 +46,23 @@ Then run binvox with the -pb option
 
 
 if __name__ == "__main__":
-    rospy.init_node("augment_shapenet_node")
-    sn_path = shapenet_storage.get_shapenet_path()
-    # sn_path = sn_path / shape_completion_training.utils.shapenet_storage.shape_map['mug']
-    sn_path = sn_path / shape_completion_training.utils.shapenet_storage.get_shape_map()['table']
+    # rospy.init_node("augment_shapenet_node")
+    ds_path = shapenet_storage.get_shapenet_path()
+    category = shapenet_storage.get_shape_map()['airplane']
 
     start_time = datetime.datetime.now()
 
+    shape_ids = ["10155655850468db78d106ce0a280f87",
+                 "1021a0914a7207aff927ed529ad90a11",
+                 "1026dd1b26120799107f68a9cb8e3c",
+                 "103c9e43cdf6501c62b600da24e0965",
+                 "105f7f51e4140ee4b6b87e72ead132ed",
+                 ]
+
     # augment_category(sn_path)
-    augment_category(sn_path, shape_ids=["ff5a2e340869e9c45981503fc6dfccb2",
-                                         "ff60e4b29c5cc38fceda3ac62a593e9c",
-                                         "f9bb9597cac5ef17a50afc9c93f8a50",
-                                         "fa71bb0a75ebd7f93ad7cfe5cf8e21f",
-                                         "fa875f5e2242d62d13de1e342854aa",
-                                         "fb5e48fde2cca54518bdb78540c51ed",
-                                         "fb7b155cea1159a3a8e4d3441f2dd18",
-                                         "fc2c7813c80d8fd323d6bd8db8de5b",
-                                         "fc75a8bdb88c751b7fbcb21c074906c",
-                                         "fd45a17e325bfa91933ffef19678834",
-                                         "fe02f7b3b421ee96cff9b44fdf0517e",
-                                         "fe1c487f7b9909bfebad4f49b26ec52",
-                                         "fe2bf44f5d9760b9a8ef44e1d2c5b75",
-                                         "fe4383cff6d000a3628187d1bb97b92",
-                                         "ff492e352c8cb336240c88cd4684446",
-                                         "ff7f07d1c4042f8a946c24c4f9fb58e"
-                                         ])
+    # augment_category(ds_path, category, shape_ids=shape_ids)
+
+    # ds = shapenet_storage.ShapenetMetaDataset("shapenet_wip_airplanes")
+    # ds.create_new_dataset([category])
     print("")
     print("Augmenting with {} threads took {} seconds".format(NUM_THREADS, datetime.datetime.now() - start_time))

@@ -3,17 +3,21 @@ import multiprocessing as mp
 import os
 import subprocess
 import sys
+import time
+from pathlib import Path
+
 try:
     from itertools import zip_longest
-    from queue import Queue
+    from queue import Queue, Empty
 except ImportError:
     from itertools import izip_longest as zip_longest
     import Queue
+    from Queue import Empty
 
 from shape_completion_training.utils import dataset_storage, obj_tools
 
-NUM_THREADS_PER_CATEGORY = 5
-NUM_THREADS_PER_OBJECT = 6
+NUM_THREADS_PER_CATEGORY = 1
+NUM_THREADS_PER_OBJECT = 1
 HARDCODED_BOUNDARY = '-bb -1.0 -1.0 -1.0 1.0 1.0 1.0'
 NUM_THREADS = NUM_THREADS_PER_CATEGORY * NUM_THREADS_PER_OBJECT
 
@@ -25,6 +29,10 @@ def grouper(n, iterable, fillvalue=None):
 
 
 def process_in_threads(target, args, num_threads):
+    if num_threads == 1:
+        target(*args)
+        return
+
     threads = []
     for _ in range(num_threads):
         thread = mp.Process(target=target, args=args)
@@ -34,7 +42,7 @@ def process_in_threads(target, args, num_threads):
         thread.join()
 
 
-def binvox_object_file(fp):
+def binvox_object_file(fp, ds_path):
     """
     Runs binvox on the input obj file
     """
@@ -58,19 +66,21 @@ def binvox_object_file(fp):
     file_dir, file_name = fp.parent.as_posix(), fp.stem
     augmentation = file_name[len('model_augmented_'):]
     gt = dataset_storage.load_gt_voxels_from_binvox(file_dir, augmentation)
-    dataset_storage.save_gt_voxels(fp.with_suffix(".pkl"), gt, compression="gzip")
+    dataset_storage.save_gt_voxels(fp.with_suffix(".pkl"), gt, ds_path=ds_path, compression="gzip")
 
 
-def binvox_object_file_worker(queue):
+def binvox_object_file_worker(queue, ds_path):
     while True:
         try:
             fp = queue.get(False)
-        except Queue.Empty:
+        except Empty:
             return
-        binvox_object_file(fp)
+        binvox_object_file(fp, ds_path)
 
 
-def augment_category(object_path, models_dirname="models", obj_filename="model_normalized.obj", shape_ids=None):
+def augment_category(ds_path, object_category, models_dirname="models", obj_filename="model_normalized.obj",
+                     shape_ids=None):
+    object_path = Path(ds_path) / object_category
     # shape_ids = ['a1d293f5cc20d01ad7f470ee20dce9e0']
     # shapes = ['214dbcace712e49de195a69ef7c885a4']
     if shape_ids is None:
@@ -85,27 +95,29 @@ def augment_category(object_path, models_dirname="models", obj_filename="model_n
     print("Augmenting shapes using {} threads".format(NUM_THREADS))
     print("Progress may appear eratic due to threading")
     print("")
+    while q.empty():  # Hack to deal with race condition
+        time.sleep(0.1)
 
-    process_in_threads(target=augment_shape_worker, args=(q, object_path, models_dirname,
+    process_in_threads(target=augment_shape_worker, args=(q, ds_path, object_category, models_dirname,
                                                           obj_filename, len(shape_ids),),
                        num_threads=NUM_THREADS_PER_CATEGORY)
 
 
-def augment_shape_worker(queue, object_path, models_dirname, obj_filename, total):
+def augment_shape_worker(queue, ds_path, object_category, models_dirname, obj_filename, total):
     while True:
         try:
             count, shape_id = queue.get(False)
-        except Queue.Empty:
+        except Empty:
             return
 
         sys.stdout.write('\033[2K\033[1G')
         print("{:03d}/{} Augmenting {}".format(count, total, shape_id), end="")
         sys.stdout.flush()
-        fp = object_path / shape_id / models_dirname
-        augment_shape(fp, obj_filename)
+        fp = Path(ds_path) / object_category / shape_id / models_dirname
+        augment_shape(ds_path, fp, obj_filename)
 
 
-def augment_shape(filepath, obj_filename):
+def augment_shape(ds_path, filepath, obj_filename):
     """
     Augments the model at the filepath
 
@@ -137,7 +149,7 @@ def augment_shape(filepath, obj_filename):
     for f in augmented_obj_files:
         # binvox_object_file(join(fp, f))
         q.put(f)
-    process_in_threads(target=binvox_object_file_worker, args=(q,),
+    process_in_threads(target=binvox_object_file_worker, args=(q, ds_path),
                        num_threads=NUM_THREADS_PER_OBJECT)
 
     # Cleanup large model files

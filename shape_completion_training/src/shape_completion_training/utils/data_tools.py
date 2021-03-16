@@ -134,7 +134,7 @@ def get_addressible_dataset(**kwargs):
     return AddressableDataset(**kwargs)
 
 
-class AddressableDataset():
+class AddressableDataset:
     """
     Shape dataset where shapes can be looked up by name or index. Useful for
     Manually visualizing and examining shapes
@@ -185,7 +185,7 @@ class AddressableDataset():
 
 
 def get_dataset_path(dataset_name):
-    paths = {"shapenet": shapenet_storage.shapenet_load_path,
+    paths = {"shapenet": shapenet_storage.get_shapenet_path(),
              "ycb": ycb_storage.ycb_load_path}
     return paths[dataset_name]
 
@@ -198,7 +198,7 @@ def load_dataset(dataset_name, metadata_only=True, shuffle=True):
     """
     if dataset_name == 'shapenet':
         train_data, test_data = load_shapenet_metadata([
-            shapenet_storage.shape_map["mug"]], shuffle=shuffle)
+            shapenet_storage.get_shape_map()["mug"]], shuffle=shuffle)
     elif dataset_name == 'ycb':
         train_data, test_data = load_ycb_metadata(shuffle=shuffle)
     else:
@@ -259,7 +259,7 @@ def preprocess_test_dataset(dataset, params):
 
 
 def _load_metadata_train_or_test(shapes="all", shuffle=True, prefix="train",
-                                 record_path=shapenet_storage.shapenet_record_path):
+                                 record_path=shapenet_storage.get_shapenet_record_path()):
     """
     Loads either the test or train data
     @param shapes: "all", or a list of shape names to load
@@ -443,7 +443,7 @@ def apply_sensor_noise(dataset):
         ko = conversions.img_to_voxelgrid(img)
         elem['known_occ'] = ko
         elem['known_free'], = tf.numpy_function(simulate_2_5D_known_free, [ko],
-                                               [tf.float32])
+                                                [tf.float32])
         return elem
 
     return dataset.map(_apply_sensor_noise)
