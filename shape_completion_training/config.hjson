@@ -1,4 +1,9 @@
 {
   "shapenet_path": "/fast/bradsaund/datasets/shapenet/ShapeNetCore.v2_augmented",
   # "shapenet_path": "data/ShapeNetCore.v2_augmented"
+  "augmentation":
+  {
+    "num_threads_per_category": 2,
+    "num_threads_per_object": 2
+  }
 }

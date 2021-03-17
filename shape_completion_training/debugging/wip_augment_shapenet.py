@@ -48,21 +48,23 @@ Then run binvox with the -pb option
 if __name__ == "__main__":
     # rospy.init_node("augment_shapenet_node")
     ds_path = shapenet_storage.get_shapenet_path()
-    category = shapenet_storage.get_shape_map()['airplane']
+    category = shapenet_storage.get_shape_map()['table']
+    # category = shapenet_storage.get_shape_map()['mug']
 
     start_time = datetime.datetime.now()
 
-    shape_ids = ["10155655850468db78d106ce0a280f87",
-                 "1021a0914a7207aff927ed529ad90a11",
-                 "1026dd1b26120799107f68a9cb8e3c",
-                 "103c9e43cdf6501c62b600da24e0965",
-                 "105f7f51e4140ee4b6b87e72ead132ed",
-                 ]
+    # shape_ids = ["10155655850468db78d106ce0a280f87",
+    #              "1021a0914a7207aff927ed529ad90a11",
+    #              "1026dd1b26120799107f68a9cb8e3c",
+    #              "103c9e43cdf6501c62b600da24e0965",
+    #              "105f7f51e4140ee4b6b87e72ead132ed",
+    #              ]
+    shape_ids = None
 
     # augment_category(sn_path)
-    # augment_category(ds_path, category, shape_ids=shape_ids)
+    augment_category(ds_path, category, shape_ids=shape_ids)
 
-    # ds = shapenet_storage.ShapenetMetaDataset("shapenet_wip_airplanes")
+    # ds = shapenet_storage.ShapenetMetaDataset("shapenet_wip_mugs")
     # ds.create_new_dataset([category])
     print("")
     print("Augmenting with {} threads took {} seconds".format(NUM_THREADS, datetime.datetime.now() - start_time))

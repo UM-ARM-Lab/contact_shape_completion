@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from shape_completion_training.utils.config import get_config
 
 try:
     from itertools import zip_longest
@@ -16,10 +17,14 @@ except ImportError:
 
 from shape_completion_training.utils import dataset_storage, obj_tools
 
-NUM_THREADS_PER_CATEGORY = 5
-NUM_THREADS_PER_OBJECT = 6
+
+config = get_config()
+
 HARDCODED_BOUNDARY = '-bb -1.0 -1.0 -1.0 1.0 1.0 1.0'
+NUM_THREADS_PER_CATEGORY = config["augmentation"]["num_threads_per_category"]
+NUM_THREADS_PER_OBJECT = config["augmentation"]["num_threads_per_object"]
 NUM_THREADS = NUM_THREADS_PER_CATEGORY * NUM_THREADS_PER_OBJECT
+
 
 
 def grouper(n, iterable, fillvalue=None):

@@ -1,4 +1,5 @@
 from shape_completion_training.model import filepath_tools
+from shape_completion_training.utils.config import get_config
 from shape_completion_training.utils import tf_utils
 from shape_completion_training.utils.dataset_storage import load_metadata, _split_train_and_test, write_to_filelist
 import hjson
@@ -103,12 +104,8 @@ def get_all_shapenet_files(shape_ids):
     return shapenet_records
 
 
-@lru_cache()
 def get_shapenet_path():
-    fp = filepath_tools.get_shape_completion_package_path() / "config.hjson"
-    with fp.open() as f:
-        config = hjson.load(f)
-
+    config = get_config()
     if 'shapenet_path' not in config:
         raise KeyError("shapenet_path must be defined in config.hjson file")
 
@@ -117,7 +114,6 @@ def get_shapenet_path():
         return p
 
     return filepath_tools.get_shape_completion_package_path() / p
-
 
 @lru_cache()
 def get_shapenet_record_path():
