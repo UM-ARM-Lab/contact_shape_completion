@@ -1,3 +1,4 @@
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.model import utils
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils import data_tools
@@ -65,10 +66,10 @@ if __name__ == "__main__":
         dataset_params = model_runner.params
         dataset_params.update(slit_params)
 
-        train_records, test_records = data_tools.load_dataset(dataset_name=dataset_params['dataset'],
-                                                              metadata_only=True, shuffle=False)
-        ds = data_tools.load_voxelgrids(test_records)
-        ds = data_tools.preprocess_test_dataset(ds, dataset_params)
+        train_records, test_records = shape_completion_training.utils.old_dataset_tools.load_dataset(dataset_name=dataset_params['dataset'],
+                                                                                                     metadata_only=True, shuffle=False)
+        ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(test_records)
+        ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(ds, dataset_params)
 
         for elem_num, elem in ds.enumerate():
             publish_display_count(count_pub, elem_num.numpy())

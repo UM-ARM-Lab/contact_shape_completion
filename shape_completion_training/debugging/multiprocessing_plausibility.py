@@ -1,4 +1,6 @@
 import multiprocessing as mp
+
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.utils import data_tools
 import tensorflow as tf
 
@@ -26,7 +28,7 @@ def compute_single_best_fit(queue):
         reference, other = queue.get(block=True, timeout=100.0)
         if reference is None:
             return
-        print("{}, {}".format(data_tools.get_unique_name(reference), data_tools.get_unique_name(other)))
+        print("{}, {}".format(shape_completion_training.utils.old_dataset_tools.get_unique_name(reference), shape_completion_training.utils.old_dataset_tools.get_unique_name(other)))
 
 
 def compute_best_fits(reference, ds):
@@ -45,8 +47,9 @@ def compute_best_fits(reference, ds):
         # other = next(single_elem_ds.__iter__())
         other = data_tools.load_voxelgrids_for_elem(other)
 
-        print("Processing {} and {}".format(data_tools.get_unique_name(reference),
-                                            data_tools.get_unique_name(other)))
+        print("Processing {} and {}".format(
+            shape_completion_training.utils.old_dataset_tools.get_unique_name(reference),
+            shape_completion_training.utils.old_dataset_tools.get_unique_name(other)))
 
 
 def compute_plausibilities_in_parallel(metadata):
@@ -88,7 +91,7 @@ def compute_plausibilities_in_parallel(metadata):
 if __name__ == "__main__":
     # train_dataset, test_dataset = data_tools.load_shapenet_metadata(shuffle=False)
 
-    test_dataset = data_tools._load_metadata_train_or_test(shapes="all", shuffle=False, prefix="test")
+    test_dataset = shape_completion_training.utils.old_dataset_tools._load_metadata_train_or_test(shapes="all", shuffle=False, prefix="test")
     test_dataset = test_dataset.take(10)
 
     compute_plausibilities_in_parallel(test_dataset)

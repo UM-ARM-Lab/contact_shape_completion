@@ -1,12 +1,16 @@
 from shape_completion_training.model import filepath_tools
 from shape_completion_training.utils.config import get_config
 from shape_completion_training.utils import tf_utils
-from shape_completion_training.utils.dataset_storage import load_metadata, _split_train_and_test, write_to_filelist
+from shape_completion_training.utils.data_tools import simulate_2_5D_input
+from shape_completion_training.utils.dataset_storage import load_metadata, _split_train_and_test, write_to_filelist, \
+    load_gt_only
 import hjson
 from pathlib import Path
 from functools import lru_cache
 from itertools import chain
 import pickle
+
+from shape_completion_training.utils.tf_utils import sequence_of_dicts_to_dict_of_sequences, stack_dict
 
 """
 Tools for storing and preprocessing augmented shapenet
@@ -14,6 +18,31 @@ Tools for storing and preprocessing augmented shapenet
 
 
 class ShapenetMetaDataset:
+    load_limit = 20
+
+    def __init__(self, metadata):
+        self.md = metadata
+
+    def batch(self, batch_size):
+        for i in range(0, len(self.md), batch_size):
+            yield ShapenetMetaDataset(self.md[i:i+batch_size])
+
+    def load(self):
+        if len(self.md) > self.load_limit:
+            raise OverflowError(f"Asked to load {len(self.md)} shapes. Too large. You probably didnt mean that")
+        for elem in self.md:
+            fp = get_shapenet_path() / elem['filepath']
+            vg = load_gt_only(fp)
+            elem['gt_occ'] = vg
+            elem['gt_free'] = 1-vg
+            ko, kf = simulate_2_5D_input(vg)
+            elem['known_occ'] = ko
+            elem['known_free'] = kf
+            # print(f"Loading {elem['filepath']}")
+        return stack_dict(sequence_of_dicts_to_dict_of_sequences(self.md))
+
+
+class ShapenetDatasetSupervisor:
     def __init__(self, name):
         self.name = name
         self.train_md = None
@@ -21,6 +50,22 @@ class ShapenetMetaDataset:
 
         self.ind_for_train_id = dict()
         self.ind_for_test_id = dict()
+
+        try:
+            self.load()
+        except FileNotFoundError:
+            print(f"Dataset {self.name} does not exist. You must create it")
+
+    def get_element(self, unique_id):
+        if unique_id in self.ind_for_train_id:
+            ind = self.ind_for_train_id[unique_id]
+            elem = self.train_md[ind]
+            return ShapenetMetaDataset([elem])
+        if unique_id in self.ind_for_test_id:
+            ind = self.ind_for_test_id[unique_id]
+            elem = self.test_md[ind]
+            return ShapenetMetaDataset([elem])
+        raise KeyError(f"Id {unique_id} not found in dataset")
 
     def create_new_dataset(self, shape_ids, test_ratio=0.1):
         files = get_all_shapenet_files(shape_ids)
@@ -32,7 +77,6 @@ class ShapenetMetaDataset:
             self.ind_for_train_id[get_unique_name(elem)] = i
         for i, elem in enumerate(self.test_md):
             self.ind_for_test_id[get_unique_name(elem)] = i
-
 
     def save(self, overwrite=False):
         fp = get_shapenet_path() / "MetaDataSets"
@@ -50,6 +94,12 @@ class ShapenetMetaDataset:
             raise FileNotFoundError(f"metadataset file not found: {fp.as_posix()}")
         with fp.open('rb') as f:
             self.__dict__ = pickle.load(f)
+
+    def get_training(self):
+        return ShapenetMetaDataset(self.train_md)
+
+    def get_testing(self):
+        return ShapenetMetaDataset(self.test_md)
 
 
 def get_unique_name(datum, has_batch_dim=False):
@@ -114,6 +164,7 @@ def get_shapenet_path():
         return p
 
     return filepath_tools.get_shape_completion_package_path() / p
+
 
 @lru_cache()
 def get_shapenet_record_path():

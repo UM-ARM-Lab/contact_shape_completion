@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.plausible_diversity import plausiblility
 from shape_completion_training.utils import data_tools
 import argparse
@@ -20,7 +21,7 @@ slit_width = 30
 
 def compute_plausibles_for_shard(shard):
 
-    _, ds = data_tools.load_dataset("ycb", shuffle=False, metadata_only=True)
+    _, ds = shape_completion_training.utils.old_dataset_tools.load_dataset("ycb", shuffle=False, metadata_only=True)
 
 
     params = {'apply_slit_occlusion': True,
@@ -32,18 +33,19 @@ def compute_plausibles_for_shard(shard):
     ref_size = 0
     for _ in reference_ds:
         ref_size += 1
-    reference_ds = data_tools.load_voxelgrids(reference_ds)
-    reference_ds = data_tools.preprocess_test_dataset(reference_ds, params)
+    reference_ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(reference_ds)
+    reference_ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(reference_ds, params)
 
-    ds = data_tools.load_voxelgrids(ds)
+    ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(ds)
 
-    single_match_ds = data_tools.simulate_input(ds, 0, 0, 0, sim_input_fn=data_tools.simulate_2_5D_input)
-    match_ds =  data_tools.apply_fixed_slit_occlusion(single_match_ds, 32, 6)
+    single_match_ds = shape_completion_training.utils.old_dataset_tools.simulate_input(ds, 0, 0, 0, sim_input_fn=data_tools.simulate_2_5D_input)
+    match_ds =  shape_completion_training.utils.old_dataset_tools.apply_fixed_slit_occlusion(single_match_ds, 32, 6)
 
     for slit_min in range(32-10, 32+10, 2):
         if slit_min == 32:
             continue
-        match_ds = match_ds.concatenate(data_tools.apply_fixed_slit_occlusion(single_match_ds, slit_min, slit_width))
+        match_ds = match_ds.concatenate(
+            shape_completion_training.utils.old_dataset_tools.apply_fixed_slit_occlusion(single_match_ds, slit_min, slit_width))
 
     mask = data_tools.get_slit_occlusion_2D_mask(slit_start, slit_width, (64, 64))
 

@@ -1,6 +1,8 @@
 from __future__ import print_function
 import rospy
 import shape_completion_training.model.observation_model
+
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.utils import data_tools
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 from shape_completion_training.voxelgrid import conversions
@@ -70,7 +72,7 @@ def run():
 
 
 def compare():
-    sn = data_tools.get_addressible_dataset(dataset_name="shapenet", use_train=False)
+    sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(dataset_name="shapenet", use_train=False)
     name = "9737c77d3263062b8ca7a0a01bcd55b60.0_0.0_0.0_265"
     best_fits = plausiblility.get_plausibilities_for(name, "shapenet")
     for i in range(30):

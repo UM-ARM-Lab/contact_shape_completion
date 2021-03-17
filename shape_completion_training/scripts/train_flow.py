@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import shape_completion_training.utils.old_dataset_tools
 import shape_completion_training.utils.shapenet_storage
 from shape_completion_training.utils import data_tools
 from shape_completion_training.model.model_runner import ModelRunner
@@ -23,13 +24,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     params = default_params.get_default_params(group_name=args.group)
 
-    data, _ = data_tools.load_dataset(params['dataset'])
+    data, _ = shape_completion_training.utils.old_dataset_tools.load_dataset(params['dataset'])
 
 
     def _shift(elem):
-        return data_tools.shift_bounding_box_only(elem, params['translation_pixel_range_x'],
-                                                  params['translation_pixel_range_y'],
-                                                  params['translation_pixel_range_z'])
+        return shape_completion_training.utils.old_dataset_tools.shift_bounding_box_only(elem, params['translation_pixel_range_x'],
+                                                                                         params['translation_pixel_range_y'],
+                                                                                         params['translation_pixel_range_z'])
 
     data = data.map(_shift)
 

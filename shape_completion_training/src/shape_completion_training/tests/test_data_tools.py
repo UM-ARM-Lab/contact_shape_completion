@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import shape_completion_training.utils.dataset_storage
+import shape_completion_training.utils.old_dataset_tools
 import shape_completion_training.utils.shapenet_storage
 from shape_completion_training.utils import data_tools
 import tensorflow as tf
@@ -10,7 +11,7 @@ from shape_completion_training.voxelgrid import conversions
 
 class TestDatasetLoading(TestCase):
     def test_dataset_exists_and_can_be_loaded(self):
-        train_data_shapenet, test_data_shapenet = data_tools.load_dataset('shapenet')
+        train_data_shapenet, test_data_shapenet = shape_completion_training.utils.old_dataset_tools.load_dataset('shapenet')
 
 
 class TestObservationModel(TestCase):

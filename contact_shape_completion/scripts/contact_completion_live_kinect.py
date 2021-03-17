@@ -9,6 +9,7 @@ import time
 import rospy
 import numpy as np
 
+import shape_completion_training.utils.old_dataset_tools
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.model.model_runner import ModelRunner
@@ -126,8 +127,8 @@ def complete_shape(req: CompleteShapeRequest):
 
 def get_elem(metadata, ind):
     ds = metadata.skip(ind).take(1)
-    ds = data_tools.load_voxelgrids(ds)
-    ds = data_tools.preprocess_test_dataset(ds, dataset_params)
+    ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(ds)
+    ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(ds, dataset_params)
 
     elem_raw = next(ds.__iter__())
     for k in elem_raw.keys():

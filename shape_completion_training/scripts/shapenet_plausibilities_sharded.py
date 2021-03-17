@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.plausible_diversity import plausiblility
 from shape_completion_training.utils import data_tools
 import argparse
@@ -20,7 +21,7 @@ def compute_plausibles_for_shard(shard):
     params = {'apply_slit_occlusion': False,
               'apply_depth_sensor_noise': False}
 
-    train_ds, test_ds = data_tools.load_dataset("shapenet", shuffle=False, metadata_only=True)
+    train_ds, test_ds = shape_completion_training.utils.old_dataset_tools.load_dataset("shapenet", shuffle=False, metadata_only=True)
     sharded_test_ds = test_ds.shard(TOTAL_SHARDS, shard)
 
     ref_size = 0
@@ -30,11 +31,11 @@ def compute_plausibles_for_shard(shard):
     # plausible_ds = test_ds.concatenate(train_ds.take(1*72))
     plausible_ds = test_ds.concatenate(train_ds.take(70 * 72))
 
-    plausible_ds = data_tools.load_voxelgrids(plausible_ds)
-    sharded_test_ds = data_tools.load_voxelgrids(sharded_test_ds)
+    plausible_ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(plausible_ds)
+    sharded_test_ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(sharded_test_ds)
 
-    plausible_ds = data_tools.preprocess_test_dataset(plausible_ds, params)
-    sharded_test_ds = data_tools.preprocess_test_dataset(sharded_test_ds, params)
+    plausible_ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(plausible_ds, params)
+    sharded_test_ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(sharded_test_ds, params)
 
     print("Computing shapenet plausibilities for shard {}/{}".format(shard, TOTAL_SHARDS))
 

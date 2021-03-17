@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import argparse
 
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.plausible_diversity import model_evaluator
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils import data_tools
@@ -52,12 +53,12 @@ if __name__ == "__main__":
         if mr.params['dataset'] == 'ycb':
             mr.params.update(slit_params)
 
-        _, test_ds = data_tools.load_dataset(mr.params['dataset'], shuffle=False, metadata_only=True)
+        _, test_ds = shape_completion_training.utils.old_dataset_tools.load_dataset(mr.params['dataset'], shuffle=False, metadata_only=True)
         test_set_size = 0
         for _ in test_ds:
             test_set_size += 1
-        test_ds = data_tools.load_voxelgrids(test_ds)
-        test_ds = data_tools.preprocess_test_dataset(test_ds, mr.params)
+        test_ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(test_ds)
+        test_ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(test_ds, mr.params)
 
         evaluation = {trial_path: model_evaluator.evaluate_model(mr.model, test_ds, test_set_size,
                                                                  mr.params['dataset'],

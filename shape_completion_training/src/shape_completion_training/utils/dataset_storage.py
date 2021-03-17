@@ -97,7 +97,7 @@ def load_data_with_gt(filepath, compression="gzip"):
 
 
 def load_gt_only(filepath, compression="gzip"):
-    loaded = _load_compressed(pathlib.Path(filepath.decode('UTF-8')), compression)
+    loaded = _load_compressed(pathlib.Path(filepath), compression)
     return np.reshape(np.unpackbits(loaded['gt_occ_packed']), loaded['shape']).astype(np.float32)
 
 

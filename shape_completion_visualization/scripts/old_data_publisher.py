@@ -17,7 +17,6 @@ from shape_completion_training.voxelgrid import fit
 from shape_completion_training.plausible_diversity import model_evaluator, plausiblility
 from shape_completion_training.voxelgrid import conversions
 from shape_completion_training.voxelgrid.metrics import chamfer_distance
-from shape_completion_visualization.visualizer import Visualizer
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 from shape_completion_visualization.shape_selection import send_display_names_from_metadata
 from shape_completion_training.voxelgrid.utils import sample_from_voxelgrid
@@ -286,15 +285,89 @@ def publish_selection(metadata, ind, str_msg):
         sampling_thread.start()
 
 
+def sampler_worker(elem):
+    global stop_current_sampler
+    stop_current_sampler = False
+
+    print()
+    for i in range(200):
+        if stop_current_sampler:
+            return
+        rospy.sleep(0.01)
+
+    # sampler = sampling_tools.UnknownSpaceSampler(elem)
+    sampler = sampling_tools.EfficientCNNSampler(elem)
+    # sampler = sampling_tools.MostConfidentSampler(elem)
+    inference = model_runner.model(elem)
+
+    finished = False
+    prev_ct = 0
+
+    while not finished and not stop_current_sampler:
+        try:
+            elem, inference = sampler.sample(model_runner, elem, inference)
+        except StopIteration:
+            finished = True
+
+        if sampler.ct - prev_ct >= 100 or finished:
+            prev_ct = sampler.ct
+            VG_PUB.publish_elem(elem)
+            VG_PUB.publish_inference(inference)
+    print("Sampling complete")
 
 
+def load_network():
+    global model_runner
+    # global model_evaluator
+    if ARGS.trial is None:
+        print("Not loading any inference model")
+        return
+    model_runner = ModelRunner(training=False, trial_path=ARGS.trial)
+    # model_evaluator = ModelEvaluator(model_runner.model)
+
+
+def parse_command_line_args():
+    parser = argparse.ArgumentParser(description='Publish shape data to RViz for viewing')
+    parser.add_argument('--sample', help='foo help', action='store_true')
+    parser.add_argument('--use_best_iou', help='foo help', action='store_true')
+    parser.add_argument('--publish_each_sample', help='foo help', action='store_true')
+    parser.add_argument('--fit_to_particles', help='foo help', action='store_true')
+    parser.add_argument('--publish_nearest_plausible', help='foo help', action='store_true')
+    parser.add_argument('--publish_nearest_sample', help='foo help', action='store_true')
+    parser.add_argument('--multistep', action='store_true')
+    parser.add_argument('--trial')
+    parser.add_argument('--publish_closest_train', action='store_true')
+    parser.add_argument('--enforce_contact', action='store_true')
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
+    ARGS = parse_command_line_args()
 
     rospy.init_node('shape_publisher')
     rospy.loginfo("Data Publisher")
 
-    visulizer = Visualizer(dataset='shapenet_wip_mugs')
+    load_network()
+
+    dataset_params = default_dataset_params
+    if model_runner is not None:
+        dataset_params.update(model_runner.params)
+        dataset_params.update({
+            "slit_start": 32,
+            "slit_width": 32,
+        })
+    # dataset_params.update({
+    #     "apply_depth_sensor_noise": True,
+    # })
+
+    dataset_params.update(default_translations)
+    train_records, test_records = shape_completion_training.utils.old_dataset_tools.load_dataset(dataset_name=dataset_params['dataset'],
+                                                                                                 metadata_only=True, shuffle=False)
+
+    VG_PUB = VoxelgridPublisher()
+
+    # selection_sub = send_display_names_from_metadata(train_records, publish_selection)
+    selection_sub = send_display_names_from_metadata(test_records, publish_selection)
 
     rospy.spin()

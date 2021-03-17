@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import rospy
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.plausible_diversity import model_evaluator
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 from shape_completion_training.utils import data_tools, tf_utils
@@ -17,7 +18,7 @@ save_folder = filepath_tools.get_shape_completion_package_path() / "results"
 # data_names = ["model", "shape", "best_sample_gt", ""
 
 # Shapenet
-sn = data_tools.get_addressible_dataset(use_train=False)
+sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(use_train=False)
 model_name_map = {"VAE/September_12_15-46-26_f87bdf38d4": "VAE",
                   "PSSNet/September_10_21-15-32_f87bdf38d4": "Ours",
                   "VAE_GAN/September_12_15-08-29_f87bdf38d4": "VAE_GAN",

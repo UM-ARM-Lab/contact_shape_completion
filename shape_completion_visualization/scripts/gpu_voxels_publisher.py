@@ -9,6 +9,7 @@ import time
 import rospy
 import numpy as np
 
+import shape_completion_training.utils.old_dataset_tools
 from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
@@ -129,7 +130,7 @@ def run_inference(elem):
     if ARGS.publish_closest_train:
         # Computes and publishes the closest element in the training set to the test shape
         train_in_correct_augmentation = train_records.filter(lambda x: x['augmentation'] == elem['augmentation'][0])
-        train_in_correct_augmentation = data_tools.load_voxelgrids(train_in_correct_augmentation)
+        train_in_correct_augmentation = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(train_in_correct_augmentation)
         min_cd = np.inf
         closest_train = None
         for train_elem in train_in_correct_augmentation:
@@ -151,8 +152,8 @@ def run_inference(elem):
 
 def get_elem(metadata, ind):
     ds = metadata.skip(ind).take(1)
-    ds = data_tools.load_voxelgrids(ds)
-    ds = data_tools.preprocess_test_dataset(ds, dataset_params)
+    ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(ds)
+    ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(ds, dataset_params)
 
     elem_raw = next(ds.__iter__())
     for k in elem_raw.keys():

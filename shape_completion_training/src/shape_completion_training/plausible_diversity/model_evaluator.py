@@ -1,5 +1,6 @@
 import sys
 
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.voxelgrid import metrics
 from shape_completion_training.voxelgrid.metrics import best_match_value, chamfer_distance
 from shape_completion_training.voxelgrid import conversions
@@ -44,7 +45,7 @@ def save_evaluation(evaluation_dict):
 
 
 def get_plausibles(shape_name, dataset_name):
-    sn = data_tools.get_addressible_dataset(dataset_name=dataset_name)
+    sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(dataset_name=dataset_name)
     valid_fits = plausiblility.get_plausibilities_for(shape_name, dataset_name)
     plausibles = [conversions.transform_voxelgrid(sn.get(name)['gt_occ'], T, scale=0.01)
                   for name, T, _, _ in valid_fits]
@@ -76,7 +77,7 @@ def evaluate_model(model, test_set, test_set_size, dataset_name, num_particles=1
     with progressbar.ProgressBar(widgets=widgets, max_value=test_set_size) as bar:
         for i, elem in test_set.batch(1).enumerate():
             # print("Evaluating {}".format(data_tools.get_unique_name(elem)))
-            elem_name = data_tools.get_unique_name(elem, has_batch_dim=True)
+            elem_name = shape_completion_training.utils.old_dataset_tools.get_unique_name(elem, has_batch_dim=True)
             bar.update(i.numpy(), CurrentShape=elem_name)
 
             if tf.reduce_sum(elem['known_occ']) == 0.0:

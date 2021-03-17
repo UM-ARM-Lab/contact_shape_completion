@@ -4,6 +4,8 @@ from __future__ import print_function
 import sys
 from os.path import dirname, abspath, join
 
+import shape_completion_training.utils.old_dataset_tools
+
 sc_path = join(dirname(abspath(__file__)), "..")
 sys.path.append(sc_path)
 
@@ -49,7 +51,7 @@ def examine_random_behavior():
 
 def examine_shapenet_loading_behavior():
     dataset = data_tools.load_shapenet([shape_map["mug"]], shuffle=True)
-    dataset = data_tools.simulate_input(dataset, 10, 10, 10)
+    dataset = shape_completion_training.utils.old_dataset_tools.simulate_input(dataset, 10, 10, 10)
     batched_ds = dataset.batch(16)
     batched_ds = batched_ds
 

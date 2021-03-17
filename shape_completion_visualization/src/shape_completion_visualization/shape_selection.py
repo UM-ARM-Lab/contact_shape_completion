@@ -1,12 +1,13 @@
 from __future__ import print_function
 import rospy
+import shape_completion_training.utils.old_dataset_tools
 from rviz_text_selection_panel_msgs.msg import TextSelectionOptions
 from std_msgs.msg import String
 from shape_completion_training.utils import data_tools
 
 
 def send_display_names_from_metadata(metadata, callback):
-    names_list = [data_tools.get_unique_name(elem) for _, elem in metadata.enumerate()]
+    names_list = [shape_completion_training.utils.old_dataset_tools.get_unique_name(elem) for _, elem in metadata.enumerate()]
     return send_display_names(names_list, lambda ind, name: callback(metadata, ind, name))
 
 

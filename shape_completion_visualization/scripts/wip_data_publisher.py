@@ -5,6 +5,7 @@ import argparse
 import rospy
 import numpy as np
 
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils import data_tools
 from shape_completion_training.model.utils import add_batch_to_dict, numpyify
@@ -66,8 +67,8 @@ def publish_selection(metadata, ind, str_msg):
         return
 
     ds = metadata.skip(ind).take(1)
-    ds = data_tools.load_voxelgrids(ds)
-    ds = data_tools.preprocess_dataset(ds, dataset_params)
+    ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(ds)
+    ds = shape_completion_training.utils.old_dataset_tools.preprocess_dataset(ds, dataset_params)
     # ds = data_tools.load_voxelgrids(ds)
     # ds = data_tools.simulate_input(ds, 0, 0, 0)
     # ds = data_tools.apply_slit_occlusion(ds)
@@ -130,8 +131,8 @@ if __name__ == "__main__":
         dataset_params = model_runner.params
 
     dataset_params.update(default_translations)
-    train_records, test_records = data_tools.load_dataset(dataset_name=dataset_params['dataset'],
-                                                          metadata_only=True, shuffle=False)
+    train_records, test_records = shape_completion_training.utils.old_dataset_tools.load_dataset(dataset_name=dataset_params['dataset'],
+                                                                                                 metadata_only=True, shuffle=False)
 
     VG_PUB = VoxelgridPublisher()
 

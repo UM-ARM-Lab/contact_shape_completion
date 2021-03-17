@@ -4,6 +4,7 @@ import rospkg
 import pickle
 import tensorflow as tf
 
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.plausible_diversity.observation_model import observation_likelihood_geometric_mean, out_of_range_count
 from shape_completion_training.utils import data_tools
 from shape_completion_training.voxelgrid import fit, conversions
@@ -13,7 +14,7 @@ import progressbar
 
 def _get_path(dataset_name, identifier=""):
     r = rospkg.RosPack()
-    trial_path = data_tools.get_dataset_path(dataset_name) / ("plausibility" + identifier + ".pkl")
+    trial_path = shape_completion_training.utils.old_dataset_tools.get_dataset_path(dataset_name) / ("plausibility" + identifier + ".pkl")
     return trial_path.as_posix()
 
 
@@ -50,8 +51,8 @@ def compute_icp_fit_dict(metadata, params):
     num_shapes = 0
     for i in metadata:
         num_shapes += 1
-    ds = data_tools.load_voxelgrids(metadata)
-    ds = data_tools.preprocess_test_dataset(params)
+    ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(metadata)
+    ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(params)
     return compute_partial_icp_fit_dict(ds, ds, num_shapes)
 
 
@@ -79,7 +80,7 @@ def compute_partial_icp_fit_dict(reference_ds, other_ds, reference_ds_size=None,
     with progressbar.ProgressBar(widgets=widgets, max_value=reference_ds_size) as bar:
         for i, reference in reference_ds.enumerate():
             # bar.update(i.numpy())
-            bar.update(i.numpy(), CurrentShape=data_tools.get_unique_name(reference))
+            bar.update(i.numpy(), CurrentShape=shape_completion_training.utils.old_dataset_tools.get_unique_name(reference))
 
             best_fit_for_reference = {}
             if tf.reduce_sum(reference['known_occ']) == 0:
@@ -89,7 +90,7 @@ def compute_partial_icp_fit_dict(reference_ds, other_ds, reference_ds_size=None,
                 if tf.reduce_sum(other['known_occ']) == 0:
                     continue
 
-                other_name = data_tools.get_unique_name(other)
+                other_name = shape_completion_training.utils.old_dataset_tools.get_unique_name(other)
                 # print("    Fitting: {}".format(other_name))
                 T = fit.icp_transform(other['known_occ'], reference['known_occ'], scale=0.01)
                 fitted = conversions.transform_voxelgrid(other['gt_occ'], T, scale=0.01)
@@ -103,5 +104,5 @@ def compute_partial_icp_fit_dict(reference_ds, other_ds, reference_ds_size=None,
                 best_fit_for_reference[(j.numpy(), other_name)] = {"T": T, "observation_probability": p,
                                                            "out_of_range_count": oob}
 
-            best_fits[data_tools.get_unique_name(reference)] = best_fit_for_reference
+            best_fits[shape_completion_training.utils.old_dataset_tools.get_unique_name(reference)] = best_fit_for_reference
     return best_fits

@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import shape_completion_training.utils.old_dataset_tools
 import shape_completion_training.utils.shapenet_storage
 from shape_completion_training.utils import data_tools
 
@@ -26,7 +27,7 @@ def write_all_files():
 
 
 if __name__ == "__main__":
-    train_ds, test_ds = data_tools.load_shapenet_metadata()
+    train_ds, test_ds = shape_completion_training.utils.old_dataset_tools.load_shapenet_metadata()
     print(report("test dataset", process(test_ds)))
     # write_all_files()
 

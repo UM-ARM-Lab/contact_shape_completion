@@ -2,6 +2,7 @@
 import copy
 from random import shuffle
 
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.utils import data_tools
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_visualization import voxelgrid_publisher
@@ -60,7 +61,7 @@ def view_inferred_bounding_box():
     vg_pub = voxelgrid_publisher.VoxelgridPublisher()
     mr = ModelRunner(training=False, trial_path="NormalizingAE/July_02_15-15-06_ede2472d34")
     # mr = ModelRunner(training=False, trial_path="NormalizingAE_YCB/July_16_21-36-14_4ec8969b2c")
-    ds = data_tools.get_addressible_dataset(dataset_name=mr.params['dataset'])
+    ds = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(dataset_name=mr.params['dataset'])
     # mr = get_untrained_model()
     flow = get_flow()
 
@@ -93,7 +94,7 @@ def view_inferred_bounding_box():
 
 def view_augmented_ae():
     vg_pub = voxelgrid_publisher.VoxelgridPublisher()
-    sn = data_tools.get_addressible_dataset()
+    sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset()
     mr = ModelRunner(training=False, trial_path="Augmented_VAE/May_21_20-00-00_0000000000")
 
     for i in range(0, 1000, 2):
@@ -111,7 +112,7 @@ def view_augmented_ae():
 
 
 def view_latent_space():
-    sn = data_tools.get_addressible_dataset()
+    sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset()
     flow = get_flow()
 
     latents = []
@@ -135,7 +136,7 @@ def view_latent_space():
 
 
 def view_latent_space_as_movie():
-    sn = data_tools.get_addressible_dataset()
+    sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset()
     flow = get_flow()
 
     train_names = copy.deepcopy(sn.train_names)
@@ -169,7 +170,7 @@ def view_latent_space_as_movie():
 
 
 def check_loss():
-    sn = data_tools.get_addressible_dataset()
+    sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset()
     flow = get_flow()
 
     latents = []

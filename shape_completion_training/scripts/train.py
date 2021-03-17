@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import argparse
 
+import shape_completion_training.utils.old_dataset_tools
 import shape_completion_training.utils.shapenet_storage
 from shape_completion_training.utils import data_tools
 from shape_completion_training.model.model_runner import ModelRunner
@@ -19,8 +20,8 @@ if __name__ == "__main__":
     params = default_params.get_default_params(group_name=args.group)
     params.update(override_params)
 
-    data, _ = data_tools.load_dataset(params['dataset'], metadata_only=False)
-    data = data_tools.preprocess_dataset(data, params)
+    data, _ = shape_completion_training.utils.old_dataset_tools.load_dataset(params['dataset'], metadata_only=False)
+    data = shape_completion_training.utils.old_dataset_tools.preprocess_dataset(data, params)
 
     if args.tmp:
         mr = ModelRunner(training=True, params=params, group_name=None)

@@ -5,6 +5,7 @@ import random
 import rospy
 import numpy as np
 
+import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import model_evaluator, default_params
 from shape_completion_training.utils import data_tools
@@ -45,8 +46,8 @@ def compute():
         'translation_pixel_range_z': 0,
     }
 
-    train_records, test_records = data_tools.load_dataset(dataset_name=dataset_params['dataset'],
-                                                          metadata_only=True, shuffle=False)
+    train_records, test_records = shape_completion_training.utils.old_dataset_tools.load_dataset(dataset_name=dataset_params['dataset'],
+                                                                                                 metadata_only=True, shuffle=False)
 
     test_size = 0
     for _ in test_records:
@@ -54,13 +55,13 @@ def compute():
 
     results = {}
 
-    test_ds = data_tools.load_voxelgrids(test_records)
-    test_ds = data_tools.preprocess_test_dataset(test_ds, dataset_params)
+    test_ds = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(test_records)
+    test_ds = shape_completion_training.utils.old_dataset_tools.preprocess_test_dataset(test_ds, dataset_params)
     for i, elem in test_ds.enumerate():
         print("Evaluating {}/{}".format(i.numpy(), test_size))
         # Computes and publishes the closest element in the training set to the test shape
         train_in_correct_augmentation = train_records.filter(lambda x: x['augmentation'] == elem['augmentation'])
-        train_in_correct_augmentation = data_tools.load_voxelgrids(train_in_correct_augmentation)
+        train_in_correct_augmentation = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(train_in_correct_augmentation)
         min_cd = np.inf
         closest_train = None
         for train_elem in train_in_correct_augmentation:

@@ -126,6 +126,10 @@ def stack_known(inp):
     return tf.concat([inp['known_occ'], inp['known_free']], axis=4)
 
 
+def stack_dict(inp: dict):
+    return {k: tf.convert_to_tensor(np.stack(v)) for k, v in inp.items()}
+
+
 def log_normal_pdf(sample, mean, logvar, raxis=1):
     """
     Computes the probability density for a sample (vector) given a gaussian means and variance.
