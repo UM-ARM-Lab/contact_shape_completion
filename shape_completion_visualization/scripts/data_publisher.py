@@ -17,7 +17,7 @@ from shape_completion_training.voxelgrid import fit
 from shape_completion_training.plausible_diversity import model_evaluator, plausiblility
 from shape_completion_training.voxelgrid import conversions
 from shape_completion_training.voxelgrid.metrics import chamfer_distance
-from shape_completion_visualization.visualizer import Visualizer
+from shape_completion_visualization.visualizer import Visualizer, parse_visualizer_command_line_args
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 from shape_completion_visualization.shape_selection import send_display_names_from_metadata
 from shape_completion_training.voxelgrid.utils import sample_from_voxelgrid
@@ -43,48 +43,6 @@ default_translations = {
 }
 
 
-def wip_enforce_contact(elem):
-    inference = model_runner.model(elem)
-    VG_PUB.publish_inference(inference)
-    mismatch = tf.abs(elem['gt_occ'] - inference['predicted_occ'])
-    VG_PUB.publish("mismatch", mismatch)
-    pssnet = model_runner.model
-    latent = tf.Variable(pssnet.sample_latent(elem))
-    pred = pssnet.decode(latent, apply_sigmoid=True)
-    VG_PUB.publish('predicted_occ', pred)
-
-    known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-    known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-
-
-
-    # known_free = known_free + sample_from_voxelgrid((pred - elem['gt_occ']) > 0.5)
-    # known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
-
-    # known_contact = (elem['gt_occ'] - pred) > 0.5
-    # known_contact = tf.cast(known_contact, tf.float32)
-    # known_free = (pred - elem['gt_occ']) > 0.5
-    # known_free = tf.cast(known_free, tf.float32)
-    known_contact = known_contact + sample_from_voxelgrid((elem['gt_occ'] - pred) > 0.5)
-
-    VG_PUB.publish('aux', known_contact)
-
-    rospy.sleep(2)
-
-    # for i in range(100):
-    #     pssnet.grad_step_towards_output(latent, known_contact, known_free)
-    #     VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-    i = 0
-    while tf.reduce_min(tf.boolean_mask(pred, known_contact)) < 0.5:
-        i += 1
-        if i > 1000:
-            print("Failed to satisfy contact")
-            break
-        pssnet.grad_step_towards_output(latent, known_contact, known_free)
-        pred = pssnet.decode(latent, apply_sigmoid=True)
-        VG_PUB.publish('predicted_occ', pred)
-    print("Finished update")
-    return pssnet.decode(latent, apply_sigmoid=True)
 
 
 def run_inference(elem):
@@ -273,28 +231,15 @@ def publish_selection(metadata, ind, str_msg):
     print("p_correct: {}".format(metrics.p_correct(inference['predicted_occ'], elem['gt_occ'])))
     print("iou: {}".format(metrics.iou(elem['gt_occ'], inference['predicted_occ'])))
 
-    if ARGS.sample:
-        global stop_current_sampler
-        global sampling_thread
-
-        # print("Stopping old worker")
-        stop_current_sampler = True
-        if sampling_thread is not None:
-            sampling_thread.join()
-
-        sampling_thread = threading.Thread(target=sampler_worker, args=(elem,))
-        sampling_thread.start()
-
-
-
-
 
 
 if __name__ == "__main__":
 
     rospy.init_node('shape_publisher')
     rospy.loginfo("Data Publisher")
+    # args = {'dataset': 'shapenet_wip_mugs'}
+    args = vars(parse_visualizer_command_line_args())
 
-    visulizer = Visualizer(dataset='shapenet_wip_mugs')
+    visualizer = Visualizer(**args)
 
     rospy.spin()

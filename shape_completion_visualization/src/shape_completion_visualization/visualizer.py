@@ -1,5 +1,6 @@
 import argparse
 
+from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor, get_unique_name
 from shape_completion_visualization.shape_selection import send_display_names
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
@@ -15,6 +16,7 @@ def parse_visualizer_command_line_args(**args):
     parser.add_argument('--publish_nearest_sample', help='foo help', action='store_true')
     parser.add_argument('--multistep', action='store_true')
     parser.add_argument('--trial')
+    parser.add_argument('--dataset', default='shapenet_wip_mugs')
     parser.add_argument('--publish_closest_train', action='store_true')
     parser.add_argument('--enforce_contact', action='store_true')
 
@@ -25,13 +27,16 @@ class Visualizer:
     def __init__(self, **args):
         self.vg_pub = VoxelgridPublisher()
         self.selection_sub = None
-        self.model = None
+        self.model_runner = None
         self.dataset_supervisor = None
 
         self.train_or_test = args['train_or_test'] if 'train_or_test' in args else 'train'
 
-        if 'dataset' in args:
+        if args['dataset']:
             self.load_dataset(args['dataset'])
+
+        if args['trial']:
+            self.load_model(args['trial'])
 
     def load_dataset(self, name):
         self.dataset_supervisor = ShapenetDatasetSupervisor(name)
@@ -46,5 +51,12 @@ class Visualizer:
         elem = self.dataset_supervisor.get_element(unique_id.data).load()
         self.vg_pub.publish_elem(elem)
 
-    def load_model(self):
-        pass
+        if self.model_runner is None:
+            return
+
+        inference = self.model_runner.model(elem)
+        self.vg_pub.publish_inference(inference)
+
+
+    def load_model(self, trial):
+        self.model_runner = ModelRunner(training=False, trial_path=trial)

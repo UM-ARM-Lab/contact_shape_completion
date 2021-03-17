@@ -89,11 +89,14 @@ class ShapenetDatasetSupervisor:
             pickle.dump(self.__dict__, f)
 
     def load(self):
-        fp = get_shapenet_path() / "MetaDataSets" / f'{self.name}.metadataset.pkl'
+        fp = self.get_save_path()
         if not fp.exists():
             raise FileNotFoundError(f"metadataset file not found: {fp.as_posix()}")
         with fp.open('rb') as f:
             self.__dict__ = pickle.load(f)
+
+    def get_save_path(self):
+        return get_shapenet_path() / "MetaDataSets" / f'{self.name}.metadataset.pkl'
 
     def get_training(self):
         return ShapenetMetaDataset(self.train_md)
@@ -142,7 +145,7 @@ def get_all_shapenet_files(shape_ids):
     for category in shape_ids:
         shape_path = get_shapenet_path() / category
         for obj_fp in sorted(p for p in shape_path.iterdir()):
-            print("{}".format(obj_fp.name))
+            # print("{}".format(obj_fp.name))
             all_augmentations = [f for f in (obj_fp / "models").iterdir()
                                  if f.name.startswith("model_augmented")
                                  if f.name.endswith(".pkl.gzip")]
