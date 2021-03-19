@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     for i, category in enumerate(categories):
         cat_id = shape_map[category]
-        print(f"Augmenting {category} ({cat_id}). {i+1}/{len(categories)}")
+        print(f"\n\nAugmenting {category} ({cat_id}). {i+1}/{len(categories)}")
         start_time = datetime.datetime.now()
 
         shape_ids = None
