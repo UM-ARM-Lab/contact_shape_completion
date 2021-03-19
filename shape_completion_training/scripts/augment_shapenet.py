@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function
 
+import argparse
+
 import shape_completion_training.utils.shapenet_storage
 from shape_completion_training.utils import shapenet_storage
 import datetime
@@ -23,20 +25,26 @@ Then run binvox with the -pb option
 
 """
 
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--reverse',
+                        help="reverses the order of categories when augmenting. "
+                             "Useful when running on two computers",
+                        action='store_true')
+    args = parser.parse_args()
+
     ds_path = shapenet_storage.get_shapenet_path()
     shape_map = shapenet_storage.get_shape_map()
 
     categories = list(shape_map.keys())
 
     category = ['table']
-    if get_config()['augmentation']['reverse_order']:
+    if args.reverse:
         categories.reverse()
 
     for i, category in enumerate(categories):
         cat_id = shape_map[category]
-        print(f"\n\nAugmenting {category} ({cat_id}). {i+1}/{len(categories)}")
+        print(f"\n\nAugmenting {category} ({cat_id}). {i + 1}/{len(categories)}")
         start_time = datetime.datetime.now()
 
         shape_ids = None
