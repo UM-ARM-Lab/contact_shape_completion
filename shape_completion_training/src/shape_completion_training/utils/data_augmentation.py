@@ -17,14 +17,12 @@ except ImportError:
 
 from shape_completion_training.utils import dataset_storage, obj_tools
 
-
 config = get_config()
 
 HARDCODED_BOUNDARY = '-bb -1.0 -1.0 -1.0 1.0 1.0 1.0'
 NUM_THREADS_PER_CATEGORY = config["augmentation"]["num_threads_per_category"]
 NUM_THREADS_PER_OBJECT = config["augmentation"]["num_threads_per_object"]
 NUM_THREADS = NUM_THREADS_PER_CATEGORY * NUM_THREADS_PER_OBJECT
-
 
 
 def grouper(n, iterable, fillvalue=None):
@@ -56,7 +54,7 @@ def binvox_object_file(fp, ds_path):
 
     # Fast but inaccurate
     wire_binvox_str = "~/useful_scripts/binvox -e -down -down -dmin 1 {} {}".format(HARDCODED_BOUNDARY,
-                                                                                        fp.as_posix())
+                                                                                    fp.as_posix())
     # cuda_binvox_str = "~/useful_scripts/cuda_voxelizer -s 64 -f {}".format(fp)
 
     with open(os.devnull, 'w') as FNULL:

@@ -31,6 +31,8 @@ def augment(filename):
 
     savepath = os.path.dirname(filename)
 
+    # TODO: Make these parameters in the config file
+
     # Shapenet
     x_rotations = [0]
     y_rotations = range(0, 360, 5)
