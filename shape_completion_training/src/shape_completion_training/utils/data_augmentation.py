@@ -52,10 +52,10 @@ def binvox_object_file(fp, ds_path):
     Runs binvox on the input obj file
     """
     # TODO Hardcoded binvox path
-    binvox_str = "~/useful_scripts/binvox -dc -pb -down -down -dmin 2 {} {}".format(HARDCODED_BOUNDARY, fp.as_posix())
+    binvox_str = "~/useful_scripts/binvox -dc -down -down -dmin 2 {} {}".format(HARDCODED_BOUNDARY, fp.as_posix())
 
     # Fast but inaccurate
-    wire_binvox_str = "~/useful_scripts/binvox -e -pb -down -down -dmin 1 {} {}".format(HARDCODED_BOUNDARY,
+    wire_binvox_str = "~/useful_scripts/binvox -e -down -down -dmin 1 {} {}".format(HARDCODED_BOUNDARY,
                                                                                         fp.as_posix())
     # cuda_binvox_str = "~/useful_scripts/cuda_voxelizer -s 64 -f {}".format(fp)
 
