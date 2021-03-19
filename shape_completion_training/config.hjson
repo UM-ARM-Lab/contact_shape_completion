@@ -5,5 +5,6 @@
   {
     "num_threads_per_category": 2,
     "num_threads_per_object": 2
+    "reverse_order": False  # Useful when computing augmentations on two different machines
   }
 }

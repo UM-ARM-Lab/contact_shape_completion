@@ -5,6 +5,7 @@ import shape_completion_training.utils.shapenet_storage
 from shape_completion_training.utils import shapenet_storage
 import datetime
 import rospy
+from shape_completion_training.utils.config import get_config
 from shape_completion_training.utils.data_augmentation import NUM_THREADS, augment_category
 
 # HARDCODED_BOUNDARY = '-bb -0.6 -0.6 -0.6 0.6 0.6 0.6'
@@ -30,6 +31,8 @@ if __name__ == "__main__":
     categories = list(shape_map.keys())
 
     category = ['table']
+    if get_config()['augmentation']['reverse_order']:
+        categories.reverse()
 
     for i, category in enumerate(categories):
         cat_id = shape_map[category]
