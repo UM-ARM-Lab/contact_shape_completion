@@ -91,9 +91,10 @@ class ModelRunner:
         self.model.summary()
 
     def build_model(self, dataset):
-        elem = dataset.take(self.batch_size).batch(self.batch_size)
+        elem = next(dataset.get_training().batch(self.batch_size)).load()
+        # elem = dataset.take(self.batch_size).batch(self.batch_size)
         tf.summary.trace_on(graph=True, profiler=False)
-        self.model.predict(elem)
+        self.model(elem)
         with self.train_summary_writer.as_default():
             tf.summary.trace_export(name='train_trace', step=self.ckpt.step.numpy())
 
@@ -125,8 +126,9 @@ class ModelRunner:
             for batch in dataset:
                 self.num_batches += 1
                 self.ckpt.step.assign_add(1)
+                data = batch.load()
 
-                _, ret = self.model.train_step(batch)
+                _, ret = self.model.train_step(data)
                 time_str = str(datetime.timedelta(seconds=int(self.ckpt.train_time.numpy())))
                 bar.update(self.num_batches, Loss=ret['loss'].numpy(),
                            TrainTime=time_str)
@@ -144,7 +146,7 @@ class ModelRunner:
         self.count_params()
         # dataset = dataset.shuffle(10000)
         # batched_ds = dataset.batch(self.batch_size, drop_remainder=True).prefetch(64)
-        batched_ds = dataset.batch(self.batch_size).prefetch(64)
+        # batched_ds = dataset.batch(self.batch_size).prefetch(64)
 
         num_epochs = 1000
         while self.ckpt.epoch < num_epochs:
@@ -152,7 +154,7 @@ class ModelRunner:
             print('')
             print('==  Epoch {}/{}  '.format(self.ckpt.epoch.numpy(), num_epochs) + '=' * 25
                   + ' ' + self.group_name + ' ' + '=' * 20)
-            self.train_batch(batched_ds)
+            self.train_batch(dataset.get_training().batch(self.batch_size))
             print('=' * 48)
 
     def train_and_test(self, dataset):

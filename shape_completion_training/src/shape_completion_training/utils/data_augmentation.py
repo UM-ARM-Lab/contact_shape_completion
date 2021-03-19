@@ -97,7 +97,7 @@ def augment_category(ds_path, object_category, models_dirname="models", obj_file
         q.put(elem)
 
     print("")
-    print("Augmenting shapes using {} threads".format(NUM_THREADS))
+    print(f"Augmenting {object_category} shapes using {NUM_THREADS} threads")
     print("Progress may appear eratic due to threading")
     print("")
     while q.empty():  # Hack to deal with race condition

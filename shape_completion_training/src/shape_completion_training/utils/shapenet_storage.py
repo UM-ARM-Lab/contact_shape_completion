@@ -9,6 +9,7 @@ from pathlib import Path
 from functools import lru_cache
 from itertools import chain
 import pickle
+import progressbar
 
 from shape_completion_training.utils.tf_utils import sequence_of_dicts_to_dict_of_sequences, stack_dict
 
@@ -43,7 +44,7 @@ class ShapenetMetaDataset:
 
 
 class ShapenetDatasetSupervisor:
-    def __init__(self, name):
+    def __init__(self, name, require_exists=True):
         self.name = name
         self.train_md = None
         self.test_md = None
@@ -53,8 +54,10 @@ class ShapenetDatasetSupervisor:
 
         try:
             self.load()
-        except FileNotFoundError:
-            print(f"Dataset {self.name} does not exist. You must create it")
+        except FileNotFoundError as e:
+            print(f"Dataset '{self.name}' does not exist. You must create it")
+            if require_exists:
+                raise e
 
     def get_element(self, unique_id):
         if unique_id in self.ind_for_train_id:
@@ -142,6 +145,7 @@ def get_all_shapenet_files(shape_ids):
         #              if os.path.isdir(join(shapenet_load_path, f))]
         shape_ids.sort()
 
+    # TODO: Add progressbar
     for category in shape_ids:
         shape_path = get_shapenet_path() / category
         for obj_fp in sorted(p for p in shape_path.iterdir()):

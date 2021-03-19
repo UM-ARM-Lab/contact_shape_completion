@@ -15,7 +15,7 @@ def get_default_params(group_name=None):
         # 'network': 'NormalizingAE',
         'learning_rate': 1e-3,
         'batch_size': 16,
-        'dataset': 'shapenet',
+        'dataset': 'shapenet_mugs',
         'apply_slit_occlusion': False,
         'apply_depth_sensor_noise': False,
     }
@@ -77,7 +77,6 @@ def get_default_params(group_name=None):
         "3D_rec_gan":
             {
                 'batch_size': 4,
-                'dataset': 'shapenet',
                 'network': '3D_rec_gan',
                 "learning_rate": 0.0001,
                 "gan_learning_rate": 0.00005,
@@ -133,7 +132,6 @@ def get_default_params(group_name=None):
         "3D_rec_gan_YCB":
             {
                 'batch_size': 4,
-                'dataset': 'shapenet',
                 'network': '3D_rec_gan',
                 "learning_rate": 0.0001,
                 "gan_learning_rate": 0.00005,

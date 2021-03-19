@@ -8,16 +8,17 @@ from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupe
 
 shapenet_categories_for = {
     "shapenet_mugs": ['mug'],
-    "shapenet_airplanes": ['airplane']}
+    "shapenet_airplanes": ['airplane'],
+    "shapenet_tables": ['table']}
 
 
 def create_shapenet_only_datasets():
     for name, categories in shapenet_categories_for.items():
-        ds = ShapenetDatasetSupervisor(name)
+        ds = ShapenetDatasetSupervisor(name, require_exists=False)
         if ds.get_save_path().exists():
             print(f"Dataset {name} already exists")
             continue
-
+        print(f"Creating dataset {name}...")
         fps = [shapenet_storage.get_shape_map()[c] for c in categories]
         ds.create_new_dataset(fps)
         ds.save()
