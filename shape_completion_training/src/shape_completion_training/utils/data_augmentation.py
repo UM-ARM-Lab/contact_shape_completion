@@ -59,10 +59,16 @@ def binvox_object_file(fp, ds_path):
 
     with open(os.devnull, 'w') as FNULL:
         subprocess.call(binvox_str, shell=True, stdout=FNULL)
-        fp.with_suffix('.binvox').rename(fp.with_suffix(".mesh.binvox"))
+        try:
+            fp.with_suffix('.binvox').rename(fp.with_suffix(".mesh.binvox"))
+        except FileNotFoundError as e:
+            print(f"\n{fp.with_suffix('.binvox')} not found. Binvox probably failed\n")
 
         subprocess.call(wire_binvox_str, shell=True, stdout=FNULL)
-        fp.with_suffix('.binvox').rename(fp.with_suffix(".wire.binvox"))
+        try:
+            fp.with_suffix('.binvox').rename(fp.with_suffix(".wire.binvox"))
+        except FileNotFoundError as e:
+            print(f"\n{fp.with_suffix('.binvox')} not found. Binvox probably failed\n")
 
         # subprocess.call(cuda_binvox_str, shell=True, stdout=FNULL)
 

@@ -9,7 +9,8 @@ from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupe
 shapenet_categories_for = {
     "shapenet_mugs": ['mug'],
     "shapenet_airplanes": ['airplane'],
-    "shapenet_tables": ['table']}
+    "shapenet_tables": ['table'],
+    "shapenet_bag": ['bag']}
 
 
 def create_shapenet_only_datasets():
