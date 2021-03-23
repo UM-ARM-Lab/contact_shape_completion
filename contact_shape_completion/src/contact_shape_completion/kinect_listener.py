@@ -19,7 +19,7 @@ x_bounds = (0, 64)
 y_bounds = (0, 64)
 z_bounds = (0, 64)
 
-target_frame = "victor_root"
+# target_frame = "victor_root"
 
 
 class DepthCameraListener:
@@ -32,16 +32,18 @@ class DepthCameraListener:
         self.z_bounds = (0, 64)
         self.origin = (0, 0, 0)
 
-        target_frame = "victor_root"
+        self.target_frame = "victor_root"
 
         self.point_cloud_creator = PointcloudCreator([i for i in range(1, 3)],
                                                      topic_prefix="/kinect2_victor_head/qhd/")
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
-        self.VG_PUB = VoxelgridPublisher(frame=target_frame, scale=scale, origin=self.origin)
+        self.VG_PUB = VoxelgridPublisher(frame=self.target_frame, scale=scale, origin=self.origin)
 
-    def transform_pts_to_target(self, pt_msg):
+    def transform_pts_to_target(self, pt_msg, target_frame=None):
+        if target_frame is None:
+            target_frame = self.target_frame
         timeout = 1.0
         try:
             trans = self.tf_buffer.lookup_transform(target_frame, pt_msg.header.frame_id,
