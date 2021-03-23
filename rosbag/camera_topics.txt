@@ -1,0 +1,7 @@
+/kinect2_victor_head/qhd/camera_info
+/kinect2_victor_head/qhd/image_color_rect/compressed
+/kinect2_victor_head/qhd/image_depth_rect/compressed
+/kinect2_victor_head/qhd/marked_image/compressed
+/kinect2_victor_head/qhd/segmentation_mask/compressed
+/kinect2_victor_head/qhd/segmented_pointcloud
+/tf
