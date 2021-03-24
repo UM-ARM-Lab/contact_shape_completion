@@ -200,22 +200,25 @@ if __name__ == "__main__":
     rospy.init_node('contact_shape_completer_service')
     rospy.loginfo("Data Publisher")
 
-    load_network()
+    # tf.config.set_visible_devices([], 'GPU')
+    # load_network()
 
     # VG_PUB = VoxelgridPublisher(scale=0.05)
     # PT_PUB = PointcloudPublisher(scale=0.05)
     # COMPLETE_SHAPE_SRV = rospy.Service("complete_shape", CompleteShape, complete_shape)
     #     robot_view = DepthCameraListener()
-    contact_shape_completer = ContactShapeCompleter()
-    contact_shape_completer.load_network(ARGS.trial)
+    contact_shape_completer = ContactShapeCompleter(ARGS.trial)
+    # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()
     contact_shape_completer.infer_completion()
 
-    # selection_sub = send_display_names_from_metadata(train_records, publish_selection)
-    # selection_sub = send_display_names_from_metadata(test_records, publish_selection)
 
-    # complete_shape(None)
-    # sample_random_shape()
+    # for i in range(20):
+    #     print(i)
+    #     rospy.sleep(1)
+    #
+    # contact_shape_completer.infer_completion()
+
     print("Up and running")
     rospy.spin()

@@ -6,8 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Active Robot1
         - /Kinect Victor Head2/Auto Size1
         - /Kinect Victor Head2/Occlusion Compensation1
+        - /GVP_Belief2
       Splitter Ratio: 0.550000011920929
     Tree Height: 550
   - Class: rviz/Selection
@@ -159,17 +161,28 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /voxelgrid/passive_robot
       Value: false
+    - Alpha Multiple: 1
+      Binary Display: false
+      Class: rviz_voxelgrid_visuals/SparseVoxelGrid
+      Color: 164; 0; 0
+      Enabled: false
+      Hide: false
+      Name: GVP_Belief
+      Queue Size: 10
+      Threshold: 0.10000000149011612
+      Topic: /voxelgrid/belief_obstacles
+      Value: false
     - Alpha Multiple: 0.15000000596046448
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 60; 0; 255
-      Enabled: true
+      Enabled: false
       Hide: false
       Name: "Robot Swept Freespace "
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/known_free
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -263,8 +276,8 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color: 52; 101; 164
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: false
       Invert Rainbow: false
@@ -318,6 +331,50 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha Multiple: 1
+      Binary Display: true
+      Class: rviz_voxelgrid_visuals/VoxelGrid
+      Color: 204; 0; 0
+      Enabled: false
+      Hide: false
+      Name: Aux
+      Queue Size: 10
+      Threshold: 0.5
+      Topic: /aux_voxel_grid
+      Value: false
+    - Alpha Multiple: 1
+      Binary Display: true
+      Class: rviz_voxelgrid_visuals/SparseVoxelGrid
+      Color: 136; 138; 133
+      Enabled: true
+      Hide: false
+      Name: GVP_True
+      Queue Size: 10
+      Threshold: 0.5
+      Topic: /voxelgrid/true_obstacles
+      Value: true
+    - Alpha Multiple: 1
+      Binary Display: true
+      Class: rviz_voxelgrid_visuals/SparseVoxelGrid
+      Color: 0; 0; 0
+      Enabled: true
+      Hide: false
+      Name: GVP_Known
+      Queue Size: 10
+      Threshold: 0.5
+      Topic: /voxelgrid/known_obstacles
+      Value: true
+    - Alpha Multiple: 1
+      Binary Display: true
+      Class: rviz_voxelgrid_visuals/SparseVoxelGrid
+      Color: 164; 0; 0
+      Enabled: true
+      Hide: false
+      Name: GVP_Belief
+      Queue Size: 10
+      Threshold: 0.5
+      Topic: /voxelgrid/belief_obstacles
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -346,7 +403,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.2026917934417725
+      Distance: 1.9606443643569946
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -354,17 +411,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.4278615713119507
-        Y: -1.8764852285385132
-        Z: -0.15599830448627472
+        X: 1.1386923789978027
+        Y: -0.7508413791656494
+        Z: 0.7643848657608032
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5002031326293945
+      Pitch: 0.12520350515842438
       Target Frame: <Fixed Frame>
-      Yaw: 1.8062211275100708
+      Yaw: 1.8362222909927368
     Saved: ~
 Window Geometry:
   Displays:
