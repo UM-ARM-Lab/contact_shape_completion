@@ -62,16 +62,18 @@ class RosbagPlayer:
 
             pub = self.publishers[topic]
 
-            now = rospy.Time.now()
+            # now = rospy.Time.now()
             # now = t_play_start - t0
+            # now.secs += t.secs
+            offset = t_play_start - t0
             if topic == "/tf":
                 for m in msg.transforms:
-                    m.header.stamp.secs = now.secs
-                    m.header.stamp.nsecs = now.nsecs
+                    m.header.stamp.secs += offset.secs
+                    m.header.stamp.nsecs += offset.nsecs
             elif msg._has_header:
                 # print(topic)
-                msg.header.stamp.secs = now.secs
-                msg.header.stamp.nsecs = now.nsecs
+                msg.header.stamp.secs += offset.secs
+                msg.header.stamp.nsecs += offset.nsecs
 
             pub.publish(msg)
 
