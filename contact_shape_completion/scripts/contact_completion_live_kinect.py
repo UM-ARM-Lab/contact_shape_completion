@@ -211,8 +211,8 @@ if __name__ == "__main__":
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()
-    contact_shape_completer.infer_completion()
-
+    # contact_shape_completer.infer_completion()
+    contact_shape_completer.do_some_completions_debug()
 
     # for i in range(20):
     #     print(i)

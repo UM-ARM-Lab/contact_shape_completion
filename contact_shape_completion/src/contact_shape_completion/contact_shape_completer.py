@@ -132,8 +132,8 @@ class ContactShapeCompleter:
         # mr2 = ModelRunner(trial_path=self.model_runner.trial_path, training=False)
         # pssnet = mr2.model
         # ModelRunner(trial_path=self.model_runner.trial_path, training=False)
-        pssnet = self.model_runner.model  # type PSSNet
-        mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
+        # pssnet = self.model_runner.model  # type PSSNet
+        # mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
 
         # pssnet.hparams['use_flow_during_inference']
         # output = pssnet.decode(mean, apply_sigmoid=True)
@@ -143,29 +143,29 @@ class ContactShapeCompleter:
         # output = pssnet.decode(latent)
         # flow = pssnet.apply_flow_to_latent_box(mean)
         # print(tf.reduce_sum(flow).numpy())
-
-        flow_in = np.array([np.float32(i) for i in range(1, 25)])
-        flow_in = np.expand_dims(flow_in, axis=0) / 100
-
-        flow = pssnet.flow  # Type RealNVP
-        # flow.
-
-        flow_tmp = flow_in
+        #
+        # flow_in = np.array([np.float32(i) for i in range(1, 25)])
+        # flow_in = np.expand_dims(flow_in, axis=0) / 100
+        #
+        # flow = pssnet.flow  # Type RealNVP
+        # # flow.
+        #
+        # flow_tmp = flow_in
 
         # print(f"input: {tf.reduce_sum(flow_tmp).numpy()}")
         # for bijector in reversed(flow.bijector.bijectors):
         #     flow_tmp = bijector(flow_tmp)
         #     print(f"{bijector.name:<20} {tf.reduce_sum(flow_tmp).numpy()}")
 
-        flow_out = pssnet.flow.bijector.forward(flow_in, training=False)
-        print(f'Calling bijector forward: {tf.reduce_sum(flow_out).numpy()}')
+        # flow_out = pssnet.flow.bijector.forward(flow_in, training=False)
+        # print(f'Calling bijector forward: {tf.reduce_sum(flow_out).numpy()}')
 
         # self.robot_view.VG_PUB.publish('predicted_occ', output)
 
-        # for _ in range(30):
-        #     latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
-        #     predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
-        #     self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+        for _ in range(30):
+            latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
+            predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
+            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
 
     def infer_completion(self):
         if self.model_runner is None:
