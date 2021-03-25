@@ -5,3 +5,4 @@
 /kinect2_victor_head/qhd/segmentation_mask/compressed
 /kinect2_victor_head/qhd/segmented_pointcloud
 /tf
+/tf_static
