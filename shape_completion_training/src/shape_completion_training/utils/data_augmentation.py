@@ -23,6 +23,7 @@ HARDCODED_BOUNDARY = '-bb -1.0 -1.0 -1.0 1.0 1.0 1.0'
 NUM_THREADS_PER_CATEGORY = config["augmentation"]["num_threads_per_category"]
 NUM_THREADS_PER_OBJECT = config["augmentation"]["num_threads_per_object"]
 NUM_THREADS = NUM_THREADS_PER_CATEGORY * NUM_THREADS_PER_OBJECT
+NO_RECOMPUTE_THRESHOLD = 10
 
 
 def grouper(n, iterable, fillvalue=None):
@@ -88,7 +89,7 @@ def binvox_object_file_worker(queue, ds_path):
 
 
 def augment_category(ds_path, object_category, models_dirname="models", obj_filename="model_normalized.obj",
-                     shape_ids=None):
+                     shape_ids=None, only_new_files=False):
     object_path = Path(ds_path) / object_category
     # shape_ids = ['a1d293f5cc20d01ad7f470ee20dce9e0']
     # shapes = ['214dbcace712e49de195a69ef7c885a4']
@@ -108,11 +109,12 @@ def augment_category(ds_path, object_category, models_dirname="models", obj_file
         time.sleep(0.1)
 
     process_in_threads(target=augment_shape_worker, args=(q, ds_path, object_category, models_dirname,
-                                                          obj_filename, len(shape_ids),),
+                                                          obj_filename, len(shape_ids), only_new_files),
                        num_threads=NUM_THREADS_PER_CATEGORY)
 
 
-def augment_shape_worker(queue, ds_path, object_category, models_dirname, obj_filename, total):
+def augment_shape_worker(queue, ds_path, object_category, models_dirname, obj_filename, total,
+                         only_new_files):
     while True:
         try:
             count, shape_id = queue.get(False)
@@ -123,10 +125,10 @@ def augment_shape_worker(queue, ds_path, object_category, models_dirname, obj_fi
         print("{:03d}/{} Augmenting {}".format(count, total, shape_id), end="")
         sys.stdout.flush()
         fp = Path(ds_path) / object_category / shape_id / models_dirname
-        augment_shape(ds_path, fp, obj_filename)
+        augment_shape(ds_path, fp, obj_filename, only_new_files)
 
 
-def augment_shape(ds_path, filepath, obj_filename):
+def augment_shape(ds_path, filepath, obj_filename, only_new_files):
     """
     Augments the model at the filepath
 
@@ -142,6 +144,11 @@ def augment_shape(ds_path, filepath, obj_filename):
         return
 
     old_files = [f for f in fp.iterdir() if f.name.startswith("model_augmented")]
+
+    num_existing_gzip_files = len([f for f in old_files if f.name.endswith(".pkl.gzip")])
+    if only_new_files and num_existing_gzip_files > NO_RECOMPUTE_THRESHOLD:
+        return
+
     for f in old_files:
         f.unlink()
 
