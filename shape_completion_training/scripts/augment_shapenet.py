@@ -31,12 +31,14 @@ if __name__ == "__main__":
                         help="reverses the order of categories when augmenting. "
                              "Useful when running on two computers",
                         action='store_true')
+    parser.add_argument('--resume', action="store_true", help="Skip files that have already been processed")
     args = parser.parse_args()
 
     ds_path = shapenet_storage.get_shapenet_path()
     shape_map = shapenet_storage.get_shape_map()
 
     categories = list(shape_map.keys())
+    categories.remove('car')
 
     category = ['table']
     if args.reverse:
@@ -49,7 +51,7 @@ if __name__ == "__main__":
 
         shape_ids = None
 
-        augment_category(ds_path, cat_id, shape_ids=shape_ids)
+        augment_category(ds_path, cat_id, shape_ids=shape_ids, only_new_files=args.resume)
 
         print("")
         print("Augmenting with {} threads took {} seconds".format(NUM_THREADS, datetime.datetime.now() - start_time))
