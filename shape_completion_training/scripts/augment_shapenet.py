@@ -38,6 +38,7 @@ if __name__ == "__main__":
     shape_map = shapenet_storage.get_shape_map()
 
     categories = list(shape_map.keys())
+    categories.remove('car')
 
     category = ['table']
     if args.reverse:
