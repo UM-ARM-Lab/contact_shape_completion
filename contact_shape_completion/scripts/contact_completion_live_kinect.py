@@ -11,6 +11,7 @@ import numpy as np
 
 import shape_completion_training.utils.old_dataset_tools
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
+from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 from rviz_voxelgrid_visuals.conversions import pointcloud2_msg_to_vox
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
@@ -207,7 +208,9 @@ if __name__ == "__main__":
     # PT_PUB = PointcloudPublisher(scale=0.05)
     # COMPLETE_SHAPE_SRV = rospy.Service("complete_shape", CompleteShape, complete_shape)
     #     robot_view = DepthCameraListener()
-    contact_shape_completer = ContactShapeCompleter(ARGS.trial)
+
+    goal_generator = CheezeitGoalGenerator()
+    contact_shape_completer = ContactShapeCompleter(ARGS.trial, goal_generator=goal_generator)
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()

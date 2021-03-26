@@ -2,6 +2,7 @@ import ros_numpy
 from contact_shape_completion.kinect_listener import DepthCameraListener
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest
+from gpu_voxel_planning_msgs.msg import JointConfig
 from shape_completion_training.voxelgrid import conversions
 import rospy
 from sensor_msgs.msg import PointCloud2
@@ -9,6 +10,7 @@ from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known
 import tensorflow as tf
 import numpy as np
+from contact_shape_completion.goal_generator import GoalGenerator
 
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 
@@ -16,7 +18,8 @@ tf.get_logger().setLevel('ERROR')
 
 
 class ContactShapeCompleter:
-    def __init__(self, trial=None):
+    def __init__(self, trial=None, goal_generator=None):
+        self.goal_generator = goal_generator  # type GoalGenerator
         self.robot_view = DepthCameraListener()
         self.model_runner = None
         if trial is not None:
@@ -67,6 +70,8 @@ class ContactShapeCompleter:
         return RequestShapeResponse(points=pt)
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
+        print(f"{req.num_samples} shape completions requested")
+
         # print(req)
         if self.model_runner is None:
             raise AttributeError("Model must be loaded before inferring completion")
@@ -78,11 +83,19 @@ class ContactShapeCompleter:
         # self.do_some_completions_debug()
 
         resp = CompleteShapeResponse()
-        for _ in range(req.num_samples):
+
+        # TODO: Handle case where a scenario has no valid goal
+        while len(resp.sampled_completions) < req.num_samples:
+            # for _ in range(req.num_samples):
             inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
             pt = self.transform_to_gpuvoxels(inference['predicted_occ'])
             self.robot_view.VG_PUB.publish('predicted_occ', inference['predicted_occ'])
+            goal_config = self.goal_generator.generate_goal(pt)
+            if goal_config is None:
+                continue
+
             resp.sampled_completions.append(pt)
+            resp.goal_configs.append(JointConfig(joint_values=goal_config))
         return resp
 
     def transform_from_gpuvoxels(self, pt_msg: PointCloud2):
@@ -114,7 +127,6 @@ class ContactShapeCompleter:
 
     def new_swept_freespace_callback(self, pt_msg: PointCloud2):
         self.pointcloud_repub.publish(pt_msg)
-        print("Point message received")
         elem = self.last_visible_vg
         if elem is None:
             print("No visible vg to update")
