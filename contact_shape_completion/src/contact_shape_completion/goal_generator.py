@@ -88,8 +88,8 @@ class CheezeitGoalGenerator(GoalGenerator):
     def generate_goal_tsr(self, pts):
         pt = self.generate_goal_point(pts)
         tsr = TSR(x_lower=pt[0] - 0.1, x_upper=pt[0] + 0.1,
-                  y_lower=pt[0] - 0.1, y_upper=pt[0] + 0.1,
-                  z_lower=pt[0] - 0.1, z_upper=pt[0] + 0.1
+                  y_lower=pt[1] - 0.1, y_upper=pt[1] + 0.1,
+                  z_lower=pt[2] - 0.1, z_upper=pt[2] + 0.1
                   )
         tsr.header.frame_id="notsureyet"
         return tsr
