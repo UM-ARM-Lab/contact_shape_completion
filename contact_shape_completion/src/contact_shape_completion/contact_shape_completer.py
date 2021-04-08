@@ -88,14 +88,21 @@ class ContactShapeCompleter:
         while len(resp.sampled_completions) < req.num_samples:
             # for _ in range(req.num_samples):
             inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
-            pt = self.transform_to_gpuvoxels(inference['predicted_occ'])
+            pts = self.transform_to_gpuvoxels(inference['predicted_occ'])
             self.robot_view.VG_PUB.publish('predicted_occ', inference['predicted_occ'])
-            goal_config = self.goal_generator.generate_goal(pt)
-            if goal_config is None:
+            # goal_config = self.goal_generator.generate_goal(pts)
+            # if goal_config is None:
+            #     continue
+            try:
+                goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+            except RuntimeError as e:
+                print(e)
                 continue
 
-            resp.sampled_completions.append(pt)
-            resp.goal_configs.append(JointConfig(joint_values=goal_config))
+
+            resp.sampled_completions.append(pts)
+            resp.goal_tsrs.append(goal_tsr)
+            # resp.goal_configs.append(JointConfig(joint_values=goal_config))
         return resp
 
     def transform_from_gpuvoxels(self, pt_msg: PointCloud2):

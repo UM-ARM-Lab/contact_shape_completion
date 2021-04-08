@@ -9,6 +9,7 @@ from visualization_msgs.msg import Marker
 from std_msgs.msg import ColorRGBA, Header
 from geometry_msgs.msg import Pose
 from copy import deepcopy
+from gpu_voxel_planning_msgs.msg import TSR
 
 
 class GoalGenerator(abc.ABC):
@@ -33,7 +34,6 @@ class CheezeitGoalGenerator(GoalGenerator):
         pose.orientation.w = 0.08661771909760922
         self.base_pose = pose
 
-
     def generate_goal(self, state: PointCloud2):
         goal_pt = self.generate_goal_point(state)
         goal_config = self.generate_goal_config(goal_pt)
@@ -54,7 +54,7 @@ class CheezeitGoalGenerator(GoalGenerator):
             return None
 
         def norm(lst):
-            return sum([elem**2 for elem in lst])
+            return sum([elem ** 2 for elem in lst])
 
         goal_config = min(goal_configs, key=norm)
 
@@ -63,6 +63,9 @@ class CheezeitGoalGenerator(GoalGenerator):
     def generate_goal_point(self, state: PointCloud2):
         pts = point_cloud2.read_points(state, field_names=('x', 'y', 'z'))
         pts = np.array([p for p in pts])
+        if len(pts) == 0:
+            raise RuntimeError("Cannot generate a goal from no points")
+
         centroid = np.mean(pts, axis=0)
         back = np.max(pts, axis=0)
 
@@ -81,3 +84,12 @@ class CheezeitGoalGenerator(GoalGenerator):
 
         self.goal_pt_pub.publish(m)
         return goal_pt
+
+    def generate_goal_tsr(self, pts):
+        pt = self.generate_goal_point(pts)
+        tsr = TSR(x_lower=pt[0] - 0.1, x_upper=pt[0] + 0.1,
+                  y_lower=pt[0] - 0.1, y_upper=pt[0] + 0.1,
+                  z_lower=pt[0] - 0.1, z_upper=pt[0] + 0.1
+                  )
+        tsr.header.frame_id="notsureyet"
+        return tsr
