@@ -87,11 +87,16 @@ class CheezeitGoalGenerator(GoalGenerator):
 
     def generate_goal_tsr(self, pts):
         pt = self.generate_goal_point(pts)
-        tsr = TSR(x_lower=pt[0] - 0.1, x_upper=pt[0] + 0.1,
-                  y_lower=pt[1] - 0.1, y_upper=pt[1] + 0.1,
-                  z_lower=pt[2] - 0.05, z_upper=pt[2] + 0.05
+        # x_bound = [-0.1, 0.1]
+        x_bound = [-0.004, 0.004]
+        y_bound = [-0.1, 0.1]
+        z_bound = [-0.05, 0.05]
+
+        tsr = TSR(x_lower=pt[0] + x_bound[0], x_upper=pt[0] + x_bound[1],
+                  y_lower=pt[1] + y_bound[0], y_upper=pt[1] + y_bound[1],
+                  z_lower=pt[2] + z_bound[0], z_upper=pt[2] + z_bound[1]
                   )
-        tsr.header.frame_id="notsureyet"
+        tsr.header.frame_id = "notsureyet"
 
         m = Marker(color=ColorRGBA(a=0.3, r=0.0, g=1.0, b=0.0),
                    header=Header(stamp=rospy.Time().now(), frame_id=pts.header.frame_id),
@@ -108,3 +113,8 @@ class CheezeitGoalGenerator(GoalGenerator):
         self.goal_pt_pub.publish(m)
 
         return tsr
+
+    def clear_goals(self):
+        m = Marker(action=Marker.DELETEALL)
+        m.ns = "tsr"
+        self.goal_pt_pub.publish(m)

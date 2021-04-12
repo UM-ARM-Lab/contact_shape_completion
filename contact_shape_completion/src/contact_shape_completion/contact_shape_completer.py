@@ -81,6 +81,9 @@ class ContactShapeCompleter:
             raise ValueError(f"{req.num_samples} samples requested. Probably a mistake")
 
         # self.do_some_completions_debug()
+        known_free = self.transform_from_gpuvoxels(req.known_free)
+        # TODO: Pass chss
+        chss = None
 
         resp = CompleteShapeResponse()
 
@@ -88,17 +91,21 @@ class ContactShapeCompleter:
         while len(resp.sampled_completions) < req.num_samples:
             # for _ in range(req.num_samples):
             inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
-            pts = self.transform_to_gpuvoxels(inference['predicted_occ'])
-            self.robot_view.VG_PUB.publish('predicted_occ', inference['predicted_occ'])
-            # goal_config = self.goal_generator.generate_goal(pts)
-            # if goal_config is None:
-            #     continue
+
+            latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
+            self.goal_generator.clear_goals()
+            latent = self.enforce_contact(latent, known_free, chss)
+
+            predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
+            pts = self.transform_to_gpuvoxels(predicted_occ)
+
+            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+
             try:
                 goal_tsr = self.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
                 print(e)
                 continue
-
 
             resp.sampled_completions.append(pts)
             resp.goal_tsrs.append(goal_tsr)
@@ -201,13 +208,13 @@ class ContactShapeCompleter:
 
         # self.do_some_completions_debug()
 
-        # self.enforce_contact(latent)
+        # self.wip_enforce_contact(latent)
 
         # TODO Graident decent to remove swept freespace
 
         return inference
 
-    def enforce_contact(self, latent):
+    def wip_enforce_contact(self, latent):
         pssnet = self.model_runner.model
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
         known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
@@ -221,5 +228,35 @@ class ContactShapeCompleter:
 
         for i in range(100):
             pssnet.grad_step_towards_output(latent, known_contact, known_free)
-            self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-        return pssnet.decode(latent, apply_sigmoid=True)
+            pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+            self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
+
+            if np.max(pred_occ * known_free) <= 0.5:
+                break
+
+        return latent
+
+    def enforce_contact(self, latent, known_free, chss):
+        pssnet = self.model_runner.model
+        self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
+        known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+        # known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+        # known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
+        # VG_PUB.publish('aux', known_contact)
+        # known_contact = self.last_visible_vg['known_occ']
+
+        # rospy.sleep(2)
+        prev_loss = 0.0
+        for i in range(500):
+            loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
+            pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+            self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
+
+            if loss == prev_loss:
+                print("No progress made. Accepting shape as is")
+                break
+            prev_loss = loss
+            if np.max(pred_occ * known_free) <= 0.2:
+                break
+
+        return latent
