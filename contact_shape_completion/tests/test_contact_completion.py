@@ -42,7 +42,7 @@ def test_enforce_contact(sc):
 
 
 if __name__ == "__main__":
-    rospy.init_node('contact_shape_completer_service')
+    rospy.init_node('test_contact_completion')
     rospy.loginfo("Data Publisher")
 
     trial = 'PSSNet_YCB/July_24_11-21-46_f2aea4d768'
