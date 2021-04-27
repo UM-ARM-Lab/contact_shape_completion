@@ -9,6 +9,7 @@ Panels:
         - /Active Robot1
         - /Kinect Victor Head2/Auto Size1
         - /Kinect Victor Head2/Occlusion Compensation1
+        - /swept edge1
       Splitter Ratio: 0.550000011920929
     Tree Height: 824
   - Class: rviz/Selection
@@ -142,13 +143,13 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 252; 175; 62
-      Enabled: false
+      Enabled: true
       Hide: false
       Name: Active Robot
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/active_robot
-      Value: false
+      Value: true
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -369,7 +370,19 @@ Visualization Manager:
       Name: Goal
       Namespaces:
         "": true
+        tsr: true
       Queue Size: 100
+      Value: true
+    - Alpha Multiple: 0.30000001192092896
+      Binary Display: true
+      Class: rviz_voxelgrid_visuals/SparseVoxelGrid
+      Color: 204; 51; 204
+      Enabled: true
+      Hide: false
+      Name: swept edge
+      Queue Size: 10
+      Threshold: 0.5
+      Topic: /voxelgrid/swept_edge
       Value: true
   Enabled: true
   Global Options:
@@ -399,7 +412,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.4683613777160645
+      Distance: 1.7150357961654663
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -407,17 +420,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.7572450041770935
-        Y: -0.65031898021698
-        Z: 0.9302665591239929
+        X: 0.7672333121299744
+        Y: -0.49687206745147705
+        Z: 0.7282915711402893
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.35020357370376587
+      Pitch: 0.4402039051055908
       Target Frame: <Fixed Frame>
-      Yaw: 1.7212313413619995
+      Yaw: 1.5512263774871826
     Saved: ~
 Window Geometry:
   Displays:

@@ -114,7 +114,7 @@ class CheezeitGoalGenerator(GoalGenerator):
 
         return tsr
 
-    def clear_goals(self):
+    def clear_goal_markers(self):
         m = Marker(action=Marker.DELETEALL)
         m.ns = "tsr"
         self.goal_pt_pub.publish(m)

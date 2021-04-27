@@ -138,7 +138,6 @@ class PSSNet(MyKerasModel):
             #TODO: Remove hardcoded numbers and choose grad step size better
             loss = -tf.reduce_sum(known_occ * predicted_occ) / 500 + tf.reduce_sum(known_free * predicted_occ) / 500
 
-        print('loss: {}'.format(loss))
         variables = [latent]
         gradients = tape.gradient(loss, variables)
         self.contact_optimizer.apply_gradients(zip(gradients, variables))

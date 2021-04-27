@@ -1,7 +1,10 @@
+import rospkg
+
 import ros_numpy
 from contact_shape_completion.kinect_listener import DepthCameraListener
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
-    RequestShapeResponse, RequestShapeRequest
+    RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
+    ResetShapeCompleter
 from gpu_voxel_planning_msgs.msg import JointConfig
 from shape_completion_training.voxelgrid import conversions
 import rospy
@@ -10,6 +13,7 @@ from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known
 import tensorflow as tf
 import numpy as np
+from pathlib import Path
 from contact_shape_completion.goal_generator import GoalGenerator
 
 from rviz_voxelgrid_visuals import conversions as visual_conversions
@@ -28,11 +32,17 @@ class ContactShapeCompleter:
 
         self.complete_shape = rospy.Service("complete_shape", CompleteShape, self.complete_shape_srv)
         self.request_shape = rospy.Service("get_shape", RequestShape, self.request_shape_srv)
+        self.reset_completer = rospy.Service("reset_completer", ResetShapeCompleter, self.reset_completer_srv)
         self.new_free_sub = rospy.Subscriber("swept_freespace_pointcloud", PointCloud2,
                                              self.new_swept_freespace_callback)
         self.pointcloud_repub = rospy.Publisher("swept_volume_republisher", PointCloud2, queue_size=10)
         self.last_visible_vg = None
         self.swept_freespace = tf.zeros((1, 64, 64, 64, 1))
+        self.sampled_latent_particles = []
+
+    def reset_completer_srv(self, req: ResetShapeCompleterRequest):
+        self.sampled_latent_particles = []
+        return ResetShapeCompleterResponse(reset_complete=True)
 
     def reload_flow(self):
         """
@@ -46,8 +56,6 @@ class ContactShapeCompleter:
                                                    trial_path=self.model_runner.params['flow']).model.flow
 
     def load_network(self, trial):
-        # global model_runner
-        # global model_evaluator
         if trial is None:
             print("Not loading any inference model")
             return
@@ -55,6 +63,22 @@ class ContactShapeCompleter:
 
     def get_visible_vg(self):
         self.last_visible_vg = self.robot_view.get_visible_element()
+
+    @staticmethod
+    def get_wip_save_path():
+        path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "tests/files"
+        path.mkdir(exist_ok=True)
+        return path / "visible_vg.npz"
+
+    def save_last_visible_vg(self):
+        path = self.get_wip_save_path()
+
+        with path.open('wb') as f:
+            np.savez_compressed(f, **self.last_visible_vg)
+
+    def load_last_visible_vg(self):
+        path = self.get_wip_save_path()
+        self.last_visible_vg = np.load(path.as_posix())
 
     def request_shape_srv(self, req: RequestShapeRequest):
         if self.model_runner is None:
@@ -72,7 +96,6 @@ class ContactShapeCompleter:
     def complete_shape_srv(self, req: CompleteShapeRequest):
         print(f"{req.num_samples} shape completions requested")
 
-        # print(req)
         if self.model_runner is None:
             raise AttributeError("Model must be loaded before inferring completion")
         self.reload_flow()
@@ -87,15 +110,20 @@ class ContactShapeCompleter:
 
         resp = CompleteShapeResponse()
 
+        prev_latents = self.sampled_latent_particles
+        self.sampled_latent_particles = []
+
         # TODO: Handle case where a scenario has no valid goal
         while len(resp.sampled_completions) < req.num_samples:
-            # for _ in range(req.num_samples):
-            inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
+            # inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
 
-            latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
-            self.goal_generator.clear_goals()
+            if len(prev_latents) > 0:
+                latent = prev_latents.pop()
+            else:
+                latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
+
+            self.goal_generator.clear_goal_markers()
             latent = self.enforce_contact(latent, known_free, chss)
-
             predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
             pts = self.transform_to_gpuvoxels(predicted_occ)
 
@@ -106,7 +134,7 @@ class ContactShapeCompleter:
             except RuntimeError as e:
                 print(e)
                 continue
-
+            self.sampled_latent_particles.append(latent)
             resp.sampled_completions.append(pts)
             resp.goal_tsrs.append(goal_tsr)
             # resp.goal_configs.append(JointConfig(joint_values=goal_config))
@@ -249,6 +277,7 @@ class ContactShapeCompleter:
         prev_loss = 0.0
         for i in range(500):
             loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
+            print('loss: {}'.format(loss))
             pred_occ = pssnet.decode(latent, apply_sigmoid=True)
             self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
 
@@ -256,7 +285,11 @@ class ContactShapeCompleter:
                 print("No progress made. Accepting shape as is")
                 break
             prev_loss = loss
+            if tf.math.is_nan(loss):
+                print("Loss is nan. There is a problem I am not addressing")
+                break
             if np.max(pred_occ * known_free) <= 0.2:
+                print("All known free have less that 0.2 prob occupancy")
                 break
 
         return latent
