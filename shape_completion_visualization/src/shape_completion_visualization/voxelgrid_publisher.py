@@ -23,7 +23,7 @@ class VoxelgridPublisher:
     def __init__(self, frame="object", scale=0.01, origin=(0, 0, 0)):
         self.pubs = {}
         pub_names = ["gt", "known_occ", "known_free", "predicted_occ", "predicted_free", "sampled_occ",
-                     "conditioned_occ", "mismatch", "aux", "plausible"]
+                     "conditioned_occ", "mismatch", "aux", "plausible", "chs"]
         for name in pub_names:
             self.add(name, name + "_voxel_grid")
         self.bb_pub = rospy.Publisher("bounding_box", MarkerArray, queue_size=1)

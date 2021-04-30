@@ -14,10 +14,9 @@ def assert_true(cond: bool, msg: str = None):
         raise RuntimeError(f"Failed: {msg}")
 
 
-def test_enforce_contact(sc):
+def test_enforce_freespace(sc):
     tf.random.set_seed(42)
     latent = tf.Variable(sc.model_runner.model.sample_latent(add_batch_to_dict(sc.last_visible_vg)))
-    known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
     chss = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
 
     initial_completion = sc.model_runner.model.decode(latent, apply_sigmoid=True)
@@ -29,6 +28,34 @@ def test_enforce_contact(sc):
     known_free_np[:, free_x:, :, :, :] = 1.0
     known_free = tf.convert_to_tensor(known_free_np, tf.dtypes.float32)
     sc.robot_view.VG_PUB.publish("known_free", known_free)
+
+    assert_true(tf.reduce_sum(known_free * initial_completion) > 1.0,
+                "Known free does not overlap with initial completion. Test is useless")
+
+    new_latent = sc.enforce_contact(latent, known_free, chss)
+
+    enforced_completion = sc.model_runner.model.decode(new_latent, apply_sigmoid=True)
+
+    assert_true(tf.reduce_max(known_free * enforced_completion) <= 0.5,
+                "enforce_contact did not eliminate all known_free voxels")
+
+
+def test_enforce_contact(sc):
+    tf.random.set_seed(42)
+    latent = tf.Variable(sc.model_runner.model.sample_latent(add_batch_to_dict(sc.last_visible_vg)))
+    known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+    # chss = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+
+    initial_completion = sc.model_runner.model.decode(latent, apply_sigmoid=True)
+
+    occ_inds = tf.where(initial_completion > 0.5)
+
+    free_z = np.max(occ_inds.numpy()[:, 3]) + 3
+    chss_np = np.zeros(initial_completion.shape)
+    chss_np[:, :, :, free_z:, :] = 1.0
+    chss = tf.convert_to_tensor(chss_np, tf.dtypes.float32)
+    sc.robot_view.VG_PUB.publish("chs", chss)
+    sc.robot_view.VG_PUB.publish('predicted_occ', initial_completion)
 
     assert_true(tf.reduce_sum(known_free * initial_completion) > 1.0,
                 "Known free does not overlap with initial completion. Test is useless")
@@ -55,6 +82,7 @@ if __name__ == "__main__":
     contact_shape_completer.load_last_visible_vg()
     # contact_shape_completer.get_visible_vg()
 
+    # test_enforce_freespace(contact_shape_completer)
     test_enforce_contact(contact_shape_completer)
 
     print("Up and running")
