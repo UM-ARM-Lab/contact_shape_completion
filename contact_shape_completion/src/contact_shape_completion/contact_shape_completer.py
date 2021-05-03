@@ -1,6 +1,7 @@
 import rospkg
 
 import ros_numpy
+from contact_shape_completion import contact_tools
 from contact_shape_completion.kinect_listener import DepthCameraListener
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
@@ -267,11 +268,13 @@ class ContactShapeCompleter:
     def enforce_contact(self, latent, known_free, chss):
         pssnet = self.model_runner.model
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-        known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+        # known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
         # known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
         # known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
         # VG_PUB.publish('aux', known_contact)
         # known_contact = self.last_visible_vg['known_occ']
+        pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+        known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
 
         # rospy.sleep(2)
         prev_loss = 0.0
@@ -279,7 +282,9 @@ class ContactShapeCompleter:
             loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
             print('loss: {}'.format(loss))
             pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+            known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
             self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
+            self.robot_view.VG_PUB.publish('chs', known_contact)
 
             if loss == prev_loss:
                 print("No progress made. Accepting shape as is")
@@ -288,8 +293,10 @@ class ContactShapeCompleter:
             if tf.math.is_nan(loss):
                 print("Loss is nan. There is a problem I am not addressing")
                 break
-            if np.max(pred_occ * known_free) <= 0.2:
-                print("All known free have less that 0.2 prob occupancy")
+            if np.max(pred_occ * known_free) <= 0.2 and tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= 0.8:
+                print("All known free have less that 0.2 prob occupancy, and chss have value > 0.8")
                 break
+        else:
+            print('Warning, enforcing contact terminated due to max iterations, not actually satisfying contact')
 
         return latent

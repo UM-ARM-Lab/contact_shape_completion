@@ -136,7 +136,7 @@ class PSSNet(MyKerasModel):
             # loss = tf.exp(loss)
             predicted_occ = self.decode(latent)
             #TODO: Remove hardcoded numbers and choose grad step size better
-            loss = -tf.reduce_sum(known_occ * predicted_occ) / 500 + tf.reduce_sum(known_free * predicted_occ) / 500
+            loss = -10*tf.reduce_sum(known_occ * predicted_occ) + tf.reduce_sum(known_free * predicted_occ) / 500
 
         variables = [latent]
         gradients = tape.gradient(loss, variables)

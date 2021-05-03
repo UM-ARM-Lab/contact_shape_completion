@@ -2,6 +2,7 @@
 
 import rospy
 
+from contact_shape_completion import contact_tools
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 from shape_completion_training.utils.tf_utils import add_batch_to_dict
@@ -54,11 +55,12 @@ def test_enforce_contact(sc):
     chss_np = np.zeros(initial_completion.shape)
     chss_np[:, :, :, free_z:, :] = 1.0
     chss = tf.convert_to_tensor(chss_np, tf.dtypes.float32)
+    known_contact = contact_tools.get_assumed_occ(initial_completion, chss)
     sc.robot_view.VG_PUB.publish("chs", chss)
     sc.robot_view.VG_PUB.publish('predicted_occ', initial_completion)
 
-    assert_true(tf.reduce_sum(known_free * initial_completion) > 1.0,
-                "Known free does not overlap with initial completion. Test is useless")
+    assert_true(tf.reduce_min(known_contact * initial_completion) < 0.8,
+                "chss already overlap with initial completion. Test is useless")
 
     new_latent = sc.enforce_contact(latent, known_free, chss)
 
