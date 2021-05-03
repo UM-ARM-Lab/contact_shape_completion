@@ -18,7 +18,7 @@ def assert_true(cond: bool, msg: str = None):
 def test_enforce_freespace(sc):
     tf.random.set_seed(42)
     latent = tf.Variable(sc.model_runner.model.sample_latent(add_batch_to_dict(sc.last_visible_vg)))
-    chss = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
+    chss = None
 
     initial_completion = sc.model_runner.model.decode(latent, apply_sigmoid=True)
 
@@ -84,7 +84,9 @@ if __name__ == "__main__":
     contact_shape_completer.load_last_visible_vg()
     # contact_shape_completer.get_visible_vg()
 
-    # test_enforce_freespace(contact_shape_completer)
+    test_enforce_freespace(contact_shape_completer)
+
+    input("Finished enforce freespace. On to enforce contact?")
     test_enforce_contact(contact_shape_completer)
 
     print("Up and running")
