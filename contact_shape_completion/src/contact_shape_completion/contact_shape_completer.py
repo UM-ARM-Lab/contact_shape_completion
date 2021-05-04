@@ -107,7 +107,10 @@ class ContactShapeCompleter:
         # self.do_some_completions_debug()
         known_free = self.transform_from_gpuvoxels(req.known_free)
         # TODO: Pass chss
-        chss = None
+        if len(req.chss) == 0:
+            chss = None
+        else:
+            chss = tf.concat([tf.expand_dims(self.transform_from_gpuvoxels(chs), axis=0) for chs in req.chss], axis=0)
 
         resp = CompleteShapeResponse()
 

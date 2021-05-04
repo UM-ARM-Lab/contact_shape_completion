@@ -214,8 +214,8 @@ if __name__ == "__main__":
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()
-    contact_shape_completer.save_last_visible_vg()
-    contact_shape_completer.load_last_visible_vg()
+    # contact_shape_completer.save_last_visible_vg()
+    # contact_shape_completer.load_last_visible_vg()
 
     # contact_shape_completer.infer_completion()
     contact_shape_completer.do_some_completions_debug()

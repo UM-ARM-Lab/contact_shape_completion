@@ -66,7 +66,7 @@ def pointcloud_to_voxelgrid(pointcloud, scale=1.0, origin=(0, 0, 0), shape=(64, 
     @param add_leading_dim:
     @return:
     """
-    vg = np.zeros(shape)
+    vg = np.zeros(shape, np.float32)
     if tf.is_tensor(pointcloud):
         pointcloud = pointcloud.numpy()
     # I have used this before, but it is not symetric with voxelgrid_to_pointcloud

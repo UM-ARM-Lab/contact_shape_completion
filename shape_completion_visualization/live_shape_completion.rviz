@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Active Robot1
+        - /chs for completion1
         - /Kinect Victor Head2/Auto Size1
         - /Kinect Victor Head2/Occlusion Compensation1
         - /swept edge1
@@ -123,6 +123,17 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /plausible_voxel_grid
       Value: true
+    - Alpha Multiple: 1
+      Binary Display: true
+      Class: rviz_voxelgrid_visuals/VoxelGrid
+      Color: 204; 0; 0
+      Enabled: true
+      Hide: false
+      Name: chs for completion
+      Queue Size: 10
+      Threshold: 0.5
+      Topic: /chs_voxel_grid
+      Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /model_name
@@ -229,7 +240,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -244,7 +255,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -412,7 +423,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.7150357961654663
+      Distance: 1.591141939163208
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -420,17 +431,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.7672333121299744
-        Y: -0.49687206745147705
-        Z: 0.7282915711402893
+        X: 0.7484973669052124
+        Y: -0.46391358971595764
+        Z: 1.047092318534851
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4402039051055908
+      Pitch: 0.3302043676376343
       Target Frame: <Fixed Frame>
-      Yaw: 1.5512263774871826
+      Yaw: 1.8062547445297241
     Saved: ~
 Window Geometry:
   Displays:
