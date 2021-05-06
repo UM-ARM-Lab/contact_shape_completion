@@ -1,7 +1,8 @@
 from unittest import TestCase
 from setup_data_for_unit_tests import load_test_files
 from shape_completion_training.voxelgrid.conversions import voxelgrid_to_pointcloud, pointcloud_to_voxelgrid, \
-    transform_voxelgrid, make_transform, downsample, format_voxelgrid
+    transform_voxelgrid, make_transform, downsample, format_voxelgrid, pointcloud_to_sparse_voxelgrid, \
+    sparse_voxelgrid_to_pointcloud, combine_sparse_voxelgrids
 import numpy as np
 import tensorflow as tf
 
@@ -55,6 +56,72 @@ class TestConversions(TestCase):
             pt_cloud = voxelgrid_to_pointcloud(vg_orig)
             vg_new = pointcloud_to_voxelgrid(pt_cloud, add_leading_dim=True, add_trailing_dim=True)
             self.assertTrue((vg_orig == vg_new).all(), "Failed on point cloud {}".format(i))
+
+    def test_pointcloud_to_sparse_voxelgrid_on_simple(self):
+        vg_orig = np.zeros([3, 3, 3])
+        vg_orig[(1, 2), (0, 2), (1, 0)] = 1.0
+        sparse_coords = [(1, 0, 1), (2, 2, 0)]
+        origin=[132,-10,-5]
+        for scale in [0.02, 1.0, 10., 10000.]:
+            pt_cloud = voxelgrid_to_pointcloud(vg_orig, scale=scale, origin=origin)
+            sparse_vg = pointcloud_to_sparse_voxelgrid(pt_cloud, scale=scale,
+                                                       shape=[3, 3, 3], origin=origin)
+            for coord in sparse_coords:
+                self.assertTrue(coord in sparse_vg)
+                self.assertEqual(sparse_vg[coord], 1)
+
+            pt_cloud_2 = sparse_voxelgrid_to_pointcloud(sparse_vg, scale=scale, origin=origin)
+
+            self.assertTrue((pt_cloud == pt_cloud_2).all())
+
+    def test_sparse_voxelgrid_to_pointcloud_threshold(self):
+        vg_1 = np.zeros([3, 3, 3])
+        vg_2 = np.zeros([3, 3, 3])
+        vg_1[(1, 2), (0, 2), (1, 0)] = 1.0
+        vg_2[(1, 2), (0, 2), (1, 2)] = 1.0
+
+        sparse_coords_with_1 = [(2, 2, 0), (2, 2, 2)]
+        sparse_coords_with_2 = [(1, 0, 1)]
+
+        for scale in [0.02, 1.0, 10., 10000.]:
+            pt_cloud = np.concatenate([voxelgrid_to_pointcloud(vg_1, scale=scale),
+                                      voxelgrid_to_pointcloud(vg_2, scale=scale)])
+            sparse_vg = pointcloud_to_sparse_voxelgrid(pt_cloud, scale=scale,
+                                                       shape=[3, 3, 3])
+            for coord in sparse_coords_with_1:
+                self.assertTrue(coord in sparse_vg)
+                self.assertEqual(sparse_vg[coord], 1)
+
+            for coord in sparse_coords_with_2:
+                self.assertTrue(coord in sparse_vg)
+                self.assertEqual(sparse_vg[coord], 2)
+
+            pointcloud_with_2 = sparse_voxelgrid_to_pointcloud(sparse_vg, scale=scale, threshold=2)
+            self.assertEqual(pointcloud_with_2.shape[0], 1)
+
+
+    def test_combine_sparse_voxelgrids(self):
+        vg_1 = np.zeros([3, 3, 3])
+        vg_2 = np.zeros([3, 3, 3])
+        vg_1[(1, 2), (0, 2), (1, 0)] = 1.0
+        vg_2[(1, 2), (0, 2), (1, 2)] = 1.0
+        origin = [10,2,-10]
+        scaling = 3.40
+        sparse_coords_with_1 = [(2, 2, 0), (2, 2, 2)]
+        sparse_coords_with_2 = [(1, 0, 1)]
+
+        sparse_vg_1 = pointcloud_to_sparse_voxelgrid(voxelgrid_to_pointcloud(vg_1))
+        sparse_vg_2 = pointcloud_to_sparse_voxelgrid(voxelgrid_to_pointcloud(vg_2))
+
+        sparse_vg = combine_sparse_voxelgrids(sparse_vg_1, sparse_vg_2)
+
+        for coord in sparse_coords_with_1:
+            self.assertTrue(coord in sparse_vg)
+            self.assertEqual(sparse_vg[coord], 1)
+
+        for coord in sparse_coords_with_2:
+            self.assertTrue(coord in sparse_vg)
+            self.assertEqual(sparse_vg[coord], 2)
 
 
 class TestTransforms(TestCase):

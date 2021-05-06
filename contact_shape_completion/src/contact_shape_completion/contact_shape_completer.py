@@ -6,7 +6,6 @@ from contact_shape_completion.kinect_listener import DepthCameraListener
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
     ResetShapeCompleter
-from gpu_voxel_planning_msgs.msg import JointConfig
 from shape_completion_training.voxelgrid import conversions
 import rospy
 from sensor_msgs.msg import PointCloud2
@@ -29,10 +28,10 @@ class ContactShapeCompleter:
         self.model_runner = None
         if trial is not None:
             self.load_network(trial)
-        # self.model = None
 
         self.complete_shape = rospy.Service("complete_shape", CompleteShape, self.complete_shape_srv)
-        self.request_shape = rospy.Service("get_shape", RequestShape, self.request_shape_srv)
+        self.request_shape = rospy.Service("get_known_world", RequestShape, self.request_known_world_srv)
+        self.request_shape = rospy.Service("get_true_world", RequestShape, self.request_true_world_srv)
         self.reset_completer = rospy.Service("reset_completer", ResetShapeCompleter, self.reset_completer_srv)
         self.new_free_sub = rospy.Subscriber("swept_freespace_pointcloud", PointCloud2,
                                              self.new_swept_freespace_callback)
@@ -40,6 +39,7 @@ class ContactShapeCompleter:
         self.last_visible_vg = None
         self.swept_freespace = tf.zeros((1, 64, 64, 64, 1))
         self.sampled_latent_particles = []
+        self.known_obstacles = None
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.sampled_latent_particles = []
@@ -82,16 +82,35 @@ class ContactShapeCompleter:
         self.last_visible_vg = np.load(path.as_posix())
 
     def request_shape_srv(self, req: RequestShapeRequest):
-        if self.model_runner is None:
-            raise AttributeError("Model must be loaded before inferring completion")
-
-        self.reload_flow()
-
-        # self.do_some_completions_debug()
-
-        # inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
         pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
+        return RequestShapeResponse(points=pt)
 
+    def compute_known_occ(self):
+        vg = dict()
+        for i in range(1):
+            pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
+            pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
+            # vg += conversions.pointcloud_to_voxelgrid(ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts),
+            #                                           scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256])
+            vg = conversions.combine_sparse_voxelgrids(vg,
+                                                       conversions.pointcloud_to_sparse_voxelgrid(
+                                                           ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts),
+                                                           scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256]))
+        # pts_2 = conversions.voxelgrid_to_pointcloud(vg, scale=0.02, origin=[0, 0, 0])
+        pts = conversions.sparse_voxelgrid_to_pointcloud(vg, scale=0.02, origin=[0, 0, 0], threshold=100)
+        pts_2 = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
+
+        self.known_obstacles = pts_2
+        return pts_2
+        # self.robot_view.VG_PUB.publish("aux", vg)
+
+    def request_known_world_srv(self, req: RequestShapeRequest):
+        # pt = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
+        # pt = self.robot_view.transform_pts_to_target(pt, target_frame="gpu_voxel_world")
+        return RequestShapeResponse(points=self.known_obstacles)
+
+    def request_true_world_srv(self, req: RequestShapeRequest):
+        pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
         return RequestShapeResponse(points=pt)
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
@@ -156,8 +175,8 @@ class ContactShapeCompleter:
         return vg
 
     def transform_to_gpuvoxels(self, vg) -> PointCloud2:
-        pt_cloud = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
-                                                       origin=self.robot_view.origin)
+        # pt_cloud = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
+        #                                                origin=self.robot_view.origin)
 
         # TODO: There is some diaster going on with the origin definition here. The problem is my tools
         #  visual_conversions and conversions define the origin differently
@@ -271,15 +290,9 @@ class ContactShapeCompleter:
     def enforce_contact(self, latent, known_free, chss):
         pssnet = self.model_runner.model
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-        # known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-        # known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-        # known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
-        # VG_PUB.publish('aux', known_contact)
-        # known_contact = self.last_visible_vg['known_occ']
         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
 
-        # rospy.sleep(2)
         prev_loss = 0.0
         for i in range(500):
             loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)

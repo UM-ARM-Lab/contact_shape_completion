@@ -45,17 +45,25 @@ class DepthCameraListener:
         if target_frame is None:
             target_frame = self.target_frame
         timeout = 1.0
-        try:
-            trans = self.tf_buffer.lookup_transform(target_frame, pt_msg.header.frame_id,
-                                                    pt_msg.header.stamp, rospy.Duration(timeout))
-        except tf2_ros.tf2.LookupException as ex:
-            rospy.logwarn(ex)
-            rospy.logwarn("NOT TRANSFORMING")
-            return pt_msg
-        except tf2.ExtrapolationException as ex:
-            rospy.logwarn(ex)
-            rospy.logwarn("NOT TRANSFORMING")
-            return pt_msg
+        tries_limit = 3
+        for i in range(tries_limit):
+            try:
+                # trans = self.tf_buffer.lookup_transform(target_frame, pt_msg.header.frame_id,
+                #                                         pt_msg.header.stamp, rospy.Duration(timeout))
+                trans = self.tf_buffer.lookup_transform(target_frame, pt_msg.header.frame_id,
+                                                        rospy.Time.now(), rospy.Duration(timeout))
+                break
+            except tf2_ros.tf2.LookupException as ex:
+                rospy.logwarn(ex)
+                rospy.logwarn("NOT TRANSFORMING")
+                # return pt_msg
+            except tf2.ExtrapolationException as ex:
+                rospy.logwarn(ex)
+                rospy.logwarn("NOT TRANSFORMING")
+                # return pt_msg
+        else:
+            raise RuntimeError(f"Unable to transform to target frame {target_frame}")
+
         cloud_out = do_transform_cloud(pt_msg, trans)
         return cloud_out
 

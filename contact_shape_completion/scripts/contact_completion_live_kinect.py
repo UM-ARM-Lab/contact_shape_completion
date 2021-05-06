@@ -208,8 +208,10 @@ if __name__ == "__main__":
     # PT_PUB = PointcloudPublisher(scale=0.05)
     # COMPLETE_SHAPE_SRV = rospy.Service("complete_shape", CompleteShape, complete_shape)
     #     robot_view = DepthCameraListener()
+    # x_bound = (-0.004, 0.004)
+    x_bound = [-0.04, 0.04]
 
-    goal_generator = CheezeitGoalGenerator()
+    goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
     contact_shape_completer = ContactShapeCompleter(ARGS.trial, goal_generator=goal_generator)
     # contact_shape_completer.load_network(ARGS.trial)
 
@@ -218,7 +220,8 @@ if __name__ == "__main__":
     # contact_shape_completer.load_last_visible_vg()
 
     # contact_shape_completer.infer_completion()
-    contact_shape_completer.do_some_completions_debug()
+    # contact_shape_completer.do_some_completions_debug()
+    contact_shape_completer.compute_known_occ()
 
     # for i in range(20):
     #     print(i)

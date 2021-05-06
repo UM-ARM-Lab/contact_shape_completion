@@ -39,6 +39,38 @@ def format_voxelgrid(voxelgrid, leading_dim, trailing_dim):
     return voxelgrid
 
 
+def pointcloud_to_sparse_voxelgrid(pointcloud, scale=1.0, origin=(0, 0, 0), shape=(64,64,64)):
+    s = ((pointcloud - origin) / scale).astype(int)
+    valid = np.logical_and(np.min(s, axis=1) >= 0, np.max(s, axis=1) < shape[0])
+    sparse_vg = dict()
+    for voxel in s[valid]:
+        voxel = tuple(coord for coord in voxel)
+        if voxel not in sparse_vg:
+            sparse_vg[voxel] = 0
+        sparse_vg[voxel] += 1
+    return sparse_vg
+
+
+def sparse_voxelgrid_to_pointcloud(sparse_vg: dict, scale=1.0, origin=(0,0,0), threshold=1):
+    return np.array([(np.array(pt) + 0.5)*scale + origin for pt, count in sparse_vg.items() if count >= threshold])
+
+def combine_sparse_voxelgrids(sparse_vg_1, sparse_vg_2):
+    """
+    NOTE: ASSUMES SAME ORIGIN AND SCALING
+    Args:
+        sparse_vg_1:
+        sparse_vg_2:
+
+    Returns:
+    """
+    for point, count in sparse_vg_2.items():
+        if point not in sparse_vg_1:
+            sparse_vg_1[point] = 0
+        sparse_vg_1[point] += count
+    return sparse_vg_1
+
+
+
 def voxelgrid_to_pointcloud(voxelgrid, scale=1.0, origin=(0, 0, 0), threshold=0.5):
     """
     Converts a 3D voxelgrid into a 3D set of points for each voxel with value above threshold
@@ -49,7 +81,7 @@ def voxelgrid_to_pointcloud(voxelgrid, scale=1.0, origin=(0, 0, 0), threshold=0.
     @return:
     """
     pts = np.argwhere(np.squeeze(voxelgrid) > threshold)
-    return (np.array(pts) - origin + 0.5) * scale
+    return (np.array(pts) + 0.5) * scale + origin
     # pts = tf.cast(tf.where(tf.squeeze(voxelgrid) > threshold), tf.float32)
     # return (pts - origin + 0.5) * scale
 

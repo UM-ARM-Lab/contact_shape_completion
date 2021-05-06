@@ -22,8 +22,11 @@ class GoalGenerator(abc.ABC):
 
 
 class CheezeitGoalGenerator(GoalGenerator):
-    def __init__(self):
+    def __init__(self, x_bound=(-0.004, 0.004),
+                 y_bound=(-0.1, 0.1),
+                 z_bound=(-0.05, 0.05)):
         super().__init__()
+
         self.victor = Victor()
         self.victor.connect()
 
@@ -33,6 +36,9 @@ class CheezeitGoalGenerator(GoalGenerator):
         pose.orientation.z = -0.6317937464624142
         pose.orientation.w = 0.08661771909760922
         self.base_pose = pose
+        self.x_bound = x_bound
+        self.y_bound = y_bound
+        self.z_bound = z_bound
 
     def generate_goal(self, state: PointCloud2):
         goal_pt = self.generate_goal_point(state)
@@ -88,9 +94,9 @@ class CheezeitGoalGenerator(GoalGenerator):
     def generate_goal_tsr(self, pts):
         pt = self.generate_goal_point(pts)
         # x_bound = [-0.1, 0.1]
-        x_bound = [-0.004, 0.004]
-        y_bound = [-0.1, 0.1]
-        z_bound = [-0.05, 0.05]
+        x_bound = self.x_bound
+        y_bound = self.y_bound
+        z_bound = self.z_bound
 
         tsr = TSR(x_lower=pt[0] + x_bound[0], x_upper=pt[0] + x_bound[1],
                   y_lower=pt[1] + y_bound[0], y_upper=pt[1] + y_bound[1],
