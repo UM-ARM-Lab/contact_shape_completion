@@ -27,8 +27,34 @@ class Test(TestCase):
 
         rel_one_at_one = p(1, 1) / p(0, 1)
         rel_two_at_two = p(2, 4) / p(0, 4)
-
         self.assertAlmostEqual(rel_two_at_two, rel_one_at_one, delta=.001)
+
+        def p(dist_from_mean, logvar):
+            u = np.array([[0]], dtype=np.float32)
+            v = np.array([[logvar]], dtype=np.float32)
+            return np.exp(log_normal_pdf(dist_from_mean, u, v).numpy()[0])
+
+        rel_one_at_one = p(1, 0) / p(0, 0)
+        rel_two_at_two = p(2, 2 * np.log(2)) / p(0, 2 * np.log(2))
+        self.assertAlmostEqual(rel_two_at_two, rel_one_at_one, delta=.001)
+
+        for d in [1, 2, 3, 4.4, 5.5, 10]:
+            rel_d_at_d = p(d, 2 * np.log(d)) / p(0, 2 * np.log(d))
+            self.assertAlmostEqual(rel_one_at_one, rel_d_at_d, delta=0.001)
+
+    def test_relative_probability_in_two_D(self):
+        def p(dist_from_mean, logvar):
+            u = np.array([[0, 0]], dtype=np.float32)
+            v = np.array([logvar], dtype=np.float32)
+            return log_normal_pdf([dist_from_mean], u, v).numpy()[0]
+
+        zero_for_one = .3989
+        self.assertAlmostEqual(p([0, 0], [0, 0]), np.log(zero_for_one ** 2), delta=0.1)
+        rel_one_dev = p([0, 1], [0, 0]) / p([0, 0], [0, 0])
+
+        l2 = np.log(2)
+        rel_two_at_two = p([0, 2], [0, 2 * l2]) / p([0, 0], [0, 2 * l2])
+        self.assertAlmostEqual(rel_one_dev, rel_two_at_two, delta=0.1)
 
     def test_log_normal_pdf_in_two_D(self):
         # mean = np.array([[0.0]], dtype=np.float32)
