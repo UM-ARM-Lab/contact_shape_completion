@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """
 This script takes shapenet (and other?) voxel datasets and compiles ShapenetDatasetSupervisors, which are
 metadatasets.
