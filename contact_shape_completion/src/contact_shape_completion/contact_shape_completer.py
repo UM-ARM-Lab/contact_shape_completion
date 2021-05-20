@@ -10,10 +10,11 @@ from shape_completion_training.voxelgrid import conversions
 import rospy
 from sensor_msgs.msg import PointCloud2
 from shape_completion_training.model.model_runner import ModelRunner
-from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known
+from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
+from colorama import Fore
 from contact_shape_completion.goal_generator import GoalGenerator
 
 from rviz_voxelgrid_visuals import conversions as visual_conversions
@@ -86,23 +87,12 @@ class ContactShapeCompleter:
         return RequestShapeResponse(points=pt)
 
     def compute_known_occ(self):
-        vg = dict()
-        for i in range(1):
-            pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
-            pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
-            # vg += conversions.pointcloud_to_voxelgrid(ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts),
-            #                                           scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256])
-            vg = conversions.combine_sparse_voxelgrids(vg,
-                                                       conversions.pointcloud_to_sparse_voxelgrid(
-                                                           ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts),
-                                                           scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256]))
-        # pts_2 = conversions.voxelgrid_to_pointcloud(vg, scale=0.02, origin=[0, 0, 0])
-        pts = conversions.sparse_voxelgrid_to_pointcloud(vg, scale=0.02, origin=[0, 0, 0], threshold=100)
-        pts_2 = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
+        pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
+        pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
+        pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256], threshold=100)
+        self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
 
-        self.known_obstacles = pts_2
-        return pts_2
-        # self.robot_view.VG_PUB.publish("aux", vg)
+        return self.known_obstacles
 
     def request_known_world_srv(self, req: RequestShapeRequest):
         # pt = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
@@ -114,7 +104,7 @@ class ContactShapeCompleter:
         return RequestShapeResponse(points=pt)
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
-        print(f"{req.num_samples} shape completions requested")
+        print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
 
         if self.model_runner is None:
             raise AttributeError("Model must be loaded before inferring completion")
@@ -138,8 +128,6 @@ class ContactShapeCompleter:
 
         # TODO: Handle case where a scenario has no valid goal
         while len(resp.sampled_completions) < req.num_samples:
-            # inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
-
             if len(prev_latents) > 0:
                 latent = prev_latents.pop()
             else:
@@ -178,8 +166,9 @@ class ContactShapeCompleter:
         # pt_cloud = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
         #                                                origin=self.robot_view.origin)
 
-        # TODO: There is some diaster going on with the origin definition here. The problem is my tools
-        #  visual_conversions and conversions define the origin differently
+        # TODO: It is odd that I use visual_conversions here, since I used conversions (not visual, different package
+        #  of mine) get the pointcloud in the first place. However, visual_conversions has this nice function which
+        #  densifies the points
         msg = visual_conversions.vox_to_pointcloud2_msg(vg, frame=self.robot_view.target_frame,
                                                         scale=self.robot_view.scale,
                                                         origin=-self.robot_view.origin / self.robot_view.scale,
@@ -190,6 +179,7 @@ class ContactShapeCompleter:
         msg = self.robot_view.transform_pts_to_target(msg, target_frame="gpu_voxel_world")
         return msg
 
+    # TODO: This function is not necessary for the algorithm, just helps debug
     def new_swept_freespace_callback(self, pt_msg: PointCloud2):
         self.pointcloud_repub.publish(pt_msg)
         elem = self.last_visible_vg
@@ -250,18 +240,9 @@ class ContactShapeCompleter:
 
         inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
 
-        # inference['predicted_occ'] -= self.swept_freespace
-
-        # TODO: I currently can only use this sampling behavior in debug mode by setting a breakpoint
         latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
         predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
         self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
-
-        # self.do_some_completions_debug()
-
-        # self.wip_enforce_contact(latent)
-
-        # TODO Graident decent to remove swept freespace
 
         return inference
 
@@ -289,30 +270,35 @@ class ContactShapeCompleter:
 
     def enforce_contact(self, latent, known_free, chss):
         pssnet = self.model_runner.model
+        prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
+        p = log_normal_pdf(latent, prior_mean, prior_logvar)
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
+        self.robot_view.VG_PUB.publish('known_free', known_free)
 
         prev_loss = 0.0
         for i in range(500):
             loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
-            print('loss: {}'.format(loss))
+            print('\rloss: {}'.format(loss), end='')
             pred_occ = pssnet.decode(latent, apply_sigmoid=True)
             known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
             self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
             self.robot_view.VG_PUB.publish('chs', known_contact)
 
             if loss == prev_loss:
-                print("No progress made. Accepting shape as is")
+                print("\tNo progress made. Accepting shape as is")
                 break
             prev_loss = loss
             if tf.math.is_nan(loss):
-                print("Loss is nan. There is a problem I am not addressing")
+                print("\tLoss is nan. There is a problem I am not addressing")
                 break
-            if np.max(pred_occ * known_free) <= 0.2 and tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= 0.8:
-                print("All known free have less that 0.2 prob occupancy, and chss have value > 0.8")
+
+            if np.max(pred_occ * known_free) <= 0.2 and tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= 0.5:
+                print("\tAll known free have less that 0.2 prob occupancy, and chss have value > 0.5")
                 break
         else:
-            print('Warning, enforcing contact terminated due to max iterations, not actually satisfying contact')
+            print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
 
+        print(f"Latent now has logprob {log_normal_pdf(latent, prior_mean, prior_logvar)}")
         return latent
