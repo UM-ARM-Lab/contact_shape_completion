@@ -10,7 +10,7 @@ from shape_completion_training.voxelgrid import conversions
 import rospy
 from sensor_msgs.msg import PointCloud2
 from shape_completion_training.model.model_runner import ModelRunner
-from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf
+from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf, sample_gaussian
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
@@ -20,6 +20,39 @@ from contact_shape_completion.goal_generator import GoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 
 tf.get_logger().setLevel('ERROR')
+
+class ParticleBelief:
+    def __init__(self):
+        self.latent_prior_mean = None
+        self.latent_prior_logvar = None
+        self.particles = []
+
+    def reset(self):
+        self.latent_prior_mean = None
+        self.latent_prior_logvar = None
+        self.particles = []
+
+    def approximate_acceptable_quartile_probability(self, quartile=99):
+        """
+        Set the acceptable quartile (out of 100)
+        Args:
+            quartile:
+
+        Returns:
+
+        """
+        mean = self.latent_prior_mean
+        logvar = self.latent_prior_logvar
+        sam
+
+class Particle:
+    def __init__(self):
+        self.sampled_latent = None
+        self.latent = None
+        self.goal = None
+        self.completion = None
+        self.associated_chs_inds = []
+
 
 
 class ContactShapeCompleter:
@@ -39,11 +72,11 @@ class ContactShapeCompleter:
         self.pointcloud_repub = rospy.Publisher("swept_volume_republisher", PointCloud2, queue_size=10)
         self.last_visible_vg = None
         self.swept_freespace = tf.zeros((1, 64, 64, 64, 1))
-        self.sampled_latent_particles = []
+        self.belief = ParticleBelief()
         self.known_obstacles = None
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
-        self.sampled_latent_particles = []
+        self.belief.reset()
         return ResetShapeCompleterResponse(reset_complete=True)
 
     def reload_flow(self):
@@ -65,6 +98,7 @@ class ContactShapeCompleter:
 
     def get_visible_vg(self):
         self.last_visible_vg = self.robot_view.get_visible_element()
+        return self.last_visible_vg
 
     @staticmethod
     def get_wip_save_path():
@@ -108,48 +142,89 @@ class ContactShapeCompleter:
 
         if self.model_runner is None:
             raise AttributeError("Model must be loaded before inferring completion")
-        self.reload_flow()
 
         if req.num_samples <= 0:
             raise ValueError(f"{req.num_samples} samples requested. Probably a mistake")
 
         # self.do_some_completions_debug()
         known_free = self.transform_from_gpuvoxels(req.known_free)
-        # TODO: Pass chss
         if len(req.chss) == 0:
             chss = None
         else:
             chss = tf.concat([tf.expand_dims(self.transform_from_gpuvoxels(chs), axis=0) for chs in req.chss], axis=0)
 
+        # resp = CompleteShapeResponse()
+
+        # prev_latents = self.sampled_latent_particles
+
+        # self.sampled_latent_particles = []
+
+        # # TODO: Handle case where a scenario has no valid goal
+        # while len(resp.sampled_completions) < req.num_samples:
+        #     if len(prev_latents) > 0:
+        #         latent = prev_latents.pop()
+        #     else:
+        #         latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
+        #
+        #     self.goal_generator.clear_goal_markers()
+        #     latent = self.enforce_contact(latent, known_free, chss)
+        #     predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
+        #     pts = self.transform_to_gpuvoxels(predicted_occ)
+        #
+        #     self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+        #
+        #     try:
+        #         goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+        #     except RuntimeError as e:
+        #         print(e)
+        #         continue
+        #     self.sampled_latent_particles.append(latent)
+        #     resp.sampled_completions.append(pts)
+        #     resp.goal_tsrs.append(goal_tsr)
+            # resp.goal_configs.append(JointConfig(joint_values=goal_config))
+        self.update_belief(known_free, chss, req.num_samples)
         resp = CompleteShapeResponse()
+        for p in self.belief.particles:
+            resp.sampled_completions.append(p.completion)
+            resp.goal_tsrs.append(p.goal)
+        return resp
 
-        prev_latents = self.sampled_latent_particles
-        self.sampled_latent_particles = []
+    def update_belief(self, known_free, chss, num_particles):
+        self.reload_flow()
+        pssnet = self.model_runner.model
 
-        # TODO: Handle case where a scenario has no valid goal
-        while len(resp.sampled_completions) < req.num_samples:
-            if len(prev_latents) > 0:
-                latent = prev_latents.pop()
-            else:
-                latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
+        if len(self.belief.particles) > num_particles:
+            raise RuntimeError("Unexpected situation - we have more particles than requested")
 
+        if self.belief.latent_prior_mean is None:
+            mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
+            self.belief.latent_prior_mean = mean
+            self.belief.latent_prior_logvar = logvar
+
+            for _ in range(num_particles):
+                p = Particle()
+                latent = pssnet.sample_latent_from_mean_and_logvar(mean, logvar)
+                p.latent = tf.Variable(latent)
+                p.sampled_latent = latent
+                self.belief.particles.append(p)
+
+        if len(self.belief.particles) != num_particles:
+            raise RuntimeError("Unexpected situation - number of particles does not match request")
+
+        # First update current particles (If current particles exist, the prior mean and logvar must have been set
+        for particle in self.belief.particles:
             self.goal_generator.clear_goal_markers()
-            latent = self.enforce_contact(latent, known_free, chss)
-            predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
+            particle.latent = self.enforce_contact(particle.latent, known_free, chss)
+            predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
             pts = self.transform_to_gpuvoxels(predicted_occ)
-
             self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
-
             try:
                 goal_tsr = self.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
                 print(e)
                 continue
-            self.sampled_latent_particles.append(latent)
-            resp.sampled_completions.append(pts)
-            resp.goal_tsrs.append(goal_tsr)
-            # resp.goal_configs.append(JointConfig(joint_values=goal_config))
-        return resp
+            particle.goal = goal_tsr
+            particle.completion = pts
 
     def transform_from_gpuvoxels(self, pt_msg: PointCloud2):
         transformed_cloud = self.robot_view.transform_pts_to_target(pt_msg)

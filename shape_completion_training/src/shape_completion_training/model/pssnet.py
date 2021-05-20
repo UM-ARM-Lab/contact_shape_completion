@@ -123,6 +123,10 @@ class PSSNet(MyKerasModel):
     def sample_latent(self, elem):
         known = stack_known(elem)
         mean, logvar = self.encode(known)
+        return self.sample_latent_from_mean_and_logvar(mean, logvar)
+
+
+    def sample_latent_from_mean_and_logvar(self, mean, logvar):
         sampled_features = sample_gaussian(mean, logvar)
 
         if self.hparams['use_flow_during_inference']:
