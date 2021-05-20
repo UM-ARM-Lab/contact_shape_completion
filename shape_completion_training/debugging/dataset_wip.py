@@ -1,79 +1,40 @@
 #! /usr/bin/env python
+"""
+Debugging the custom dataset supervisor class
 
-from __future__ import print_function
-import sys
-from os.path import dirname, abspath, join
+"""
+from shape_completion_training.utils import shapenet_storage
+from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor
 
-import shape_completion_training.utils.old_dataset_tools
-
-sc_path = join(dirname(abspath(__file__)), "..")
-sys.path.append(sc_path)
-
-from model import data_tools
-from shape_completion_training.model.model_runner import AutoEncoderWrapper
-import time
-import tensorflow as tf
-import progressbar
-
-shape_map = {"airplane": "02691156",
-             "mug": "03797390"}
+shapenet_categories_for = {
+    "shapenet_mugs": ['mug'],
+    "shapenet_airplanes": ['airplane'],
+    "shapenet_tables": ['table'],
+    "shapenet_bag": ['bag']}
 
 
-def examine_random_behavior():
-    ds = tf.data.Dataset.from_tensor_slices(range(5)).shuffle(2)
+def create_shapenet_only_datasets():
+    for name, categories in shapenet_categories_for.items():
+        ds = ShapenetDatasetSupervisor(name, require_exists=False)
+        # if ds.get_save_path().exists():
+        #     print(f"Dataset {name} already exists")
+        #     continue
+        print(f"Creating dataset {name}...")
+        fps = [shapenet_storage.get_shape_map()[c] for c in categories]
+        ds.create_new_dataset(fps)
+        # ds.save()
+        print(f"Saved Dataset {name}")
 
-    def _rand_map(e):
-        return tf.random.uniform(shape=[1], minval=0, maxval=100)
+def load_ds():
+    data_supervisor = shapenet_storage.ShapenetDatasetSupervisor('shapenet_mugs')
+    training = data_supervisor.get_training()
+    elem = next(training.batch(1))
+    print(elem.md[0]['filepath'])
 
-    for elem in ds:
-        print(elem.numpy())
-    print()
-
-    for elem in ds:
-        print(elem.numpy())
-    print()
-    rand_ds = ds.map(_rand_map)
-    for elem in rand_ds:
-        print(elem.numpy())
-
-    print()
-    for elem in rand_ds:
-        print(elem.numpy())
-
-    cached_ds = rand_ds.cache('/tmp/tmp.cache')
-    print()
-    for elem in cached_ds:
-        print(elem.numpy())
-    print()
-    for elem in cached_ds:
-        print(elem.numpy())
-
-
-def examine_shapenet_loading_behavior():
-    dataset = data_tools.load_shapenet([shape_map["mug"]], shuffle=True)
-    dataset = shape_completion_training.utils.old_dataset_tools.simulate_input(dataset, 10, 10, 10)
-    batched_ds = dataset.batch(16)
-    batched_ds = batched_ds
-
-    widgets = [
-        ' ', progressbar.Counter(),
-        ' [', progressbar.Timer(), '] ',
-        ' ', progressbar.Variable("shape"), ' '
-    ]
-
-    print()
-    with progressbar.ProgressBar(widgets=widgets) as bar:
-        for b, elem in enumerate(batched_ds):
-            for i in range(16):
-                shape_str = "{}:{}".format(elem['shape_category'][i].numpy(),
-                                           elem['id'][i].numpy())
-                bar.update(b, shape=shape_str)
-        # print(i, , time.time() - t)
-
-    print()
-    # e = data_tools.shift(elem, 1,2,3)
+def main():
+    # create_shapenet_only_datasets()
+    load_ds()
 
 
 if __name__ == "__main__":
-    # examine_shapenet_loading_behavior()
-    examine_random_behavior()
+    main()
