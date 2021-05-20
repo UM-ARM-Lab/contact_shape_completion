@@ -36,7 +36,7 @@ class ShapenetMetaDataset:
             # TODO: This fixes a temporary bug with the way the filepath is saved if the shapenet path is relative,
             #  (not absolute)
             prefix = "data/ShapeNetCore.v2_augmented/"
-            if rel_fp.starts_with(prefix):
+            if rel_fp.startswith(prefix):
                 rel_fp = rel_fp[len(prefix):]
             fp = get_shapenet_path() / rel_fp
             vg = load_gt_only(fp)
