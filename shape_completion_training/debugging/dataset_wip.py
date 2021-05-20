@@ -29,7 +29,8 @@ def load_ds():
     data_supervisor = shapenet_storage.ShapenetDatasetSupervisor('shapenet_mugs')
     training = data_supervisor.get_training()
     elem = next(training.batch(1))
-    print(elem.md[0]['filepath'])
+    print(f"The filepath stored in the first element is: {elem.md[0]['filepath']}")
+    elem.load()
 
 def main():
     # create_shapenet_only_datasets()

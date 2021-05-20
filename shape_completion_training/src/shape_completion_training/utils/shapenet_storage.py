@@ -32,7 +32,13 @@ class ShapenetMetaDataset:
         if len(self.md) > self.load_limit:
             raise OverflowError(f"Asked to load {len(self.md)} shapes. Too large. You probably didnt mean that")
         for elem in self.md:
-            fp = get_shapenet_path() / elem['filepath']
+            rel_fp = elem['filepath']
+            # TODO: This fixes a temporary bug with the way the filepath is saved if the shapenet path is relative,
+            #  (not absolute)
+            prefix = "data/ShapeNetCore.v2_augmented/"
+            if rel_fp.starts_with(prefix):
+                rel_fp = rel_fp[len(prefix):]
+            fp = get_shapenet_path() / rel_fp
             vg = load_gt_only(fp)
             elem['gt_occ'] = vg
             elem['gt_free'] = 1-vg
