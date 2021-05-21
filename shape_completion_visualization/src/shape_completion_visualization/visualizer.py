@@ -1,8 +1,13 @@
 import argparse
 
+import rospy
+from rviz_text_selection_panel_msgs.msg import TextSelectionOptions
+from std_msgs.msg import String
+
 from shape_completion_training.model.model_runner import ModelRunner
-from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor, get_unique_name
-from shape_completion_visualization.shape_selection import send_display_names
+# from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor
+from shape_completion_training.utils.shapenet_storage import get_dataset_supervisor
+# from shape_completion_visualization.shape_selection import send_display_names
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 
 
@@ -23,6 +28,36 @@ def parse_visualizer_command_line_args(**args):
     return parser.parse_args()
 
 
+def send_display_names(names_list, callback):
+    """
+    Sends a list of names to interact with rviz_text_selection_panel
+    @param names_list: list of names
+    @param callback: python callback function of form `def fn(ind, name)`
+    @return:
+    """
+    options_pub = rospy.Publisher('shapenet_options', TextSelectionOptions, queue_size=1)
+    selection_map = {}
+    tso = TextSelectionOptions()
+    for i, name in enumerate(names_list):
+        selection_map[name] = i
+        tso.options.append(name)
+    i = 1
+    while options_pub.get_num_connections() == 0:
+        i += 1
+        if i % 10 == 0:
+            rospy.loginfo("Waiting for options publisher to connect to topic: {}".format('shapenet_options'))
+        rospy.sleep(0.1)
+    options_pub.publish(tso)
+
+    def callback_fn(str_msg):
+        return callback(selection_map[str_msg.data], str_msg)
+
+    sub = rospy.Subscriber('/shapenet_selection', String, callback_fn)
+    rospy.sleep(0.1)
+
+    return sub
+
+
 class Visualizer:
     def __init__(self, **args):
         self.vg_pub = VoxelgridPublisher()
@@ -39,7 +74,7 @@ class Visualizer:
             self.load_model(args['trial'])
 
     def load_dataset(self, name):
-        self.dataset_supervisor = ShapenetDatasetSupervisor(name)
+        self.dataset_supervisor = get_dataset_supervisor(name)
 
         md = self.dataset_supervisor.train_md if self.train_or_test == "train" else self.dataset_supervisor.test_md
         names = self.dataset_supervisor.ind_for_train_id if self.train_or_test == "train" \

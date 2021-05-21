@@ -30,7 +30,7 @@ def load_dataset(dataset_name, metadata_only=True, shuffle=True):
     """
     if dataset_name == 'shapenet':
         train_data, test_data = load_shapenet_metadata([
-            shapenet_storage.get_shape_map()["mug"]], shuffle=shuffle)
+            shapenet_storage.get_shapenet_map()["mug"]], shuffle=shuffle)
     elif dataset_name == 'ycb':
         train_data, test_data = load_ycb_metadata(shuffle=shuffle)
     else:

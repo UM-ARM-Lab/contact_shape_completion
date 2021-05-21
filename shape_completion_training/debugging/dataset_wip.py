@@ -20,7 +20,7 @@ def create_shapenet_only_datasets():
         #     print(f"Dataset {name} already exists")
         #     continue
         print(f"Creating dataset {name}...")
-        fps = [shapenet_storage.get_shape_map()[c] for c in categories]
+        fps = [shapenet_storage.get_shapenet_map()[c] for c in categories]
         ds.create_new_dataset(fps)
         # ds.save()
         print(f"Saved Dataset {name}")

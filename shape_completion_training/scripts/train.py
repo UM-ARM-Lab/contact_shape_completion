@@ -22,7 +22,8 @@ if __name__ == "__main__":
 
     # data, _ = shape_completion_training.utils.old_dataset_tools.load_dataset(params['dataset'], metadata_only=False)
     # data = shape_completion_training.utils.old_dataset_tools.preprocess_dataset(data, params)
-    data_supervisor = shapenet_storage.ShapenetDatasetSupervisor(params['dataset'])
+    # data_supervisor = shapenet_storage.ShapenetDatasetSupervisor(params['dataset'])
+    data_supervisor = shapenet_storage.get_dataset_supervisor(params['dataset'])
 
     if args.tmp:
         mr = ModelRunner(training=True, params=params, group_name=None)

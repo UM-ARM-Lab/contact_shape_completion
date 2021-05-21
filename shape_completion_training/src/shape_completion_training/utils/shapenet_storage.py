@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import hjson
+from colorama import Fore
 
 from shape_completion_training.model import filepath_tools
 from shape_completion_training.utils.config import get_config
@@ -53,6 +54,7 @@ class ShapenetMetaDataset(MetaDataset):
         super().__init__(metadata)
 
     def absolute_fp(self, rel_fp):
+        # Temporary fix for incorrect storage of path
         prefix = "data/ShapeNetCore.v2_augmented/"
         if rel_fp.startswith(prefix):
             rel_fp = rel_fp[len(prefix):]
@@ -65,7 +67,11 @@ class YcbMetaDataset(MetaDataset):
         super().__init__(metadata)
 
     def absolute_fp(self, rel_fp):
-        return get_ycb_path() / rel_fp
+        # Temporary fix for incorrect storage of path
+        prefix = "data/ycb/"
+        if rel_fp.startswith(prefix):
+            rel_fp = rel_fp[len(prefix):]
+        return get_dataset_path('ycb') / rel_fp
 
 
 class DatasetSupervisor(abc.ABC):
@@ -97,21 +103,16 @@ class DatasetSupervisor(abc.ABC):
             return self.meta_dataset_type([elem])
         raise KeyError(f"Id {unique_id} not found in dataset")
 
+    @abc.abstractmethod
     def create_new_dataset(self, shape_ids, test_ratio=0.1):
-        files = get_all_shapenet_files(shape_ids)
-        train_files, test_files = _split_train_and_test(files, test_ratio)
-        self.train_md = train_files
-        self.test_md = test_files
-
-        for i, elem in enumerate(self.train_md):
-            self.ind_for_train_id[get_unique_name(elem)] = i
-        for i, elem in enumerate(self.test_md):
-            self.ind_for_test_id[get_unique_name(elem)] = i
+        pass
 
     def save(self, overwrite=False):
-        fp = get_shapenet_path() / "MetaDataSets"
-        fp.mkdir(exist_ok=True)
-        fp = fp / f'{self.name}.metadataset.pkl'
+        fp = self.get_save_path()
+        # fp = get_shapenet_path() / "MetaDataSets"
+        # fp.mkdir(exist_ok=True)
+        # fp = fp / f'{self.name}.metadataset.pkl'
+        fp.parent.mkdir(exist_ok=True)
         if fp.exists() and not overwrite:
             raise FileExistsError(f"Metadataset already exists {fp.as_posix()}")
 
@@ -142,6 +143,46 @@ class ShapenetDatasetSupervisor(DatasetSupervisor):
 
     def get_save_path(self):
         return get_shapenet_path() / "MetaDataSets" / f'{self.name}.metadataset.pkl'
+
+    def create_new_dataset(self, shape_ids, test_ratio=0.1):
+        files = get_all_shapenet_files(shape_ids)
+        train_files, test_files = _split_train_and_test(files, test_ratio)
+        self.train_md = train_files
+        self.test_md = test_files
+
+        for i, elem in enumerate(self.train_md):
+            self.ind_for_train_id[get_unique_name(elem)] = i
+        for i, elem in enumerate(self.test_md):
+            self.ind_for_test_id[get_unique_name(elem)] = i
+
+
+class YcbDatasetSupervisor(DatasetSupervisor):
+    def __init__(self, name, require_exists=True, **kwargs):
+        super().__init__(name, meta_dataset_type=YcbMetaDataset, require_exists=require_exists, **kwargs)
+
+    def get_save_path(self):
+        return get_dataset_path('ycb') / "MetaDataSets" / f'{self.name}.metadataset.pkl'
+
+    def create_new_dataset(self, shape_ids, test_ratio=0.1):
+        files = get_all_ycb_files(shape_ids)
+        train_files, test_files = _split_train_and_test(files, test_ratio)
+        self.train_md = train_files
+        self.test_md = test_files
+
+        for i, elem in enumerate(self.train_md):
+            self.ind_for_train_id[get_unique_name(elem)] = i
+        for i, elem in enumerate(self.test_md):
+            self.ind_for_test_id[get_unique_name(elem)] = i
+
+
+def get_dataset_supervisor(dataset: str):
+    if dataset.startswith("shapenet"):
+        print(f"{Fore.GREEN}Loading Shapenet Dataset {dataset}{Fore.RESET}")
+        return ShapenetDatasetSupervisor(dataset)
+    elif dataset.startswith("ycb"):
+        print(f"{Fore.GREEN}Loading YCB Dataset {dataset}{Fore.RESET}")
+        return YcbDatasetSupervisor(dataset)
+    raise RuntimeError(f"Error: Unknown dataset {dataset}")
 
 
 def get_unique_name(datum, has_batch_dim=False):
@@ -175,13 +216,31 @@ def get_all_shapenet_files(shape_ids):
                 # shapenet_records.append(load_gt_voxels(f))
                 base = f.parent / f.stem
                 shapenet_records.append(load_metadata(base, compression="gzip"))
-
     return shapenet_records
+
+
+def get_all_ycb_files(shape_ids):
+    records = []
+    # obj_fps = [fp for fp in get_dataset_path('ycb').iterdir() if fp.stem.startswith("0")]
+    for category in shape_ids:
+        # for obj_fp in sorted(obj_fps):
+        obj_fp = get_dataset_path('ycb') / category
+
+        print("{}".format(obj_fp.name))
+        all_augmentation = [f for f in (obj_fp / "google_16k").iterdir()
+                            if f.name.startswith("model_augmented")
+                            if f.name.endswith(".pkl.gzip")]
+        for f in sorted(all_augmentation):
+            base = f.parent / f.stem
+            records.append(load_metadata(base, compression="gzip"))
+    return records
 
 
 def get_shapenet_path():
     return get_dataset_path('shapenet')
 
+
+@lru_cache()
 def get_dataset_path(dataset_name):
     config = get_config()
     dataset_path_name = f"{dataset_name}_path"
@@ -194,7 +253,7 @@ def get_dataset_path(dataset_name):
 
 
 @lru_cache()
-def get_shape_map():
+def get_shapenet_map():
     sn_path = get_shapenet_path()
     with (sn_path / "taxonomy.json").open() as f:
         taxonomy = hjson.load(f)
@@ -205,9 +264,8 @@ def get_shape_map():
         if t['synsetId'] in categories:
             name = t['name'].split(',')[0]
             sm[name] = t['synsetId']
-
     return sm
 
 
 def shapenet_labels(human_names):
-    return [get_shape_map()[hn] for hn in human_names]
+    return [get_shapenet_map()[hn] for hn in human_names]

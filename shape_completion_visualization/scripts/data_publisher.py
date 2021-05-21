@@ -14,15 +14,14 @@ from shape_completion_training.utils import data_tools
 from shape_completion_training.voxelgrid import metrics
 from shape_completion_training.model.other_model_architectures import sampling_tools
 from shape_completion_training.voxelgrid import fit
-from shape_completion_training.plausible_diversity import model_evaluator, plausiblility
+# from shape_completion_training.plausible_diversity import model_evaluator, plausiblility
 from shape_completion_training.voxelgrid import conversions
 from shape_completion_training.voxelgrid.metrics import chamfer_distance
 from shape_completion_visualization.visualizer import Visualizer, parse_visualizer_command_line_args
-from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
-from shape_completion_visualization.shape_selection import send_display_names_from_metadata
-from shape_completion_training.voxelgrid.utils import sample_from_voxelgrid
+# from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
+# from shape_completion_visualization.shape_selection import send_display_names_from_metadata
+# from shape_completion_training.voxelgrid.utils import sample_from_voxelgrid
 
-import threading
 import tensorflow as tf
 
 ARGS = None

@@ -48,7 +48,7 @@ Then run binvox with the -pb option
 if __name__ == "__main__":
     # rospy.init_node("augment_shapenet_node")
     ds_path = shapenet_storage.get_shapenet_path()
-    category = shapenet_storage.get_shape_map()['table']
+    category = shapenet_storage.get_shapenet_map()['table']
     # category = shapenet_storage.get_shape_map()['mug']
 
     start_time = datetime.datetime.now()

@@ -35,7 +35,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     ds_path = shapenet_storage.get_shapenet_path()
-    shape_map = shapenet_storage.get_shape_map()
+    shape_map = shapenet_storage.get_shapenet_map()
 
     categories = list(shape_map.keys())
     categories.remove('car')

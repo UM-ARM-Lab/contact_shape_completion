@@ -157,7 +157,7 @@ def test_stack_net():
 
 
 if __name__ == "__main__":
-    data_shapenet = data_tools.load_shapenet([shape_completion_training.utils.shapenet_storage.get_shape_map()["mug"]])
+    data_shapenet = data_tools.load_shapenet([shape_completion_training.utils.shapenet_storage.get_shapenet_map()["mug"]])
 
     # data = data_ycb
     data = data_shapenet
