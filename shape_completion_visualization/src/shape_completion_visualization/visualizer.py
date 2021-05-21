@@ -16,7 +16,7 @@ def parse_visualizer_command_line_args(**args):
     parser.add_argument('--publish_nearest_sample', help='foo help', action='store_true')
     parser.add_argument('--multistep', action='store_true')
     parser.add_argument('--trial')
-    parser.add_argument('--dataset', default='shapenet_wip_mugs')
+    parser.add_argument('--dataset', default='shapenet_mugs')
     parser.add_argument('--publish_closest_train', action='store_true')
     parser.add_argument('--enforce_contact', action='store_true')
 

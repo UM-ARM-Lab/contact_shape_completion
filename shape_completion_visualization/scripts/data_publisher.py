@@ -7,7 +7,7 @@ import random
 import rospy
 import numpy as np
 
-import shape_completion_training.utils.old_dataset_tools
+# import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
 from shape_completion_training.utils import data_tools
@@ -43,26 +43,8 @@ default_translations = {
 }
 
 
-
-
 def run_inference(elem):
-    if ARGS.enforce_contact:
-        return wip_enforce_contact(elem)
 
-    if ARGS.publish_closest_train:
-        # Computes and publishes the closest element in the training set to the test shape
-        train_in_correct_augmentation = train_records.filter(lambda x: x['augmentation'] == elem['augmentation'][0])
-        train_in_correct_augmentation = shape_completion_training.utils.old_dataset_tools.load_voxelgrids(train_in_correct_augmentation)
-        min_cd = np.inf
-        closest_train = None
-        for train_elem in train_in_correct_augmentation:
-            VG_PUB.publish("plausible", train_elem['gt_occ'])
-            cd = chamfer_distance(elem['gt_occ'], train_elem['gt_occ'],
-                                  scale=0.01, downsample=4)
-            if cd < min_cd:
-                min_cd = cd
-                closest_train = train_elem['gt_occ']
-            VG_PUB.publish("plausible", closest_train)
 
     if ARGS.publish_each_sample:
         for particle in model_evaluator.sample_particles(model_runner.model, elem, 20):
@@ -82,7 +64,8 @@ def run_inference(elem):
                 shape_completion_training.utils.old_dataset_tools.get_unique_name(elem, has_batch_dim=True),
                 model_runner.params['dataset']):
             elem_name, T, p, oob = plausible
-            sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(dataset_name=model_runner.params['dataset'])
+            sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(
+                dataset_name=model_runner.params['dataset'])
             plausible_elem = sn.get(elem_name)
             fitted = conversions.transform_voxelgrid(plausible_elem['gt_occ'], T, scale=0.01)
             VG_PUB.publish("plausible", fitted)
@@ -104,7 +87,8 @@ def run_inference(elem):
             model_runner.params['dataset'])
         plausible = random.choice(plausibles)
         elem_name, T, p, oob = plausible
-        sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(dataset_name=model_runner.params['dataset'])
+        sn = shape_completion_training.utils.old_dataset_tools.get_addressible_dataset(
+            dataset_name=model_runner.params['dataset'])
         plausible_elem = sn.get(elem_name)
         fitted = conversions.transform_voxelgrid(plausible_elem['gt_occ'], T, scale=0.01)
         VG_PUB.publish("plausible", fitted)
@@ -156,7 +140,6 @@ def fit_to_particles(metadata, sample_evaluation):
     if not ARGS.fit_to_particles:
         return
     for i, particle in enumerate(sample_evaluation.particles):
-        raw_input("Ready to fit to particle {}".format(i))
         fit_to_particle(metadata, particle)
 
 
@@ -232,9 +215,7 @@ def publish_selection(metadata, ind, str_msg):
     print("iou: {}".format(metrics.iou(elem['gt_occ'], inference['predicted_occ'])))
 
 
-
 if __name__ == "__main__":
-
     rospy.init_node('shape_publisher')
     rospy.loginfo("Data Publisher")
     # args = {'dataset': 'shapenet_wip_mugs'}

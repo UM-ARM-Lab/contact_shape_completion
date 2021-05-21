@@ -1,14 +1,17 @@
 import pickle
 import sys
+from functools import lru_cache
 
 import tensorflow as tf
+from deprecated import deprecated
 
-from shape_completion_training.utils import shapenet_storage, ycb_storage
+from shape_completion_training.utils import shapenet_storage, ycb_storage, tf_utils
 from shape_completion_training.utils.data_tools import simulate_2_5D_input, shift_voxelgrid, select_slit_location, \
     simulate_slit_occlusion, simulate_2_5D_known_free
-from shape_completion_training.utils.dataset_storage import load_gt_only
+from shape_completion_training.utils.dataset_storage import load_gt_only, _split_train_and_test, write_to_filelist
 from shape_completion_training.utils.exploratory_data_tools import simulate_partial_completion, \
     simulate_random_partial_completion
+from shape_completion_training.utils.shapenet_storage import get_shapenet_path, get_all_shapenet_files
 from shape_completion_training.utils.tf_utils import memoize
 from shape_completion_training.voxelgrid import conversions
 
@@ -87,8 +90,14 @@ def preprocess_test_dataset(dataset, params):
     return dataset
 
 
+@deprecated()
+@lru_cache()
+def get_shapenet_record_path():
+    return get_shapenet_path() / "tfrecords" / "filepath"
+
+
 def _load_metadata_train_or_test(shapes="all", shuffle=True, prefix="train",
-                                 record_path=shapenet_storage.get_shapenet_record_path()):
+                                 record_path=get_shapenet_record_path()):
     """
     Loads either the test or train data
     @param shapes: "all", or a list of shape names to load
@@ -353,3 +362,22 @@ class AddressableDataset:
         else:
             raise Exception("No element {} in dataset".format(unique_name))
         return next(ds.__iter__())
+
+
+@deprecated()
+def write_shapenet_to_filelist(test_ratio, shape_ids="all"):
+    all_files = get_all_shapenet_files(shape_ids)
+    train_files, test_files = _split_train_and_test(all_files, test_ratio)
+    # train_data = _list_of_shapenet_records_to_dict(train_files)
+    # test_data = _list_of_shapenet_records_to_dict(test_files)
+
+    print("Split shapenet into {} training and {} test shapes".format(len(train_files), len(test_files)))
+
+    # d = tf.data.Dataset.from_tensor_slices(utils.sequence_of_dicts_to_dict_of_sequences(test_files))
+    write_to_filelist(tf_utils.sequence_of_dicts_to_dict_of_sequences(train_files),
+                      get_shapenet_record_path / "train_filepaths.pkl")
+    write_to_filelist(tf_utils.sequence_of_dicts_to_dict_of_sequences(test_files),
+                      get_shapenet_record_path / "test_filepaths.pkl")
+    # write_to_tfrecord(tf.data.Dataset.from_tensor_slices(
+    #     utils.sequence_of_dicts_to_dict_of_sequences(test_files)),
+    #     shapenet_record_path / "test_filepaths.pkl")
