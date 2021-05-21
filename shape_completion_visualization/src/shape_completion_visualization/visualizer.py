@@ -59,11 +59,12 @@ def send_display_names(names_list, callback):
 
 
 class Visualizer:
-    def __init__(self, **args):
+    def __init__(self, params, **args):
         self.vg_pub = VoxelgridPublisher()
         self.selection_sub = None
         self.model_runner = None
         self.dataset_supervisor = None
+        self.params = params
 
         self.train_or_test = args['train_or_test'] if 'train_or_test' in args else 'train'
 
@@ -83,7 +84,7 @@ class Visualizer:
 
     def publish_selection(self, ind, unique_id):
         # print(f"Publishing {ind}, {unique_id}")
-        elem = self.dataset_supervisor.get_element(unique_id.data).load()
+        elem = self.dataset_supervisor.get_element(unique_id.data, self.params).load()
         self.vg_pub.publish_elem(elem)
 
         if self.model_runner is None:

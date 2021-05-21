@@ -91,7 +91,7 @@ class ModelRunner:
         self.model.summary()
 
     def build_model(self, dataset):
-        elem = next(dataset.get_training().batch(self.batch_size)).load()
+        elem = next(dataset.get_training(self.params).batch(self.batch_size)).load()
         # elem = dataset.take(self.batch_size).batch(self.batch_size)
         tf.summary.trace_on(graph=True, profiler=False)
         self.model(elem)
@@ -154,7 +154,7 @@ class ModelRunner:
             print('')
             print('==  Epoch {}/{}  '.format(self.ckpt.epoch.numpy(), num_epochs) + '=' * 25
                   + ' ' + self.group_name + ' ' + '=' * 20)
-            self.train_batch(dataset.get_training().batch(self.batch_size))
+            self.train_batch(dataset.get_training(self.params).batch(self.batch_size))
             print('=' * 48)
 
     def train_and_test(self, dataset):

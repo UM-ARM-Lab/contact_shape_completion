@@ -220,6 +220,6 @@ if __name__ == "__main__":
     # args = {'dataset': 'shapenet_wip_mugs'}
     args = vars(parse_visualizer_command_line_args())
 
-    visualizer = Visualizer(**args)
+    visualizer = Visualizer(**args, params=default_params.get_visualization_params())
 
     rospy.spin()

@@ -1,5 +1,14 @@
 from colorama import Fore
 
+def get_visualization_params():
+    default_params = {
+        'translation_pixel_range_x': 10,
+        'translation_pixel_range_y': 10,
+        'translation_pixel_range_z': 10,
+        'apply_slit_occlusion': True,
+        # 'apply_depth_sensor_noise': False,
+    }
+    return default_params
 
 def get_default_params(group_name=None):
     default_params = {

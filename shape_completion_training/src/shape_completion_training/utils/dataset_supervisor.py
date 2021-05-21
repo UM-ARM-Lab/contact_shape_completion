@@ -7,6 +7,7 @@ import hjson
 from colorama import Fore
 
 from shape_completion_training.model import filepath_tools
+from shape_completion_training.utils import data_tools
 from shape_completion_training.utils.config import get_config
 from shape_completion_training.utils.data_tools import simulate_2_5D_input
 from shape_completion_training.utils.dataset_storage import load_metadata, _split_train_and_test, load_gt_only
@@ -20,8 +21,9 @@ Tools for storing and preprocessing augmented shapenet
 class MetaDataset(abc.ABC):
     load_limit = 20
 
-    def __init__(self, metadata):
+    def __init__(self, metadata, params):
         self.md = metadata
+        self.params = params
 
     @abc.abstractmethod
     def absolute_fp(self, rel_fp):
@@ -29,32 +31,38 @@ class MetaDataset(abc.ABC):
 
     def batch(self, batch_size):
         for i in range(0, len(self.md), batch_size):
-            yield self.__class__(self.md[i:i + batch_size])
+            yield self.__class__(self.md[i:i + batch_size], self.params)
 
     def load(self):
         if len(self.md) > self.load_limit:
             raise OverflowError(f"Asked to load {len(self.md)} shapes. Too large. You probably didnt mean that")
         for elem in self.md:
             rel_fp = elem['filepath']
-            # TODO: This fixes a temporary bug with the way the filepath is saved if the shapenet path is relative,
-            #  (not absolute)
             fp = self.absolute_fp(rel_fp)
             vg = load_gt_only(fp)
             elem['gt_occ'] = vg
             elem['gt_free'] = 1 - vg
-            ko, kf = simulate_2_5D_input(vg)
+            x, y, z = (self.params[f'translation_pixel_range_{axis}'] for axis in ['x', 'y', 'z'])
+            data_tools.shift_dataset_element(elem, x, y, z)
+            ko, kf = simulate_2_5D_input(elem['gt_occ'].numpy())
+
+            if self.params[f'apply_slit_occlusion']:
+                slit_min, slit_max = data_tools.select_slit_location(elem['gt_occ'], min_slit_width=5,
+                                                                     max_slit_width=30, min_observable=5)
+                ko, kf = data_tools.simulate_slit_occlusion(ko, kf, slit_min, slit_max)
+
             elem['known_occ'] = ko
             elem['known_free'] = kf
-            # print(f"Loading {elem['filepath']}")
         return stack_dict(sequence_of_dicts_to_dict_of_sequences(self.md))
 
 
 class ShapenetMetaDataset(MetaDataset):
-    def __init__(self, metadata):
-        super().__init__(metadata)
+    def __init__(self, metadata, params):
+        super().__init__(metadata, params)
 
     def absolute_fp(self, rel_fp):
-        # Temporary fix for incorrect storage of path
+        # TODO: This fixes a temporary bug with the way the filepath is saved if the shapenet path is relative,
+        #  (not absolute)
         prefix = "data/ShapeNetCore.v2_augmented/"
         if rel_fp.startswith(prefix):
             rel_fp = rel_fp[len(prefix):]
@@ -63,8 +71,8 @@ class ShapenetMetaDataset(MetaDataset):
 
 
 class YcbMetaDataset(MetaDataset):
-    def __init__(self, metadata):
-        super().__init__(metadata)
+    def __init__(self, metadata, params):
+        super().__init__(metadata, params)
 
     def absolute_fp(self, rel_fp):
         # Temporary fix for incorrect storage of path
@@ -92,15 +100,15 @@ class DatasetSupervisor(abc.ABC):
                 if require_exists:
                     raise e
 
-    def get_element(self, unique_id):
+    def get_element(self, unique_id, params):
         if unique_id in self.ind_for_train_id:
             ind = self.ind_for_train_id[unique_id]
             elem = self.train_md[ind]
-            return self.meta_dataset_type([elem])
+            return self.meta_dataset_type([elem], params)
         if unique_id in self.ind_for_test_id:
             ind = self.ind_for_test_id[unique_id]
             elem = self.test_md[ind]
-            return self.meta_dataset_type([elem])
+            return self.meta_dataset_type([elem], params)
         raise KeyError(f"Id {unique_id} not found in dataset")
 
     @abc.abstractmethod
@@ -130,11 +138,11 @@ class DatasetSupervisor(abc.ABC):
     def get_save_path(self):
         pass
 
-    def get_training(self):
-        return self.meta_dataset_type(self.train_md)
+    def get_training(self, params):
+        return self.meta_dataset_type(self.train_md, params)
 
-    def get_testing(self):
-        return self.meta_dataset_type(self.test_md)
+    def get_testing(self, params):
+        return self.meta_dataset_type(self.test_md, params)
 
 
 class ShapenetDatasetSupervisor(DatasetSupervisor):

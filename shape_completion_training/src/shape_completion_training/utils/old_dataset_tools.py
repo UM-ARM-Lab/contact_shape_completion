@@ -7,8 +7,8 @@ from deprecated import deprecated
 
 from shape_completion_training.model import filepath_tools
 from shape_completion_training.utils import dataset_supervisor, tf_utils
-from shape_completion_training.utils.data_tools import simulate_2_5D_input, shift_voxelgrid, select_slit_location, \
-    simulate_slit_occlusion, simulate_2_5D_known_free
+from shape_completion_training.utils.data_tools import simulate_2_5D_input, select_slit_location, \
+    simulate_slit_occlusion, simulate_2_5D_known_free, shift_dataset_element
 from shape_completion_training.utils.dataset_storage import load_gt_only, _split_train_and_test, write_to_filelist
 from shape_completion_training.utils.exploratory_data_tools import simulate_partial_completion, \
     simulate_random_partial_completion
@@ -185,30 +185,6 @@ def load_voxelgrids(metadata_ds):
         return elem
 
     return metadata_ds.map(_load_voxelgrids)
-
-
-def shift_dataset_element(elem, x, y, z):
-    """
-    Shift the voxelgrid and bounding box of elem by a random amount, up to the limits [x,y,z]
-    :param elem:
-    :param x: maximum x shift
-    :param y: maximum y shift
-    :param z: maximum z shift
-    :return:
-    """
-    dx = 0
-    dy = 0
-    dz = 0
-    if x > 0:
-        dx = tf.random.uniform(shape=[], minval=-x, maxval=x, dtype=tf.int64)
-    if y > 0:
-        dy = tf.random.uniform(shape=[], minval=-y, maxval=y, dtype=tf.int64)
-    if z > 0:
-        dz = tf.random.uniform(shape=[], minval=-z, maxval=z, dtype=tf.int64)
-    elem['gt_occ'] = shift_voxelgrid(elem['gt_occ'], dx, dy, dz, 0.0, x, y, z)
-    elem['gt_free'] = shift_voxelgrid(elem['gt_free'], dx, dy, dz, 1.0, x, y, z)
-    elem['bounding_box'] += tf.cast([[dx, dy, dz]], tf.float64) * 0.01
-    return elem
 
 
 def shift_bounding_box_only(elem, x, y, z):
