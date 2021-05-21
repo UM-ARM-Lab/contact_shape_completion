@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function
 
-import shape_completion_training.utils.shapenet_storage
-from shape_completion_training.utils import shapenet_storage
+import shape_completion_training.utils.dataset_supervisor
+from shape_completion_training.utils import dataset_supervisor
 import datetime
 import rospy
 from shape_completion_training.utils.data_augmentation import NUM_THREADS, augment_category
@@ -47,8 +47,8 @@ Then run binvox with the -pb option
 
 if __name__ == "__main__":
     # rospy.init_node("augment_shapenet_node")
-    ds_path = shapenet_storage.get_shapenet_path()
-    category = shapenet_storage.get_shapenet_map()['table']
+    ds_path = dataset_supervisor.get_shapenet_path()
+    category = dataset_supervisor.get_shapenet_map()['table']
     # category = shapenet_storage.get_shape_map()['mug']
 
     start_time = datetime.datetime.now()

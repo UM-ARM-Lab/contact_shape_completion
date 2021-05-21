@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 from __future__ import print_function
 
-from shape_completion_training.utils import ycb_storage
+from shape_completion_training.utils import dataset_supervisor
 import datetime
 import rospy
 from shape_completion_training.utils import data_augmentation
@@ -47,7 +47,7 @@ Then run binvox with the -pb option
 if __name__ == "__main__":
 
     rospy.init_node("augment_shapenet_node")
-    ycb_path = ycb_storage.ycb_load_path
+    ycb_path = dataset_supervisor.get_dataset_path('ycb')
 
     start_time = datetime.datetime.now()
 

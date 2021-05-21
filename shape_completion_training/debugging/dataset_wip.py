@@ -3,8 +3,8 @@
 Debugging the custom dataset supervisor class
 
 """
-from shape_completion_training.utils import shapenet_storage
-from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor
+from shape_completion_training.utils import dataset_supervisor
+from shape_completion_training.utils.dataset_supervisor import ShapenetDatasetSupervisor
 
 shapenet_categories_for = {
     "shapenet_mugs": ['mug'],
@@ -20,13 +20,13 @@ def create_shapenet_only_datasets():
         #     print(f"Dataset {name} already exists")
         #     continue
         print(f"Creating dataset {name}...")
-        fps = [shapenet_storage.get_shapenet_map()[c] for c in categories]
+        fps = [dataset_supervisor.get_shapenet_map()[c] for c in categories]
         ds.create_new_dataset(fps)
         # ds.save()
         print(f"Saved Dataset {name}")
 
 def load_ds():
-    data_supervisor = shapenet_storage.ShapenetDatasetSupervisor('shapenet_mugs')
+    data_supervisor = dataset_supervisor.ShapenetDatasetSupervisor('shapenet_mugs')
     training = data_supervisor.get_training()
     elem = next(training.batch(1))
     print(f"The filepath stored in the first element is: {elem.md[0]['filepath']}")

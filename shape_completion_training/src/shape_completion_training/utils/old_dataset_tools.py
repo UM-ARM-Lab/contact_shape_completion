@@ -5,20 +5,24 @@ from functools import lru_cache
 import tensorflow as tf
 from deprecated import deprecated
 
-from shape_completion_training.utils import shapenet_storage, ycb_storage, tf_utils
+from shape_completion_training.model import filepath_tools
+from shape_completion_training.utils import dataset_supervisor, tf_utils
 from shape_completion_training.utils.data_tools import simulate_2_5D_input, shift_voxelgrid, select_slit_location, \
     simulate_slit_occlusion, simulate_2_5D_known_free
 from shape_completion_training.utils.dataset_storage import load_gt_only, _split_train_and_test, write_to_filelist
 from shape_completion_training.utils.exploratory_data_tools import simulate_partial_completion, \
     simulate_random_partial_completion
-from shape_completion_training.utils.shapenet_storage import get_shapenet_path, get_all_shapenet_files
+from shape_completion_training.utils.dataset_supervisor import get_shapenet_path, get_all_shapenet_files
 from shape_completion_training.utils.tf_utils import memoize
 from shape_completion_training.voxelgrid import conversions
 
+ycb_load_path = filepath_tools.get_shape_completion_package_path() / "data" / "ycb"
+ycb_record_path = ycb_load_path / "tfrecords" / "filepath"
+
 
 def get_dataset_path(dataset_name):
-    paths = {"shapenet": shapenet_storage.get_shapenet_path(),
-             "ycb": ycb_storage.ycb_load_path}
+    paths = {"shapenet": dataset_supervisor.get_shapenet_path(),
+             "ycb": ycb_load_path}
     return paths[dataset_name]
 
 
@@ -30,7 +34,7 @@ def load_dataset(dataset_name, metadata_only=True, shuffle=True):
     """
     if dataset_name == 'shapenet':
         train_data, test_data = load_shapenet_metadata([
-            shapenet_storage.get_shapenet_map()["mug"]], shuffle=shuffle)
+            dataset_supervisor.get_shapenet_map()["mug"]], shuffle=shuffle)
     elif dataset_name == 'ycb':
         train_data, test_data = load_ycb_metadata(shuffle=shuffle)
     else:
@@ -51,8 +55,8 @@ def load_shapenet_metadata(shapes="all", shuffle=True):
 
 def load_ycb_metadata(shuffle=True):
     print("Loading YCB dataset")
-    return _load_metadata_train_or_test(shuffle=shuffle, prefix="train", record_path=ycb_storage.ycb_record_path), \
-           _load_metadata_train_or_test(shuffle=shuffle, prefix="test", record_path=ycb_storage.ycb_record_path),
+    return _load_metadata_train_or_test(shuffle=shuffle, prefix="train", record_path=ycb_record_path), \
+           _load_metadata_train_or_test(shuffle=shuffle, prefix="test", record_path=ycb_record_path),
 
 
 def preprocess_dataset(dataset, params):

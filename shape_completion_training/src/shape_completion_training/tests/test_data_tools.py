@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import shape_completion_training.utils.dataset_storage
 import shape_completion_training.utils.old_dataset_tools
-import shape_completion_training.utils.shapenet_storage
+import shape_completion_training.utils.dataset_supervisor
 from shape_completion_training.utils import data_tools
 import tensorflow as tf
 import numpy as np

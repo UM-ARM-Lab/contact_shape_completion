@@ -4,8 +4,8 @@ This script takes shapenet (and other?) voxel datasets and compiles ShapenetData
 metadatasets.
 
 """
-from shape_completion_training.utils import shapenet_storage
-from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor, YcbDatasetSupervisor
+from shape_completion_training.utils import dataset_supervisor
+from shape_completion_training.utils.dataset_supervisor import ShapenetDatasetSupervisor, YcbDatasetSupervisor
 from argparse import ArgumentParser
 
 shapenet_categories_for = {
@@ -107,7 +107,7 @@ def create_shapenet_only_datasets(overwrite: bool):
                 continue
             print("Overwriting...")
         print(f"Creating dataset {name}...")
-        fps = [shapenet_storage.get_shapenet_map()[c] for c in categories]
+        fps = [dataset_supervisor.get_shapenet_map()[c] for c in categories]
         ds.create_new_dataset(fps)
         ds.save(overwrite=overwrite)
         print(f"Saved Dataset {name}")

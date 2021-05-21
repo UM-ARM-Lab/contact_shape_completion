@@ -4,7 +4,7 @@ from os.path import dirname, abspath, join
 
 import shape_completion_training.utils.exploratory_data_tools
 import shape_completion_training.utils.old_dataset_tools
-import shape_completion_training.utils.shapenet_storage
+import shape_completion_training.utils.dataset_supervisor
 
 sc_path = join(dirname(abspath(__file__)), "..")
 sys.path.append(sc_path)
@@ -157,7 +157,7 @@ def test_stack_net():
 
 
 if __name__ == "__main__":
-    data_shapenet = data_tools.load_shapenet([shape_completion_training.utils.shapenet_storage.get_shapenet_map()["mug"]])
+    data_shapenet = data_tools.load_shapenet([shape_completion_training.utils.dataset_supervisor.get_shapenet_map()["mug"]])
 
     # data = data_ycb
     data = data_shapenet

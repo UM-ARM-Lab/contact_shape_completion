@@ -5,14 +5,14 @@ Prepares some local files of shapes to be used in unit tests
 import shape_completion_training.utils.data_tools as data_tools
 import numpy as np
 
-import shape_completion_training.utils.shapenet_storage
+import shape_completion_training.utils.dataset_supervisor
 
 test_dataset_filepath = "voxel_grid_test_data.npy"
 
 
 def create_tests_dataset():
     train_data_shapenet, test_data_shapenet = data_tools.load_shapenet([
-        shape_completion_training.utils.shapenet_storage.get_shapenet_map()["mug"]])
+        shape_completion_training.utils.dataset_supervisor.get_shapenet_map()["mug"]])
     data_shapenet = train_data_shapenet.shuffle(1000)
 
     test_shapes = []

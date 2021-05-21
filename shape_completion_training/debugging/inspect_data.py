@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 import shape_completion_training.utils.old_dataset_tools
-import shape_completion_training.utils.shapenet_storage
+import shape_completion_training.utils.dataset_supervisor
 from shape_completion_training.utils import data_tools
 
 
@@ -21,7 +21,7 @@ def report(ds_name, info):
 
 def write_all_files():
     with open("./file_names.txt", "w") as f:
-        for record in shape_completion_training.utils.shapenet_storage.get_all_shapenet_files(shape_ids=shape_completion_training.utils.shapenet_storage.shapenet_labels(["mug"])):
+        for record in shape_completion_training.utils.dataset_supervisor.get_all_shapenet_files(shape_ids=shape_completion_training.utils.dataset_supervisor.shapenet_labels(["mug"])):
             f.write("{}\n".format(record.id))
 
 

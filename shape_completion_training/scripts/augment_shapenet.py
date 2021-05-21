@@ -3,8 +3,8 @@ from __future__ import print_function
 
 import argparse
 
-import shape_completion_training.utils.shapenet_storage
-from shape_completion_training.utils import shapenet_storage
+import shape_completion_training.utils.dataset_supervisor
+from shape_completion_training.utils import dataset_supervisor
 import datetime
 import rospy
 from shape_completion_training.utils.config import get_config
@@ -34,8 +34,8 @@ if __name__ == "__main__":
     parser.add_argument('--resume', action="store_true", help="Skip files that have already been processed")
     args = parser.parse_args()
 
-    ds_path = shapenet_storage.get_shapenet_path()
-    shape_map = shapenet_storage.get_shapenet_map()
+    ds_path = dataset_supervisor.get_shapenet_path()
+    shape_map = dataset_supervisor.get_shapenet_map()
 
     categories = list(shape_map.keys())
     categories.remove('car')

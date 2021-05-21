@@ -1,10 +1,10 @@
 import shape_completion_training.utils.dataset_storage
 import shape_completion_training.utils.old_dataset_tools
 from shape_completion_training.model import filepath_tools
-from shape_completion_training.utils import data_tools, shapenet_storage
+from shape_completion_training.utils import data_tools, dataset_supervisor
 import datetime
 
-shapenet_load_path = shapenet_storage.get_shapenet_path()
+shapenet_load_path = dataset_supervisor.get_shapenet_path()
 
 
 def store_shapenet_augmentations_in_multiple_formats(shape_ids):

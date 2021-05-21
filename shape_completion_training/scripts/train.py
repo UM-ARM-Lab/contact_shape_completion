@@ -2,7 +2,7 @@
 import argparse
 
 import shape_completion_training.utils.old_dataset_tools
-from shape_completion_training.utils import shapenet_storage
+from shape_completion_training.utils import dataset_supervisor
 from shape_completion_training.utils import data_tools
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # data, _ = shape_completion_training.utils.old_dataset_tools.load_dataset(params['dataset'], metadata_only=False)
     # data = shape_completion_training.utils.old_dataset_tools.preprocess_dataset(data, params)
     # data_supervisor = shapenet_storage.ShapenetDatasetSupervisor(params['dataset'])
-    data_supervisor = shapenet_storage.get_dataset_supervisor(params['dataset'])
+    data_supervisor = dataset_supervisor.get_dataset_supervisor(params['dataset'])
 
     if args.tmp:
         mr = ModelRunner(training=True, params=params, group_name=None)
