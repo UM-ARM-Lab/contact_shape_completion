@@ -3,9 +3,10 @@
 Debugging the custom dataset supervisor class
 
 """
+import datetime
 import math
 import time
-import datetime
+import tensorflow as tf
 
 import progressbar
 
@@ -65,6 +66,7 @@ def load_full_ds_in_batches():
             # self.ckpt.step.assign_add(1)
             data = batch.load()
 
+
             # _, ret = self.model.train_step(data)
             time_str = str(datetime.timedelta(seconds=int(time.time() - t0)))
             bar.update(batch_num, Loss=0,
@@ -72,15 +74,18 @@ def load_full_ds_in_batches():
             # if self.num_batches % summary_period == 0:
             #     self.write_summary(ret)
             # self.ckpt.train_time.assign_add(time.time() - t0)
-            t0 = time.time()
-    elem = training.batch(16)
-    elem.load()
+            # t0 = time.time()
+
+def multiple_loading_of_batches(num_loadings=100):
+    for i in range(num_loadings):
+        load_full_ds_in_batches()
+        print(f"Loaded dataset {i+1} times")
 
 
 def main():
     # create_shapenet_only_datasets()
     # load_ds()
-    load_full_ds_in_batches()
+    multiple_loading_of_batches()
 
 
 if __name__ == "__main__":

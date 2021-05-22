@@ -47,7 +47,10 @@ class MetaDataset(abc.ABC):
             elem['gt_free'] = 1 - vg
             x, y, z = (self.params[f'translation_pixel_range_{axis}'] for axis in ['x', 'y', 'z'])
             data_tools.shift_dataset_element(elem, x, y, z)
-            ko, kf = simulate_2_5D_input(elem['gt_occ'].numpy())
+            elem['gt_occ'] = elem['gt_occ'].numpy()
+            elem['gt_free'] = elem['gt_free'].numpy()
+            elem['bounding_box'] = elem['bounding_box'].numpy()
+            ko, kf = simulate_2_5D_input(elem['gt_occ'])
 
             if self.params[f'apply_slit_occlusion']:
                 slit_min, slit_max = data_tools.select_slit_location(elem['gt_occ'], min_slit_width=5,
