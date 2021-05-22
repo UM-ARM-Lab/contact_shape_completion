@@ -33,6 +33,9 @@ class MetaDataset(abc.ABC):
         for i in range(0, len(self.md), batch_size):
             yield self.__class__(self.md[i:i + batch_size], self.params)
 
+    def size(self):
+        return len(self.md)
+
     def load(self):
         if len(self.md) > self.load_limit:
             raise OverflowError(f"Asked to load {len(self.md)} shapes. Too large. You probably didnt mean that")
@@ -234,7 +237,7 @@ def get_all_ycb_files(shape_ids):
         # for obj_fp in sorted(obj_fps):
         obj_fp = get_dataset_path('ycb') / category
 
-        print("{}".format(obj_fp.name))
+        print("\t{}".format(obj_fp.name))
         all_augmentation = [f for f in (obj_fp / "google_16k").iterdir()
                             if f.name.startswith("model_augmented")
                             if f.name.endswith(".pkl.gzip")]

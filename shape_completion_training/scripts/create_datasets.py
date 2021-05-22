@@ -4,6 +4,8 @@ This script takes shapenet (and other?) voxel datasets and compiles ShapenetData
 metadatasets.
 
 """
+from colorama import Fore
+
 from shape_completion_training.utils import dataset_supervisor
 from shape_completion_training.utils.dataset_supervisor import ShapenetDatasetSupervisor, YcbDatasetSupervisor
 from argparse import ArgumentParser
@@ -94,7 +96,7 @@ ycb_categories_for = {
         "073-f_lego_duplo",
         "073-g_lego_duplo",
         "077_rubiks_cube",
-]
+    ]
 }
 
 
@@ -107,10 +109,15 @@ def create_shapenet_only_datasets(overwrite: bool):
                 continue
             print("Overwriting...")
         print(f"Creating dataset {name}...")
-        fps = [dataset_supervisor.get_shapenet_map()[c] for c in categories]
+        try:
+            fps = [dataset_supervisor.get_shapenet_map()[c] for c in categories]
+        except KeyError as e:
+            print(f"{Fore.RED}Category {e.args[0]} not found for dataset {name}. Skipping this dataset{Fore.RESET}")
+            continue
         ds.create_new_dataset(fps)
         ds.save(overwrite=overwrite)
         print(f"Saved Dataset {name}")
+
 
 def create_ycb_only_dataset(overwrite: bool):
     for name, categories in ycb_categories_for.items():
