@@ -1,3 +1,7 @@
+import math
+
+from colorama import Fore
+
 from shape_completion_training.utils import tf_utils
 from shape_completion_training.model.pssnet import PSSNet
 
@@ -72,19 +76,32 @@ class ModelRunner:
 
         self.num_batches = None
 
-        self.ckpt = tf.train.Checkpoint(step=tf.Variable(1),
-                                        epoch=tf.Variable(0),
-                                        train_time=tf.Variable(0.0),
-                                        optimizer=self.model.optimizer, net=self.model)
-        self.checkpoint_path = self.trial_path / "training_checkpoints/"
-        self.manager = tf.train.CheckpointManager(self.ckpt, self.checkpoint_path.as_posix(), max_to_keep=1)
+        self.latest_ckpt = tf.train.Checkpoint(step=tf.Variable(1),
+                                               epoch=tf.Variable(0),
+                                               train_time=tf.Variable(0.0),
+                                               net=self.model)
+        self.latest_checkpoint_path = self.trial_path / "latest_checkpoints/"
+        self.latest_checkpoint_manager = tf.train.CheckpointManager(self.latest_ckpt,
+                                                                    self.latest_checkpoint_path.as_posix(),
+                                                                    max_to_keep=1)
+        self.num_batches = None
+
+        self.best_ckpt = tf.train.Checkpoint(step=tf.Variable(1),
+                                             epoch=tf.Variable(0),
+                                             train_time=tf.Variable(0.0),
+                                             best_key_metric_value=tf.Variable(10e10, dtype=tf.float32),
+                                             net=self.model)
+        self.best_checkpoint_path = self.trial_path / "best_checkpoint/"
+        self.best_checkpoint_manager = tf.train.CheckpointManager(self.best_ckpt, self.best_checkpoint_path.as_posix(),
+                                                                  max_to_keep=1)
         self.restore()
 
     def restore(self):
-        status = self.ckpt.restore(self.manager.latest_checkpoint)
+        status = self.best_ckpt.restore(self.best_checkpoint_manager.latest_checkpoint)
 
         # Suppress warning 
-        if self.manager.latest_checkpoint:
+        if self.best_checkpoint_manager.latest_checkpoint:
+            print(f"{Fore.CYAN}Restoring best checkpoint {self.best_checkpoint_manager.latest_checkpoint}{Fore.RESET}")
             status.assert_existing_objects_matched()
 
     def count_params(self):
@@ -96,7 +113,7 @@ class ModelRunner:
         tf.summary.trace_on(graph=True, profiler=False)
         self.model(elem)
         with self.train_summary_writer.as_default():
-            tf.summary.trace_export(name='train_trace', step=self.ckpt.step.numpy())
+            tf.summary.trace_export(name='train_trace', step=self.latest_ckpt.step.numpy())
 
         # tf.keras.utils.plot_model(self.model, (self.trial_path / 'network.png').as_posix(),
         #                           show_shapes=True)
@@ -104,7 +121,7 @@ class ModelRunner:
     def write_summary(self, summary_dict):
         with self.train_summary_writer.as_default():
             for k in summary_dict:
-                tf.summary.scalar(k, summary_dict[k].numpy(), step=self.ckpt.step.numpy())
+                tf.summary.scalar(k, summary_dict[k].numpy(), step=self.latest_ckpt.step.numpy())
 
     def train_batch(self, dataset, summary_period=10):
         if self.num_batches is not None:
@@ -123,23 +140,34 @@ class ModelRunner:
         with progressbar.ProgressBar(widgets=widgets, max_value=self.num_batches) as bar:
             self.num_batches = 0
             t0 = time.time()
+            total_loss = 0
             for batch in dataset:
                 self.num_batches += 1
-                self.ckpt.step.assign_add(1)
+                self.latest_ckpt.step.assign_add(1)
                 data = batch.load()
 
                 _, ret = self.model.train_step(data)
-                time_str = str(datetime.timedelta(seconds=int(self.ckpt.train_time.numpy())))
+                time_str = str(datetime.timedelta(seconds=int(self.latest_ckpt.train_time.numpy())))
+                total_loss += ret['loss'].numpy()
                 bar.update(self.num_batches, Loss=ret['loss'].numpy(),
                            TrainTime=time_str)
                 if self.num_batches % summary_period == 0:
                     self.write_summary(ret)
-                self.ckpt.train_time.assign_add(time.time() - t0)
+                self.latest_ckpt.train_time.assign_add(time.time() - t0)
                 t0 = time.time()
+        avg_loss = total_loss / self.num_batches
 
-        save_path = self.manager.save()
-        print("Saved checkpoint for step {}: {}".format(int(self.ckpt.step), save_path))
-        print("loss {:1.3f}".format(ret['loss'].numpy()))
+        if math.isnan(avg_loss):
+            raise RuntimeError("Loss is NaN. Probably an unrecoverable situation")
+
+        if avg_loss < self.best_ckpt.best_key_metric_value:
+            self.best_ckpt.best_key_metric_value.assign(avg_loss)
+            save_path = self.best_checkpoint_manager.save()
+            print(f"{Fore.GREEN}Saved new best checkpoint {save_path}{Fore.RESET}")
+
+        save_path = self.latest_checkpoint_manager.save()
+        print(f"Saved checkpoint for step {int(self.latest_ckpt.step)}: {save_path}")
+        print("Avg loss {:1.3f}".format(avg_loss))
 
     def train(self, dataset):
         self.build_model(dataset)
@@ -149,10 +177,10 @@ class ModelRunner:
         # batched_ds = dataset.batch(self.batch_size).prefetch(64)
 
         num_epochs = 1000
-        while self.ckpt.epoch < num_epochs:
-            self.ckpt.epoch.assign_add(1)
+        while self.latest_ckpt.epoch < num_epochs:
+            self.latest_ckpt.epoch.assign_add(1)
             print('')
-            print('==  Epoch {}/{}  '.format(self.ckpt.epoch.numpy(), num_epochs) + '=' * 25
+            print('==  Epoch {}/{}  '.format(self.latest_ckpt.epoch.numpy(), num_epochs) + '=' * 25
                   + ' ' + self.group_name + ' ' + '=' * 20)
             self.train_batch(dataset.get_training(self.params).batch(self.batch_size))
             print('=' * 48)
