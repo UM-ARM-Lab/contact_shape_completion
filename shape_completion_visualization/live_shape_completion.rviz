@@ -151,14 +151,14 @@ Visualization Manager:
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
-      Color: 252; 175; 62
-      Enabled: false
+      Color: 238; 238; 236
+      Enabled: true
       Hide: false
       Name: Active Robot
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/active_robot
-      Value: false
+      Value: true
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -421,7 +421,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.342246651649475
+      Distance: 1.303868293762207
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -429,17 +429,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.673271119594574
-        Y: -0.03511923551559448
-        Z: 1.3660701513290405
+        X: 0.6087546944618225
+        Y: -0.0755094364285469
+        Z: 1.4376254081726074
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.27480000257492065
+      Pitch: 0.374799907207489
       Target Frame: <Fixed Frame>
-      Yaw: 1.7063313722610474
+      Yaw: 1.751330852508545
     Saved: ~
 Window Geometry:
   Displays:

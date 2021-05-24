@@ -8,7 +8,6 @@ from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
 
 override_params = {
-    "use_flow_during_inference": True
 }
 
 
