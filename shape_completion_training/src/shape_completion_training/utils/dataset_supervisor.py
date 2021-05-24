@@ -38,6 +38,17 @@ class MetaDataset(abc.ABC):
         return len(self.md)
 
     def load(self):
+        if "load_bb_only" in self.params and self.params['load_bb_only']:
+            return self.load_bounding_box_only()
+        return self.load_all()
+
+    def load_bounding_box_only(self):
+        for elem in self.md:
+            x, y, z = (self.params[f'translation_pixel_range_{axis}'] for axis in ['x', 'y', 'z'])
+            elem['bounding_box'] = data_tools.shift_bounding_box_only(elem['bounding_box'], x, y, z).numpy()
+        return stack_dict(sequence_of_dicts_to_dict_of_sequences(self.md))
+
+    def load_all(self):
         if len(self.md) > self.load_limit:
             raise OverflowError(f"Asked to load {len(self.md)} shapes. Too large. You probably didnt mean that")
         for elem in self.md:

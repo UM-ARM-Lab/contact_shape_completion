@@ -33,6 +33,7 @@ def create_shapenet_only_datasets():
         # ds.save()
         print(f"Saved Dataset {name}")
 
+
 def load_ds():
     data_supervisor = dataset_supervisor.ShapenetDatasetSupervisor('shapenet_mugs')
     training = data_supervisor.get_training(default_params.get_visualization_params())
@@ -46,7 +47,7 @@ def load_full_ds_in_batches():
     data_supervisor = dataset_supervisor.ShapenetDatasetSupervisor('shapenet_mugs')
     training = data_supervisor.get_training(params)
     batch_size = params['batch_size']
-    num_batches = math.ceil(training.size()/batch_size)
+    num_batches = math.ceil(training.size() / batch_size)
 
     widgets = [
         '  ', progressbar.Counter(), '/', str(num_batches),
@@ -66,7 +67,6 @@ def load_full_ds_in_batches():
             # self.ckpt.step.assign_add(1)
             data = batch.load()
 
-
             # _, ret = self.model.train_step(data)
             time_str = str(datetime.timedelta(seconds=int(time.time() - t0)))
             bar.update(batch_num, Loss=0,
@@ -76,16 +76,25 @@ def load_full_ds_in_batches():
             # self.ckpt.train_time.assign_add(time.time() - t0)
             # t0 = time.time()
 
+
 def multiple_loading_of_batches(num_loadings=100):
     for i in range(num_loadings):
         load_full_ds_in_batches()
-        print(f"Loaded dataset {i+1} times")
+        print(f"Loaded dataset {i + 1} times")
+
+
+def check_load_bounding_box_only():
+    data_supervisor = dataset_supervisor.get_dataset_supervisor('ycb_all')
+    dataset = data_supervisor.get_training(params=default_params.get_visualization_params())
+    for batch in progressbar.progressbar(dataset.batch(10)):
+        elem = batch.load_bounding_box_only()
 
 
 def main():
     # create_shapenet_only_datasets()
     # load_ds()
-    multiple_loading_of_batches()
+    # multiple_loading_of_batches()
+    check_load_bounding_box_only()
 
 
 if __name__ == "__main__":

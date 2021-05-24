@@ -23,14 +23,16 @@ import time
 
 
 class ModelRunner:
-    def __init__(self, training, group_name=None, trial_path=None, params=None, write_summary=True):
+    def __init__(self, training, group_name=None, trial_path=None, params=None, write_summary=True,
+                 exists_required=False):
         """
         @type training: bool
         @param training: 
         @param group_name: 
         @param trial_path: 
         @param params: 
-        @param write_summary: 
+        @param write_summary:
+        @param exists_required: If True, will fail if checkpoint does not already exist
         """
         self.side_length = 64
         self.num_voxels = self.side_length ** 3
@@ -40,6 +42,7 @@ class ModelRunner:
                                                                            params=params,
                                                                            trial_path=trial_path,
                                                                            write_summary=write_summary)
+        self.exists_required=exists_required
         self.group_name = self.trial_path.parts[-2]
 
         self.batch_size = 1 if not self.training else params['batch_size']
@@ -68,7 +71,7 @@ class ModelRunner:
         elif self.params['network'] == "PSSNet" or \
                 self.params['network'] == "NormalizingAE":  # NormalizingAE was legacy name
             self.model = PSSNet(self.params, batch_size=self.batch_size)
-            self.model.flow = ModelRunner(training=False, trial_path=self.params['flow']).model.flow
+            self.model.flow = ModelRunner(training=False, trial_path=self.params['flow'], exists_required=True).model.flow
         elif self.params['network'] == "3D_rec_gan":
             self.model = ThreeD_rec_gan(self.params, batch_size=self.batch_size)
         else:
@@ -103,6 +106,8 @@ class ModelRunner:
         if self.best_checkpoint_manager.latest_checkpoint:
             print(f"{Fore.CYAN}Restoring best checkpoint {self.best_checkpoint_manager.latest_checkpoint}{Fore.RESET}")
             status.assert_existing_objects_matched()
+        elif self.exists_required:
+            raise RuntimeError(f"Could not load required checkpoint for {self.trial_path}")
 
     def count_params(self):
         self.model.summary()

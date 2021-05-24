@@ -29,8 +29,9 @@ class Flow(mykerasmodel.MyKerasModel):
         super(Flow, self).__init__(*args, **kwargs)
         flow = None
 
-    def call(self, *inputs):
-        return self.flow.bijector.forward(*inputs)
+    def call(self, elem):
+        # return self.flow.bijector.forward(elem['bounding_box'])
+        return self.build_model()
 
     def predict(self, elem):
         return self.build_model()

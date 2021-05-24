@@ -41,6 +41,14 @@ def get_default_params(group_name=None):
                 'network': 'PSSNet',
                 'use_flow_during_inference': False
             },
+        "PSSNet_shapenet_all":
+            {
+                'num_latent_layers': 200,
+                'flow': 'Flow_shapenet_all/??',
+                'network': 'PSSNet',
+                'use_flow_during_inference': False,
+                'dataset': 'shapenet_all',
+            },
         "NormalizingAE":
             {
                 'num_latent_layers': 200,
@@ -71,6 +79,18 @@ def get_default_params(group_name=None):
                 'translation_pixel_range_y': 10,
                 'translation_pixel_range_z': 10,
             },
+        "Flow_shapenet_all":
+            {
+                'batch_size': 1500,
+                'network': 'RealNVP',
+                'dim': 24,
+                'num_masked': 12,
+                'learning_rate': 1e-5,
+                'translation_pixel_range_x': 10,
+                'translation_pixel_range_y': 10,
+                'translation_pixel_range_z': 10,
+                'dataset': 'shapenet_all'
+            },
         "FlowYCB":
             {
                 'batch_size': 1500,
@@ -95,7 +115,7 @@ def get_default_params(group_name=None):
         "PSSNet_YCB":
             {
                 'num_latent_layers': 200,
-                'flow': 'FlowYCB/July_23_16-35-55_7d12d68bee',
+                'flow': 'FlowYCB/May_24_13-31-45_85d3ccb8ca',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
                 'dataset': 'ycb_all',

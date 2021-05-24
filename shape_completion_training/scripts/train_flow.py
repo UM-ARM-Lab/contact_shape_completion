@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import shape_completion_training.utils.old_dataset_tools
 import shape_completion_training.utils.dataset_supervisor
-from shape_completion_training.utils import data_tools
+from shape_completion_training.utils import data_tools, dataset_supervisor
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.model import default_params
 import argparse
@@ -23,23 +23,13 @@ if __name__ == "__main__":
     parser.add_argument('--group', default=None)
     args = parser.parse_args()
     params = default_params.get_default_params(group_name=args.group)
+    params['load_bb_only'] = True
 
-    data, _ = shape_completion_training.utils.old_dataset_tools.load_dataset(params['dataset'])
-
-
-    def _shift(elem):
-        return shape_completion_training.utils.old_dataset_tools.shift_bounding_box_only(elem, params['translation_pixel_range_x'],
-                                                                                         params['translation_pixel_range_y'],
-                                                                                         params['translation_pixel_range_z'])
-
-    data = data.map(_shift)
-
+    data_supervisor = dataset_supervisor.get_dataset_supervisor(params['dataset'])
 
     if args.tmp:
         mr = ModelRunner(training=True, params=params, group_name=None)
     else:
         mr = ModelRunner(training=True, params=params, group_name=args.group)
-    # mr = ModelRunner(training=True, params=params, group_name="Flow")
-    # IPython.embed()
 
-    mr.train_and_test(data)
+    mr.train_and_test(data_supervisor)

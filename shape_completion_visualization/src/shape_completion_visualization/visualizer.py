@@ -94,4 +94,4 @@ class Visualizer:
         self.vg_pub.publish_inference(inference)
 
     def load_model(self, trial):
-        self.model_runner = ModelRunner(training=False, trial_path=trial)
+        self.model_runner = ModelRunner(training=False, trial_path=trial, exists_required=True)
