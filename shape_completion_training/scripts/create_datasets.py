@@ -14,7 +14,8 @@ shapenet_categories_for = {
     "shapenet_mugs": ['mug'],
     "shapenet_airplanes": ['airplane'],
     "shapenet_tables": ['table'],
-    "shapenet_bag": ['bag']}
+    "shapenet_bag": ['bag'],
+    "shapenet_all": list(dataset_supervisor.get_shapenet_map().keys())}
 
 ycb_categories_for = {
     "ycb_all": [
