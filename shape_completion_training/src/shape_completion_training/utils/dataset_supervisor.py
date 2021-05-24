@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import hjson
+import progressbar
 from colorama import Fore
 
 from shape_completion_training.model import filepath_tools
@@ -211,12 +212,13 @@ def get_unique_name(datum, has_batch_dim=False):
 
 
 def get_all_shapenet_files(shape_ids):
-    shapenet_records = []
     if shape_ids == "all":
         shape_ids = [f.name for f in get_shapenet_path().iterdir() if f.is_dir()]
         # shape_ids = [f for f in os.listdir(shapenet_load_path)
         #              if os.path.isdir(join(shapenet_load_path, f))]
         shape_ids.sort()
+
+    files = []
 
     # TODO: Add progressbar
     for category in shape_ids:
@@ -229,7 +231,10 @@ def get_all_shapenet_files(shape_ids):
             for f in sorted(all_augmentations):
                 # shapenet_records.append(load_gt_voxels(f))
                 base = f.parent / f.stem
-                shapenet_records.append(load_metadata(base, compression="gzip"))
+                files.append(base)
+    shapenet_records = []
+    for file in progressbar.progressbar(files):
+        shapenet_records.append(load_metadata(file, compression="gzip"))
     return shapenet_records
 
 
