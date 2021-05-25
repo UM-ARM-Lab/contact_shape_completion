@@ -21,6 +21,9 @@ from rviz_voxelgrid_visuals import conversions as visual_conversions
 
 tf.get_logger().setLevel('ERROR')
 
+GRADIENT_UPDATE_ITERATION_LIMIT=100
+
+
 class ParticleBelief:
     def __init__(self):
         self.latent_prior_mean = None
@@ -45,6 +48,7 @@ class ParticleBelief:
         logvar = self.latent_prior_logvar
         sam
 
+
 class Particle:
     def __init__(self):
         self.sampled_latent = None
@@ -52,7 +56,6 @@ class Particle:
         self.goal = None
         self.completion = None
         self.associated_chs_inds = []
-
 
 
 class ContactShapeCompleter:
@@ -181,7 +184,7 @@ class ContactShapeCompleter:
         #     self.sampled_latent_particles.append(latent)
         #     resp.sampled_completions.append(pts)
         #     resp.goal_tsrs.append(goal_tsr)
-            # resp.goal_configs.append(JointConfig(joint_values=goal_config))
+        # resp.goal_configs.append(JointConfig(joint_values=goal_config))
         self.update_belief(known_free, chss, req.num_samples)
         resp = CompleteShapeResponse()
         for p in self.belief.particles:
@@ -225,6 +228,9 @@ class ContactShapeCompleter:
                 continue
             particle.goal = goal_tsr
             particle.completion = pts
+
+        for i, p in enumerate(self.belief.particles):
+            self.goal_generator.publish_goal(p.goal, marker_id=i)
 
     def transform_from_gpuvoxels(self, pt_msg: PointCloud2):
         transformed_cloud = self.robot_view.transform_pts_to_target(pt_msg)
@@ -271,43 +277,10 @@ class ContactShapeCompleter:
 
     def do_some_completions_debug(self):
 
-        # mr2 = ModelRunner(trial_path=self.model_runner.trial_path, training=False)
-        # pssnet = mr2.model
-        # ModelRunner(trial_path=self.model_runner.trial_path, training=False)
-        # pssnet = self.model_runner.model  # type PSSNet
-        # mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
-
-        # pssnet.hparams['use_flow_during_inference']
-        # output = pssnet.decode(mean, apply_sigmoid=True)
-        # print(tf.reduce_sum(mean).numpy())
-        # print(tf.reduce_mean(output).numpy())
-        # latent = pssnet.sample_latent(add_batch_to_dict(self.last_visible_vg))
-        # output = pssnet.decode(latent)
-        # flow = pssnet.apply_flow_to_latent_box(mean)
-        # print(tf.reduce_sum(flow).numpy())
-        #
-        # flow_in = np.array([np.float32(i) for i in range(1, 25)])
-        # flow_in = np.expand_dims(flow_in, axis=0) / 100
-        #
-        # flow = pssnet.flow  # Type RealNVP
-        # # flow.
-        #
-        # flow_tmp = flow_in
-
-        # print(f"input: {tf.reduce_sum(flow_tmp).numpy()}")
-        # for bijector in reversed(flow.bijector.bijectors):
-        #     flow_tmp = bijector(flow_tmp)
-        #     print(f"{bijector.name:<20} {tf.reduce_sum(flow_tmp).numpy()}")
-
-        # flow_out = pssnet.flow.bijector.forward(flow_in, training=False)
-        # print(f'Calling bijector forward: {tf.reduce_sum(flow_out).numpy()}')
-
-        # self.robot_view.VG_PUB.publish('predicted_occ', output)
-
-        for _ in range(30):
-            latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
-            predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
-            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+        known_free = np.zeros((64,64,64,1), dtype=np.float32)
+        self.update_belief(known_free, None, 10)
+        rospy.sleep(5)
+        self.update_belief(known_free, None, 10)
 
     def infer_completion(self):
         if self.model_runner is None:
@@ -321,28 +294,6 @@ class ContactShapeCompleter:
 
         return inference
 
-    def wip_enforce_contact(self, latent):
-        pssnet = self.model_runner.model
-        self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-        known_contact = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-        # known_free = tf.Variable(tf.zeros((1, 64, 64, 64, 1)))
-        # known_contact = known_contact[0, 50, 32, 32, 0].assign(1)
-        # VG_PUB.publish('aux', known_contact)
-        known_contact = self.last_visible_vg['known_occ']
-        known_free = self.swept_freespace
-
-        rospy.sleep(2)
-
-        for i in range(100):
-            pssnet.grad_step_towards_output(latent, known_contact, known_free)
-            pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-            self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
-
-            if np.max(pred_occ * known_free) <= 0.5:
-                break
-
-        return latent
-
     def enforce_contact(self, latent, known_free, chss):
         pssnet = self.model_runner.model
         prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
@@ -353,7 +304,7 @@ class ContactShapeCompleter:
         self.robot_view.VG_PUB.publish('known_free', known_free)
 
         prev_loss = 0.0
-        for i in range(500):
+        for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
             loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
             print('\rloss: {}'.format(loss), end='')
             pred_occ = pssnet.decode(latent, apply_sigmoid=True)
@@ -369,8 +320,8 @@ class ContactShapeCompleter:
                 print("\tLoss is nan. There is a problem I am not addressing")
                 break
 
-            if np.max(pred_occ * known_free) <= 0.2 and tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= 0.5:
-                print("\tAll known free have less that 0.2 prob occupancy, and chss have value > 0.5")
+            if np.max(pred_occ * known_free) <= 0.4 and tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= 0.5:
+                print("\tAll known free have less that 0.4 prob occupancy, and chss have value > 0.5")
                 break
         else:
             print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')

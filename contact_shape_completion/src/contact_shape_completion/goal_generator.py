@@ -20,6 +20,10 @@ class GoalGenerator(abc.ABC):
     def generate_goal(self, state):
         pass
 
+    @abc.abstractmethod
+    def publish_goal(self, tsr: TSR, marker_id=0):
+        pass
+
 
 class CheezeitGoalGenerator(GoalGenerator):
     def __init__(self, x_bound=(-0.004, 0.004),
@@ -102,23 +106,27 @@ class CheezeitGoalGenerator(GoalGenerator):
                   y_lower=pt[1] + y_bound[0], y_upper=pt[1] + y_bound[1],
                   z_lower=pt[2] + z_bound[0], z_upper=pt[2] + z_bound[1]
                   )
-        tsr.header.frame_id = "notsureyet"
+        tsr.header.frame_id = pts.header.frame_id
 
+        self.publish_goal(tsr)
+
+        return tsr
+
+    def publish_goal(self, tsr: TSR, marker_id=0):
         m = Marker(color=ColorRGBA(a=0.3, r=0.0, g=1.0, b=0.0),
-                   header=Header(stamp=rospy.Time().now(), frame_id=pts.header.frame_id),
-                   type=Marker.CUBE)
-        m.ns = "tsr"
+                   header=Header(stamp=rospy.Time().now(), frame_id=tsr.header.frame_id),
+                   type=Marker.CUBE,
+                   ns="tsr",
+                   id=marker_id)
         m.pose.orientation.w = 1.0
-        m.pose.position.x = pt[0]
-        m.pose.position.y = pt[1]
-        m.pose.position.z = pt[2]
+        m.pose.position.x = (tsr.x_lower + tsr.x_upper)/2
+        m.pose.position.y = (tsr.y_lower + tsr.y_upper)/2
+        m.pose.position.z = (tsr.z_lower + tsr.z_upper)/2
         m.scale.x = tsr.x_upper - tsr.x_lower
         m.scale.y = tsr.y_upper - tsr.y_lower
         m.scale.z = tsr.z_upper - tsr.z_lower
 
         self.goal_pt_pub.publish(m)
-
-        return tsr
 
     def clear_goal_markers(self):
         m = Marker(action=Marker.DELETEALL)

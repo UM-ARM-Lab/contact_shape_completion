@@ -71,10 +71,10 @@ class DepthCameraListener:
         while self.point_cloud_creator.img_msgs_to_process is None:
             print("Waiting for kinect image")
             rospy.sleep(0.5)
-        while self.point_cloud_creator.filter_pointcloud() is None:
+        while (pt_msg := self.point_cloud_creator.filter_pointcloud()) is None:
             rospy.sleep(0.5)
 
-        pt_msg = self.point_cloud_creator.filter_pointcloud()
+         #pt_msg = self.point_cloud_creator.filter_pointcloud()
 
         cloud_out = self.transform_pts_to_target(pt_msg)
 
