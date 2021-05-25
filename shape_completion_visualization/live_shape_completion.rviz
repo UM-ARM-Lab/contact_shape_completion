@@ -8,6 +8,8 @@ Panels:
         - /Status1
         - /Kinect Victor Head2/Auto Size1
         - /Kinect Victor Head2/Occlusion Compensation1
+        - /GVP_True1
+        - /Goal1/Namespaces1
       Splitter Ratio: 0.5549019575119019
     Tree Height: 550
   - Class: rviz/Selection
@@ -333,13 +335,13 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 136; 138; 133
-      Enabled: false
+      Enabled: true
       Hide: false
       Name: GVP_True
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/true_obstacles
-      Value: false
+      Value: true
     - Alpha Multiple: 0.15000000596046448
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -355,13 +357,13 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 0; 0; 0
-      Enabled: false
+      Enabled: true
       Hide: false
       Name: GVP_Known
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/known_obstacles
-      Value: false
+      Value: true
     - Alpha Multiple: 1
       Binary Display: false
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -393,6 +395,34 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /voxelgrid/swept_edge
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 0; 0; 0
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: Debug pointcloud
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.009999999776482582
+      Style: Flat Squares
+      Topic: /pointcloud
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -421,7 +451,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.303868293762207
+      Distance: 3.9246280193328857
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -429,17 +459,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.6087546944618225
-        Y: -0.0755094364285469
-        Z: 1.4376254081726074
+        X: 0.45534366369247437
+        Y: -0.3106369972229004
+        Z: 1.3176202774047852
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.374799907207489
+      Pitch: 0.20479987561702728
       Target Frame: <Fixed Frame>
-      Yaw: 1.751330852508545
+      Yaw: 2.7113444805145264
     Saved: ~
 Window Geometry:
   Displays:

@@ -1,23 +1,23 @@
+from pathlib import Path
+
+import numpy as np
 import rospkg
+import rospy
+import tensorflow as tf
+from colorama import Fore
+from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
+    RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
+    ResetShapeCompleter
+from sensor_msgs.msg import PointCloud2
 
 import ros_numpy
 from contact_shape_completion import contact_tools
 from contact_shape_completion.kinect_listener import DepthCameraListener
-from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
-    RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
-    ResetShapeCompleter
-from shape_completion_training.voxelgrid import conversions
-import rospy
-from sensor_msgs.msg import PointCloud2
+from contact_shape_completion.simulation_ground_truth_scenes import scene1_gt
+from rviz_voxelgrid_visuals import conversions as visual_conversions
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf, sample_gaussian
-import tensorflow as tf
-import numpy as np
-from pathlib import Path
-from colorama import Fore
-from contact_shape_completion.goal_generator import GoalGenerator
-
-from rviz_voxelgrid_visuals import conversions as visual_conversions
+from shape_completion_training.voxelgrid import conversions
 
 tf.get_logger().setLevel('ERROR')
 
@@ -47,7 +47,7 @@ class ParticleBelief:
         mean = self.latent_prior_mean
         logvar = self.latent_prior_logvar
 
-        
+
 
 class Particle:
     def __init__(self):
@@ -137,7 +137,8 @@ class ContactShapeCompleter:
         return RequestShapeResponse(points=self.known_obstacles)
 
     def request_true_world_srv(self, req: RequestShapeRequest):
-        pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
+        # pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
+        pt = scene1_gt()
         return RequestShapeResponse(points=pt)
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
