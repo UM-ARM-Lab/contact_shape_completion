@@ -44,7 +44,7 @@ def get_default_params(group_name=None):
         "PSSNet_shapenet_all":
             {
                 'num_latent_layers': 200,
-                'flow': 'Flow_shapenet_all/??',
+                'flow': 'Flow_shapenet_all/May_24_15-14-58_28829eda5b',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
                 'dataset': 'shapenet_all',
