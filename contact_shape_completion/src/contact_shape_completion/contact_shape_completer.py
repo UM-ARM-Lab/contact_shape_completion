@@ -46,8 +46,8 @@ class ParticleBelief:
         """
         mean = self.latent_prior_mean
         logvar = self.latent_prior_logvar
-        sam
 
+        
 
 class Particle:
     def __init__(self):
@@ -149,42 +149,12 @@ class ContactShapeCompleter:
         if req.num_samples <= 0:
             raise ValueError(f"{req.num_samples} samples requested. Probably a mistake")
 
-        # self.do_some_completions_debug()
         known_free = self.transform_from_gpuvoxels(req.known_free)
         if len(req.chss) == 0:
             chss = None
         else:
             chss = tf.concat([tf.expand_dims(self.transform_from_gpuvoxels(chs), axis=0) for chs in req.chss], axis=0)
 
-        # resp = CompleteShapeResponse()
-
-        # prev_latents = self.sampled_latent_particles
-
-        # self.sampled_latent_particles = []
-
-        # # TODO: Handle case where a scenario has no valid goal
-        # while len(resp.sampled_completions) < req.num_samples:
-        #     if len(prev_latents) > 0:
-        #         latent = prev_latents.pop()
-        #     else:
-        #         latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
-        #
-        #     self.goal_generator.clear_goal_markers()
-        #     latent = self.enforce_contact(latent, known_free, chss)
-        #     predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
-        #     pts = self.transform_to_gpuvoxels(predicted_occ)
-        #
-        #     self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
-        #
-        #     try:
-        #         goal_tsr = self.goal_generator.generate_goal_tsr(pts)
-        #     except RuntimeError as e:
-        #         print(e)
-        #         continue
-        #     self.sampled_latent_particles.append(latent)
-        #     resp.sampled_completions.append(pts)
-        #     resp.goal_tsrs.append(goal_tsr)
-        # resp.goal_configs.append(JointConfig(joint_values=goal_config))
         self.update_belief(known_free, chss, req.num_samples)
         resp = CompleteShapeResponse()
         for p in self.belief.particles:
@@ -281,18 +251,6 @@ class ContactShapeCompleter:
         self.update_belief(known_free, None, 10)
         rospy.sleep(5)
         self.update_belief(known_free, None, 10)
-
-    def infer_completion(self):
-        if self.model_runner is None:
-            raise AttributeError("Model must be loaded before inferring completion")
-
-        inference = self.model_runner.model(add_batch_to_dict(self.last_visible_vg))
-
-        latent = tf.Variable(self.model_runner.model.sample_latent(add_batch_to_dict(self.last_visible_vg)))
-        predicted_occ = self.model_runner.model.decode(latent, apply_sigmoid=True)
-        self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
-
-        return inference
 
     def enforce_contact(self, latent, known_free, chss):
         pssnet = self.model_runner.model
