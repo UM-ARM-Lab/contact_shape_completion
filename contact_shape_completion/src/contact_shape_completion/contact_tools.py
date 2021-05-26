@@ -20,6 +20,19 @@ def get_assumed_occ(pred_occ, chss):
     return tf.reduce_max(tf.cast(maxs == a, tf.float32), axis=0, keepdims=True)
 
 
+def get_most_wrong_free(pred_occ, known_free):
+    """
+    Returns a voxelgrid with only the most wrong known_free voxel
+    Args:
+        pred_occ:
+        known_free:
+
+    Returns:
+
+    """
+    return get_assumed_occ(pred_occ, known_free)
+
+
 def denoise_pointcloud(pts, scale, origin, shape, threshold):
     vg = conversions.pointcloud_to_sparse_voxelgrid(ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts),
                                                     scale=scale, origin=origin, shape=shape)

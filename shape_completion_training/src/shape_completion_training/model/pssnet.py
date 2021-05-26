@@ -33,8 +33,8 @@ class PSSNet(MyKerasModel):
         self.encoder = make_encoder(inp_shape=[64, 64, 64, 2], params=hparams)
         self.generator = make_generator(params=hparams)
         self.box_latent_size = 24
-        # self.contact_optimizer = tf.optimizers.SGD(learning_rate=0.01)
-        self.contact_optimizer = tf.optimizers.Adam(learning_rate=0.001)
+        # self.contact_optimizer = tf.optimizers.SGD(learning_rate=0.1)
+        self.contact_optimizer = tf.optimizers.Adam(learning_rate=0.1)
 
     def call(self, dataset_element, training=False, **kwargs):
         known = stack_known(dataset_element)
@@ -142,7 +142,7 @@ class PSSNet(MyKerasModel):
             # predicted_occ = self.decode(latent)
             predicted_occ = self.decode(latent, apply_sigmoid=True)
             #TODO: Remove hardcoded numbers and choose grad step size better
-            loss = -10*tf.reduce_sum(known_occ * predicted_occ) + tf.reduce_sum(known_free * predicted_occ) / 5
+            loss = -1*tf.reduce_sum(known_occ * predicted_occ) + 1*tf.reduce_sum(known_free * predicted_occ)
 
         variables = [latent]
         gradients = tape.gradient(loss, variables)

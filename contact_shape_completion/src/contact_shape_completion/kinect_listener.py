@@ -67,7 +67,7 @@ class DepthCameraListener:
         cloud_out = do_transform_cloud(pt_msg, trans)
         return cloud_out
 
-    def get_visible_element(self):
+    def get_visible_element(self, save_file=None):
         while self.point_cloud_creator.img_msgs_to_process is None:
             print("Waiting for kinect image")
             rospy.sleep(0.5)
@@ -75,6 +75,13 @@ class DepthCameraListener:
             rospy.sleep(0.5)
 
          #pt_msg = self.point_cloud_creator.filter_pointcloud()
+        if save_file is not None:
+            with save_file.open('wb') as f:
+                pt_msg.serialize(f)
+
+        return self.voxelize_visible_element(pt_msg)
+
+    def voxelize_visible_element(self, pt_msg):
 
         cloud_out = self.transform_pts_to_target(pt_msg)
 

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from deprecated import deprecated
 import numpy as np
 import rospkg
 import rospy
@@ -21,7 +22,9 @@ from shape_completion_training.voxelgrid import conversions
 
 tf.get_logger().setLevel('ERROR')
 
-GRADIENT_UPDATE_ITERATION_LIMIT=100
+GRADIENT_UPDATE_ITERATION_LIMIT = 100
+KNOWN_FREE_LIMIT = 0.4
+KNOWN_OCC_LIMIT = 0.5
 
 
 class ParticleBelief:
@@ -46,7 +49,6 @@ class ParticleBelief:
         """
         mean = self.latent_prior_mean
         logvar = self.latent_prior_logvar
-
 
 
 class Particle:
@@ -100,23 +102,33 @@ class ContactShapeCompleter:
         self.model_runner = ModelRunner(training=False, trial_path=trial)
 
     def get_visible_vg(self):
-        self.last_visible_vg = self.robot_view.get_visible_element()
+        save_path = self.get_wip_save_path() / "latest_segmented_pts.msg"
+        self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
+        # self.save_last_visible_vg()
         return self.last_visible_vg
+
+    def load_visible_vg(self, filename='latest_segmented_pts.msg'):
+        pt_msg = PointCloud2()
+        with (self.get_wip_save_path() / filename).open('rb') as f:
+            pt_msg.deserialize(f.read())
+        self.last_visible_vg = self.robot_view.get_visible_element()
 
     @staticmethod
     def get_wip_save_path():
-        path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "tests/files"
+        path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "debugging/files"
         path.mkdir(exist_ok=True)
-        return path / "visible_vg.npz"
+        return path
 
+    @deprecated
     def save_last_visible_vg(self):
-        path = self.get_wip_save_path()
+        path = self.get_wip_save_path() / "wip_visible_vg.npz"
 
         with path.open('wb') as f:
             np.savez_compressed(f, **self.last_visible_vg)
 
-    def load_last_visible_vg(self):
-        path = self.get_wip_save_path()
+    @deprecated
+    def load_last_visible_vg(self, filename="wip_visible_vg.npz"):
+        path = self.get_wip_save_path() / filename
         self.last_visible_vg = np.load(path.as_posix())
 
     def request_shape_srv(self, req: RequestShapeRequest):
@@ -142,6 +154,9 @@ class ContactShapeCompleter:
         return RequestShapeResponse(points=pt)
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
+        with (self.get_wip_save_path() / "wip_req").open('wb') as f:
+            req.serialize(f)
+
         print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
 
         if self.model_runner is None:
@@ -155,6 +170,8 @@ class ContactShapeCompleter:
             chss = None
         else:
             chss = tf.concat([tf.expand_dims(self.transform_from_gpuvoxels(chs), axis=0) for chs in req.chss], axis=0)
+            if tf.reduce_max(known_free * chss) > 0:
+                raise RuntimeError("Known free overlaps with CHSs")
 
         self.update_belief(known_free, chss, req.num_samples)
         resp = CompleteShapeResponse()
@@ -162,6 +179,19 @@ class ContactShapeCompleter:
             resp.sampled_completions.append(p.completion)
             resp.goal_tsrs.append(p.goal)
         return resp
+
+    def initialize_belief(self, num_particles):
+        pssnet = self.model_runner.model
+        mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
+        self.belief.latent_prior_mean = mean
+        self.belief.latent_prior_logvar = logvar
+
+        for _ in range(num_particles):
+            p = Particle()
+            latent = pssnet.sample_latent_from_mean_and_logvar(mean, logvar)
+            p.latent = tf.Variable(latent)
+            p.sampled_latent = latent
+            self.belief.particles.append(p)
 
     def update_belief(self, known_free, chss, num_particles):
         self.reload_flow()
@@ -171,19 +201,14 @@ class ContactShapeCompleter:
             raise RuntimeError("Unexpected situation - we have more particles than requested")
 
         if self.belief.latent_prior_mean is None:
-            mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
-            self.belief.latent_prior_mean = mean
-            self.belief.latent_prior_logvar = logvar
-
-            for _ in range(num_particles):
-                p = Particle()
-                latent = pssnet.sample_latent_from_mean_and_logvar(mean, logvar)
-                p.latent = tf.Variable(latent)
-                p.sampled_latent = latent
-                self.belief.particles.append(p)
+            self.initialize_belief(num_particles)
 
         if len(self.belief.particles) != num_particles:
             raise RuntimeError("Unexpected situation - number of particles does not match request")
+
+        # TODO: This is a debugging script only
+        # if chss is not None:
+        #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
         for particle in self.belief.particles:
@@ -202,6 +227,11 @@ class ContactShapeCompleter:
 
         for i, p in enumerate(self.belief.particles):
             self.goal_generator.publish_goal(p.goal, marker_id=i)
+
+    def debug_repeated_sampling(self, bel: ParticleBelief, known_free, chss):
+        pssnet = self.model_runner.model
+        latent = tf.Variable(pssnet.sample_latent_from_mean_and_logvar(bel.latent_prior_mean, bel.latent_prior_logvar))
+        latent = self.enforce_contact(latent, known_free, chss)
 
     def transform_from_gpuvoxels(self, pt_msg: PointCloud2):
         transformed_cloud = self.robot_view.transform_pts_to_target(pt_msg)
@@ -248,28 +278,35 @@ class ContactShapeCompleter:
 
     def do_some_completions_debug(self):
 
-        known_free = np.zeros((64,64,64,1), dtype=np.float32)
+        known_free = np.zeros((64, 64, 64, 1), dtype=np.float32)
         self.update_belief(known_free, None, 10)
         rospy.sleep(5)
         self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss):
+        self.robot_view.VG_PUB.publish("aux", 0*known_free)
         pssnet = self.model_runner.model
         prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
         p = log_normal_pdf(latent, prior_mean, prior_logvar)
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
+        any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
         self.robot_view.VG_PUB.publish('known_free', known_free)
+        if chss is not None:
+            self.robot_view.VG_PUB.publish('chs', chss)
 
         prev_loss = 0.0
         for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
-            loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
+            single_free = contact_tools.get_most_wrong_free(pred_occ, known_free)
+
+            # loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
+            loss = pssnet.grad_step_towards_output(latent, known_contact, single_free)
             print('\rloss: {}'.format(loss), end='')
             pred_occ = pssnet.decode(latent, apply_sigmoid=True)
             known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
             self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
-            self.robot_view.VG_PUB.publish('chs', known_contact)
+            self.robot_view.VG_PUB.publish('known_contact', known_contact)
 
             if loss == prev_loss:
                 print("\tNo progress made. Accepting shape as is")
@@ -279,10 +316,20 @@ class ContactShapeCompleter:
                 print("\tLoss is nan. There is a problem I am not addressing")
                 break
 
-            if np.max(pred_occ * known_free) <= 0.4 and tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= 0.5:
-                print("\tAll known free have less that 0.4 prob occupancy, and chss have value > 0.5")
+            if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
+                    tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
+                print(
+                    f"\tAll known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
+                    f"and chss have value > {KNOWN_OCC_LIMIT}")
                 break
         else:
+            print()
+            if np.max(pred_occ * known_free) > KNOWN_FREE_LIMIT:
+                print("Optimization did not satisfy known freespace: ")
+                self.robot_view.VG_PUB.publish("aux", pred_occ * known_free)
+            if tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) < KNOWN_OCC_LIMIT:
+                print("Optimization did not satisfy assumed occ: ")
+                self.robot_view.VG_PUB.publish("aux", (1 - pred_occ)*known_contact)
             print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
 
         print(f"Latent now has logprob {log_normal_pdf(latent, prior_mean, prior_logvar)}")
