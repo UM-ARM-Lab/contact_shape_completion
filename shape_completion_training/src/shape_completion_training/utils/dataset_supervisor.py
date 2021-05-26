@@ -5,7 +5,6 @@ from pathlib import Path
 
 import hjson
 import progressbar
-from colorama import Fore
 
 from shape_completion_training.model import filepath_tools
 from shape_completion_training.utils import data_tools
@@ -199,16 +198,6 @@ class YcbDatasetSupervisor(DatasetSupervisor):
             self.ind_for_train_id[get_unique_name(elem)] = i
         for i, elem in enumerate(self.test_md):
             self.ind_for_test_id[get_unique_name(elem)] = i
-
-
-def get_dataset_supervisor(dataset: str):
-    if dataset.startswith("shapenet"):
-        print(f"{Fore.GREEN}Loading Shapenet Dataset {dataset}{Fore.RESET}")
-        return ShapenetDatasetSupervisor(dataset)
-    elif dataset.startswith("ycb"):
-        print(f"{Fore.GREEN}Loading YCB Dataset {dataset}{Fore.RESET}")
-        return YcbDatasetSupervisor(dataset)
-    raise RuntimeError(f"Error: Unknown dataset {dataset}")
 
 
 def get_unique_name(datum, has_batch_dim=False):

@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import shape_completion_training.utils.dataset_loader
 import shape_completion_training.utils.old_dataset_tools
 import shape_completion_training.utils.dataset_supervisor
 from shape_completion_training.utils import data_tools, dataset_supervisor
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     params = default_params.get_default_params(group_name=args.group)
     params['load_bb_only'] = True
 
-    data_supervisor = dataset_supervisor.get_dataset_supervisor(params['dataset'])
+    data_supervisor = shape_completion_training.utils.dataset_loader.get_dataset_supervisor(params['dataset'])
 
     if args.tmp:
         mr = ModelRunner(training=True, params=params, group_name=None)

@@ -6,7 +6,7 @@ from std_msgs.msg import String
 
 from shape_completion_training.model.model_runner import ModelRunner
 # from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor
-from shape_completion_training.utils.dataset_supervisor import get_dataset_supervisor
+from shape_completion_training.utils.dataset_loader import get_dataset_supervisor
 # from shape_completion_visualization.shape_selection import send_display_names
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 

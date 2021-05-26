@@ -11,7 +11,7 @@ import tensorflow as tf
 import progressbar
 
 from shape_completion_training.model import default_params
-from shape_completion_training.utils import dataset_supervisor
+from shape_completion_training.utils import dataset_supervisor, dataset_loader
 from shape_completion_training.utils.dataset_supervisor import ShapenetDatasetSupervisor
 
 shapenet_categories_for = {
@@ -84,17 +84,24 @@ def multiple_loading_of_batches(num_loadings=100):
 
 
 def check_load_bounding_box_only():
-    data_supervisor = dataset_supervisor.get_dataset_supervisor('ycb_all')
+    data_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
     dataset = data_supervisor.get_training(params=default_params.get_visualization_params())
     for batch in progressbar.progressbar(dataset.batch(10)):
         elem = batch.load_bounding_box_only()
+
+
+def check_aab_dataset():
+    data_supervisor = dataset_loader.get_dataset_supervisor('aab')
+    elem = data_supervisor.train_md[0]
+
 
 
 def main():
     # create_shapenet_only_datasets()
     # load_ds()
     # multiple_loading_of_batches()
-    check_load_bounding_box_only()
+    # check_load_bounding_box_only()
+    check_aab_dataset()
 
 
 if __name__ == "__main__":
