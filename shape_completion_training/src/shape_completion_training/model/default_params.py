@@ -144,7 +144,7 @@ def get_default_params(group_name=None):
                 'flow': 'Flow_aab/May_26_20-05-11_eed18af77d',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
-                'dataset': 'ycb_all',
+                'dataset': 'aab',
                 'translation_pixel_range_x': 15,
                 'translation_pixel_range_y': 10,
                 'translation_pixel_range_z': 10,
