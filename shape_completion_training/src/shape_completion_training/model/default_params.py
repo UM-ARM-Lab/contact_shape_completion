@@ -141,7 +141,7 @@ def get_default_params(group_name=None):
         "PSSNet_aab":
             {
                 'num_latent_layers': 200,
-                'flow': 'Flow_aab/???',
+                'flow': 'Flow_aab/May_26_20-05-11_eed18af77d',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
                 'dataset': 'ycb_all',
