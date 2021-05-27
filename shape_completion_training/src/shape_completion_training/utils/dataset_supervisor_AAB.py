@@ -26,7 +26,7 @@ class AabMetaDataset(MetaDataset):
             ind_corners = elem['bounding_box'] / elem['scale']
             mins = np.clip(np.min(ind_corners, axis=0).astype(int), 0, VOXELGRID_SIZE - 1)
             maxs = np.clip(np.max(ind_corners, axis=0).astype(int), 0, VOXELGRID_SIZE - 1)
-            gt = np.zeros(elem['shape'])
+            gt = np.zeros(elem['shape'], dtype=np.float32)
             gt[mins[0]:maxs[0], mins[1]:maxs[1], mins[2]:maxs[2]] = 1.0
 
             if np.sum(gt) == 0:
