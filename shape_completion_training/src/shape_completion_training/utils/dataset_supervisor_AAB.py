@@ -1,4 +1,5 @@
 import numpy as np
+from colorama import Fore
 from tensorflow import TensorShape
 
 from shape_completion_training.utils import data_tools
@@ -30,7 +31,8 @@ class AabMetaDataset(MetaDataset):
             gt[mins[0]:maxs[0], mins[1]:maxs[1], mins[2]:maxs[2]] = 1.0
 
             if np.sum(gt) == 0:
-                raise RuntimeError("Empty Voxel Grid")
+                # raise RuntimeError("Empty Voxel Grid")
+                print(f"{Fore.RED}Warning: Empty Voxel Grid{Fore.RESET}")
 
             elem['gt_occ'] = gt
             elem['gt_free'] = 1 - elem['gt_occ']
@@ -42,7 +44,8 @@ class AabMetaDataset(MetaDataset):
                 ko, kf = data_tools.simulate_slit_occlusion(ko, kf, slit_min, slit_max)
 
                 if np.sum(kf) == 0:
-                    raise RuntimeError("Empty Known Free")
+                    # raise RuntimeError("Empty Known Free")
+                    print(f"{Fore.RED}Warning: Empty Known Free{Fore.RESET}")
 
             elem['known_occ'] = ko
             elem['known_free'] = kf
