@@ -1,4 +1,5 @@
 import abc
+import copy
 import pickle
 from functools import lru_cache
 from pathlib import Path
@@ -31,7 +32,7 @@ class MetaDataset(abc.ABC):
 
     def batch(self, batch_size):
         for i in range(0, len(self.md), batch_size):
-            yield self.__class__(self.md[i:i + batch_size], self.params)
+            yield self.__class__(copy.deepcopy(self.md[i:i + batch_size]), self.params)
 
     def size(self):
         return len(self.md)

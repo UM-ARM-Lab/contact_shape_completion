@@ -42,9 +42,9 @@ def load_ds():
     elem.load()
 
 
-def load_full_ds_in_batches():
-    params = default_params.get_default_params(group_name='PSSNet')
-    data_supervisor = dataset_supervisor.ShapenetDatasetSupervisor('shapenet_mugs')
+def load_full_ds_in_batches(dataset_name):
+    params = default_params.get_default_params(group_name='PSSNet_aab')
+    data_supervisor = dataset_loader.get_dataset_supervisor(dataset_name)
     training = data_supervisor.get_training(params)
     batch_size = params['batch_size']
     num_batches = math.ceil(training.size() / batch_size)
@@ -64,22 +64,17 @@ def load_full_ds_in_batches():
         batch_num = 0
         for batch in training_batches:
             batch_num += 1
-            # self.ckpt.step.assign_add(1)
             data = batch.load()
 
-            # _, ret = self.model.train_step(data)
             time_str = str(datetime.timedelta(seconds=int(time.time() - t0)))
             bar.update(batch_num, Loss=0,
                        TrainTime=time_str)
-            # if self.num_batches % summary_period == 0:
-            #     self.write_summary(ret)
-            # self.ckpt.train_time.assign_add(time.time() - t0)
-            # t0 = time.time()
+
 
 
 def multiple_loading_of_batches(num_loadings=100):
     for i in range(num_loadings):
-        load_full_ds_in_batches()
+        load_full_ds_in_batches('aab')
         print(f"Loaded dataset {i + 1} times")
 
 
@@ -99,9 +94,9 @@ def check_aab_dataset():
 def main():
     # create_shapenet_only_datasets()
     # load_ds()
-    # multiple_loading_of_batches()
+    multiple_loading_of_batches()
     # check_load_bounding_box_only()
-    check_aab_dataset()
+    # check_aab_dataset()
 
 
 if __name__ == "__main__":
