@@ -32,7 +32,8 @@ class AabMetaDataset(MetaDataset):
 
             if np.sum(gt) == 0:
                 # raise RuntimeError("Empty Voxel Grid")
-                print(f"{Fore.RED}Warning: Empty Voxel Grid{Fore.RESET}")
+                print(f"{Fore.RED}Warning: Empty Voxel Grid.\n "
+                      f"{elem['augmentation']}. bb: {elem['bounding_box']}. mins: {mins}. maxs: {maxs}{Fore.RESET}")
 
             elem['gt_occ'] = gt
             elem['gt_free'] = 1 - elem['gt_occ']
@@ -45,7 +46,8 @@ class AabMetaDataset(MetaDataset):
 
                 if np.sum(kf) == 0:
                     # raise RuntimeError("Empty Known Free")
-                    print(f"{Fore.RED}Warning: Empty Known Free{Fore.RESET}")
+                    print(f"{Fore.RED}Warning: Empty Known Free\n"
+                          f"{elem['augmentation']}. bb: {elem['bounding_box']}. mins: {mins}. maxs: {maxs}{Fore.RESET}")
 
             elem['known_occ'] = ko
             elem['known_free'] = kf
