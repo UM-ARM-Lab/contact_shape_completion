@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Grid1
         - /Ground Truth1
         - /Active Robot1
         - /Passive Robot1
@@ -42,7 +43,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 0.6399999856948853
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -60,13 +61,13 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /bounding_box
       Name: BoundingBox
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
     - Alpha Multiple: 0.20000000298023224
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
@@ -160,14 +161,6 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /voxelgrid/passive_robot
       Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /bounding_box
-      Name: BoundingBox
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -196,7 +189,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.9095349311828613
+      Distance: 2.072944164276123
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -204,17 +197,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.29197606444358826
-        Y: -0.34924280643463135
-        Z: 0.38631969690322876
+        X: 0.2675115466117859
+        Y: -0.41653183102607727
+        Z: 0.23004025220870972
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3747972846031189
+      Pitch: 0.8097970485687256
       Target Frame: <Fixed Frame>
-      Yaw: 3.3379886150360107
+      Yaw: 3.0680134296417236
     Saved: ~
 Window Geometry:
   Displays:
@@ -234,5 +227,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1848
-  X: 3912
+  X: 72
   Y: 0

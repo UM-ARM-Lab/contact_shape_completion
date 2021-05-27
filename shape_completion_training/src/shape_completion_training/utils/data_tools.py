@@ -72,7 +72,7 @@ def select_slit_location(gt, min_slit_width, max_slit_width, min_observable=5):
                                  maxval=slit_max_possible,
                                  dtype=tf.int64)
 
-    return slit_min, slit_min + slit_width
+    return tf.clip_by_value(slit_min, 0, 63), tf.clip_by_value(slit_min + slit_width, 0, 63)
 
 
 def simulate_depth_image(vg):

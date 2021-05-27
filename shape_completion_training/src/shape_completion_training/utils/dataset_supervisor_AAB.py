@@ -6,6 +6,8 @@ from shape_completion_training.utils.data_tools import simulate_2_5D_input
 from shape_completion_training.utils.dataset_supervisor import DatasetSupervisor, MetaDataset
 from shape_completion_training.utils.tf_utils import stack_dict, sequence_of_dicts_to_dict_of_sequences
 
+VOXELGRID_SIZE = 64
+
 
 class AabMetaDataset(MetaDataset):
     def __init__(self, metadata, params):
@@ -22,18 +24,25 @@ class AabMetaDataset(MetaDataset):
             x, y, z = (self.params[f'translation_pixel_range_{axis}'] for axis in ['x', 'y', 'z'])
             elem['bounding_box'] = data_tools.shift_bounding_box_only(elem['bounding_box'], x, y, z).numpy()
             ind_corners = elem['bounding_box'] / elem['scale']
-            mins = np.min(ind_corners, axis=0).astype(int)
-            maxs = np.max(ind_corners, axis=0).astype(int)
+            mins = np.clip(np.min(ind_corners, axis=0).astype(int), 0, VOXELGRID_SIZE - 1)
+            maxs = np.clip(np.max(ind_corners, axis=0).astype(int), 0, VOXELGRID_SIZE - 1)
             gt = np.zeros(elem['shape'])
             gt[mins[0]:maxs[0], mins[1]:maxs[1], mins[2]:maxs[2]] = 1.0
+
+            if np.sum(gt) == 0:
+                raise RuntimeError("Empty Voxel Grid")
+
             elem['gt_occ'] = gt
             elem['gt_free'] = 1 - elem['gt_occ']
             ko, kf = simulate_2_5D_input(elem['gt_occ'])
 
             if self.params[f'apply_slit_occlusion']:
                 slit_min, slit_max = data_tools.select_slit_location(elem['gt_occ'], min_slit_width=5,
-                                                                     max_slit_width=30, min_observable=5)
+                                                                     max_slit_width=70, min_observable=5)
                 ko, kf = data_tools.simulate_slit_occlusion(ko, kf, slit_min, slit_max)
+
+                if np.sum(kf) == 0:
+                    raise RuntimeError("Empty Known Free")
 
             elem['known_occ'] = ko
             elem['known_free'] = kf
@@ -45,7 +54,7 @@ class AabMetaDataset(MetaDataset):
 
 
 class AabDatasetSupervisor(DatasetSupervisor):
-    def __init__(self, name, require_exists=True, length=10, **kwargs):
+    def __init__(self, name, require_exists=True, length=10000, **kwargs):
         kwargs['load'] = False
         super().__init__(name, meta_dataset_type=AabMetaDataset, require_exists=require_exists, **kwargs)
 
@@ -60,12 +69,13 @@ class AabDatasetSupervisor(DatasetSupervisor):
 
     @staticmethod
     def _generate_random_box_md():
-        w = np.random.randint(7, 30)
-        h = np.random.randint(7, 30)
-        l = np.random.randint(7, 30)
+        w = np.random.randint(2, 41)
+        h = np.random.randint(2, 41)
+        l = np.random.randint(2, 41)
         scale = 0.01
 
-        bb = (np.array([[x, y, z] for x in [0, w] for y in [0, l] for z in [0, h]]) + 15) * scale
+        bb = (np.array([[x, y, z] for x in [-w/2, w/2] for y in [-l/2, l/2] for z in [-h/2, h/2]]) + 32) * scale
+        # bb += 32 - np.array([w/2])
 
         d = {'shape': TensorShape((64, 64, 64, 1)),
              'augmentation': f'{l}_{w}_{h}',

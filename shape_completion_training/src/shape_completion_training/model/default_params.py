@@ -1,5 +1,6 @@
 from colorama import Fore
 
+
 def get_visualization_params():
     default_params = {
         'translation_pixel_range_x': 10,
@@ -9,6 +10,7 @@ def get_visualization_params():
         # 'apply_depth_sensor_noise': False,
     }
     return default_params
+
 
 def get_default_params(group_name=None):
     default_params = {
@@ -103,6 +105,18 @@ def get_default_params(group_name=None):
                 'translation_pixel_range_z': 10,
                 'dataset': 'ycb_all',
             },
+        "Flow_abb":
+            {
+                'batch_size': 1500,
+                'network': 'RealNVP',
+                'dim': 24,
+                'num_masked': 12,
+                'learning_rate': 1e-5,
+                'translation_pixel_range_x': 15,
+                'translation_pixel_range_y': 15,
+                'translation_pixel_range_z': 15,
+                'dataset': 'abb',
+            },
         "3D_rec_gan":
             {
                 'batch_size': 4,
@@ -113,6 +127,18 @@ def get_default_params(group_name=None):
                 "is_u_connected": True,
             },
         "PSSNet_YCB":
+            {
+                'num_latent_layers': 200,
+                'flow': 'FlowYCB/May_24_13-31-45_85d3ccb8ca',
+                'network': 'PSSNet',
+                'use_flow_during_inference': False,
+                'dataset': 'ycb_all',
+                'translation_pixel_range_x': 15,
+                'translation_pixel_range_y': 10,
+                'translation_pixel_range_z': 10,
+                'apply_slit_occlusion': True,
+            },
+        "PSSNet_abb":
             {
                 'num_latent_layers': 200,
                 'flow': 'FlowYCB/May_24_13-31-45_85d3ccb8ca',

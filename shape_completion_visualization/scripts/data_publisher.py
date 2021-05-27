@@ -1,28 +1,19 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
-import argparse
 import random
 
-import rospy
 import numpy as np
+import rospy
+import tensorflow as tf
 
-# import shape_completion_training.utils.old_dataset_tools
-from shape_completion_training.model.model_runner import ModelRunner
+
 from shape_completion_training.model import default_params
-from shape_completion_training.utils import data_tools
-from shape_completion_training.voxelgrid import metrics
 from shape_completion_training.model.other_model_architectures import sampling_tools
-from shape_completion_training.voxelgrid import fit
-# from shape_completion_training.plausible_diversity import model_evaluator, plausiblility
 from shape_completion_training.voxelgrid import conversions
+from shape_completion_training.voxelgrid import fit
+from shape_completion_training.voxelgrid import metrics
 from shape_completion_training.voxelgrid.metrics import chamfer_distance
 from shape_completion_visualization.visualizer import Visualizer, parse_visualizer_command_line_args
-# from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
-# from shape_completion_visualization.shape_selection import send_display_names_from_metadata
-# from shape_completion_training.voxelgrid.utils import sample_from_voxelgrid
 
-import tensorflow as tf
 
 ARGS = None
 VG_PUB = None
@@ -36,9 +27,9 @@ sampling_thread = None
 default_dataset_params = default_params.get_default_params()
 
 default_translations = {
-    'translation_pixel_range_x': 0,
-    'translation_pixel_range_y': 0,
-    'translation_pixel_range_z': 0,
+    'translation_pixel_range_x': 15,
+    'translation_pixel_range_y': 10,
+    'translation_pixel_range_z': 10,
 }
 
 
@@ -219,7 +210,8 @@ if __name__ == "__main__":
     rospy.loginfo("Data Publisher")
     # args = {'dataset': 'shapenet_wip_mugs'}
     args = vars(parse_visualizer_command_line_args())
-
-    visualizer = Visualizer(**args, params=default_params.get_visualization_params())
+    params = default_params.get_visualization_params()
+    params.update(default_translations)
+    visualizer = Visualizer(**args, params=params)
 
     rospy.spin()
