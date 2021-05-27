@@ -105,7 +105,7 @@ def get_default_params(group_name=None):
                 'translation_pixel_range_z': 10,
                 'dataset': 'ycb_all',
             },
-        "Flow_abb":
+        "Flow_aab":
             {
                 'batch_size': 1500,
                 'network': 'RealNVP',
@@ -115,7 +115,7 @@ def get_default_params(group_name=None):
                 'translation_pixel_range_x': 15,
                 'translation_pixel_range_y': 15,
                 'translation_pixel_range_z': 15,
-                'dataset': 'abb',
+                'dataset': 'aab',
             },
         "3D_rec_gan":
             {
@@ -138,10 +138,10 @@ def get_default_params(group_name=None):
                 'translation_pixel_range_z': 10,
                 'apply_slit_occlusion': True,
             },
-        "PSSNet_abb":
+        "PSSNet_aab":
             {
                 'num_latent_layers': 200,
-                'flow': 'FlowYCB/May_24_13-31-45_85d3ccb8ca',
+                'flow': 'Flow_aab/???',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
                 'dataset': 'ycb_all',
