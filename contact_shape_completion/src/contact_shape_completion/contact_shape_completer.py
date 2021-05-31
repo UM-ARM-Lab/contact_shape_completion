@@ -207,6 +207,7 @@ class ContactShapeCompleter:
             raise RuntimeError("Unexpected situation - number of particles does not match request")
 
         # TODO: This is a debugging script only
+        # self.debug_repeated_sampling(self.belief, known_free, chss)
         # if chss is not None:
         #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
@@ -231,7 +232,11 @@ class ContactShapeCompleter:
     def debug_repeated_sampling(self, bel: ParticleBelief, known_free, chss):
         pssnet = self.model_runner.model
         latent = tf.Variable(pssnet.sample_latent_from_mean_and_logvar(bel.latent_prior_mean, bel.latent_prior_logvar))
-        latent = self.enforce_contact(latent, known_free, chss)
+        pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+        # known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
+        self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
+        # self.robot_view.VG_PUB.publish('known_contact', known_contact)
+        # latent = self.enforce_contact(latent, known_free, chss)
 
     def transform_from_gpuvoxels(self, pt_msg: PointCloud2):
         transformed_cloud = self.robot_view.transform_pts_to_target(pt_msg)
