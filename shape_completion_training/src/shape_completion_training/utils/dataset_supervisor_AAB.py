@@ -3,7 +3,6 @@ from colorama import Fore
 from tensorflow import TensorShape
 
 from shape_completion_training.utils import data_tools
-from shape_completion_training.utils.data_tools import simulate_2_5D_input
 from shape_completion_training.utils.dataset_supervisor import DatasetSupervisor, MetaDataset
 from shape_completion_training.utils.tf_utils import stack_dict, sequence_of_dicts_to_dict_of_sequences
 
@@ -37,7 +36,10 @@ class AabMetaDataset(MetaDataset):
 
             elem['gt_occ'] = gt
             elem['gt_free'] = 1 - elem['gt_occ']
-            ko, kf = simulate_2_5D_input(elem['gt_occ'])
+            ko, kf = data_tools.simulate_2_5D_input(elem['gt_occ'])
+
+            if self.params['apply_depth_sensor_noise']:
+                ko, kf = data_tools.apply_sensor_noise(ko)
 
             if self.params[f'apply_slit_occlusion']:
                 slit_min, slit_max = data_tools.select_slit_location(elem['gt_occ'], min_slit_width=5,

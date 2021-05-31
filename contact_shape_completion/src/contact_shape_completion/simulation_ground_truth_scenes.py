@@ -10,7 +10,7 @@ def scene1_gt():
     vg = np.ones((5, 9, 17))
 
     pts = visual_conversions.vox_to_pointcloud2_msg(vg, scale=0.02, frame='gpu_voxel_world', origin=(-72, -100, -65),
-                                                    density_factor=2)
+                                                    density_factor=3)
     return pts
 
 

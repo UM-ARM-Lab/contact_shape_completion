@@ -26,10 +26,11 @@ sampling_thread = None
 
 default_dataset_params = default_params.get_default_params()
 
-default_translations = {
+overwrite_params = {
     'translation_pixel_range_x': 15,
     'translation_pixel_range_y': 10,
     'translation_pixel_range_z': 10,
+    'apply_depth_sensor_noise': True
 }
 
 
@@ -211,7 +212,7 @@ if __name__ == "__main__":
     # args = {'dataset': 'shapenet_wip_mugs'}
     args = vars(parse_visualizer_command_line_args())
     params = default_params.get_visualization_params()
-    params.update(default_translations)
+    params.update(overwrite_params)
     visualizer = Visualizer(**args, params=params)
 
     rospy.spin()

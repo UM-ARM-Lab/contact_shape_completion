@@ -172,3 +172,17 @@ def shift_bounding_box_only(bounding_box, x, y, z):
         dz = tf.random.uniform(shape=[], minval=-z, maxval=z, dtype=tf.int64)
     bounding_box += tf.cast([dx, dy, dz], tf.float64) * PIXELS_TO_METERS
     return bounding_box
+
+
+def apply_sensor_noise(known_occ):
+    img = conversions.to_2_5D(known_occ)
+    noise_width = 4
+    noise_shape = (np.array([img.shape[0], img.shape[1], noise_width]) / noise_width).astype(int)
+    noise = tf.random.normal(noise_shape, stddev=2.0)
+    noise = tf.image.resize(noise, img.shape[0:2])
+    noise = noise * tf.cast(img < 64, tf.float32)
+    img = img + noise
+
+    ko = conversions.img_to_voxelgrid(img).numpy()
+
+    return ko, simulate_2_5D_known_free(ko)

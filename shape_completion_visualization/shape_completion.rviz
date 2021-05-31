@@ -65,7 +65,7 @@ Visualization Manager:
       Marker Topic: /bounding_box
       Name: BoundingBox
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Alpha Multiple: 0.20000000298023224
@@ -227,5 +227,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1848
-  X: 72
+  X: 3912
   Y: 0
