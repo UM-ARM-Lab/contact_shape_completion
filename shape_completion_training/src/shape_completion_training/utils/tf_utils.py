@@ -151,6 +151,15 @@ def sample_gaussian(mean, logvar):
     return features
 
 
+def compute_quantiles(mean, logvar, num_quantiles, num_samples):
+    mean = tf.repeat(mean, axis=0, repeats=num_samples)
+    logvar = tf.repeat(logvar, axis=0, repeats=num_samples)
+    samples = sample_gaussian(mean, logvar)
+    sampled_log_pdf = log_normal_pdf(samples, mean, logvar)
+    quantiles = tf.sort(sampled_log_pdf)[::int(num_samples / num_quantiles)]
+    return quantiles
+
+
 @tf.function
 def p_x_given_y(x, y):
     """

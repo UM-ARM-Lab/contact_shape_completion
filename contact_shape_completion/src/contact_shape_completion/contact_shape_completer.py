@@ -1,23 +1,23 @@
 from pathlib import Path
 
-from deprecated import deprecated
 import numpy as np
 import rospkg
 import rospy
 import tensorflow as tf
 from colorama import Fore
-from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
-    RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
-    ResetShapeCompleter
+from deprecated import deprecated
 from sensor_msgs.msg import PointCloud2
 
 import ros_numpy
 from contact_shape_completion import contact_tools
 from contact_shape_completion.kinect_listener import DepthCameraListener
 from contact_shape_completion.simulation_ground_truth_scenes import scene1_gt
+from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
+    RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
+    ResetShapeCompleter
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from shape_completion_training.model.model_runner import ModelRunner
-from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf, sample_gaussian
+from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf, compute_quantiles
 from shape_completion_training.voxelgrid import conversions
 
 tf.get_logger().setLevel('ERROR')
@@ -32,23 +32,15 @@ class ParticleBelief:
         self.latent_prior_mean = None
         self.latent_prior_logvar = None
         self.particles = []
+        self.quantiles_log_pdf = None
 
     def reset(self):
         self.latent_prior_mean = None
         self.latent_prior_logvar = None
         self.particles = []
 
-    def approximate_acceptable_quartile_probability(self, quartile=99):
-        """
-        Set the acceptable quartile (out of 100)
-        Args:
-            quartile:
-
-        Returns:
-
-        """
-        mean = self.latent_prior_mean
-        logvar = self.latent_prior_logvar
+    def get_quantile(self, log_pdf):
+        return tf.where(self.quantiles_log_pdf > log_pdf)[0, 0].numpy()
 
 
 class Particle:
@@ -185,6 +177,7 @@ class ContactShapeCompleter:
         mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
         self.belief.latent_prior_mean = mean
         self.belief.latent_prior_logvar = logvar
+        self.belief.quantiles_log_pdf = compute_quantiles(mean, logvar, num_quantiles=100, num_samples=1000)
 
         for _ in range(num_particles):
             p = Particle()
@@ -289,7 +282,7 @@ class ContactShapeCompleter:
         self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss):
-        self.robot_view.VG_PUB.publish("aux", 0*known_free)
+        self.robot_view.VG_PUB.publish("aux", 0 * known_free)
         pssnet = self.model_runner.model
         prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
         p = log_normal_pdf(latent, prior_mean, prior_logvar)
@@ -300,6 +293,11 @@ class ContactShapeCompleter:
         self.robot_view.VG_PUB.publish('known_free', known_free)
         if chss is not None:
             self.robot_view.VG_PUB.publish('chs', chss)
+
+        print()
+        log_pdf = log_normal_pdf(latent, prior_mean, prior_logvar)
+        quantile = self.belief.get_quantile(log_pdf)
+        print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
 
         prev_loss = 0.0
         for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
@@ -334,8 +332,10 @@ class ContactShapeCompleter:
                 self.robot_view.VG_PUB.publish("aux", pred_occ * known_free)
             if tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) < KNOWN_OCC_LIMIT:
                 print("Optimization did not satisfy assumed occ: ")
-                self.robot_view.VG_PUB.publish("aux", (1 - pred_occ)*known_contact)
+                self.robot_view.VG_PUB.publish("aux", (1 - pred_occ) * known_contact)
             print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
 
-        print(f"Latent now has logprob {log_normal_pdf(latent, prior_mean, prior_logvar)}")
+        log_pdf = log_normal_pdf(latent, prior_mean, prior_logvar)
+        quantile = self.belief.get_quantile(log_pdf)
+        print(f"Latent logprob {log_pdf} ({quantile} quantile)")
         return latent

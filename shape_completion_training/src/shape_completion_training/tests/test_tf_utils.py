@@ -1,6 +1,6 @@
 from unittest import TestCase
 import numpy as np
-from shape_completion_training.utils.tf_utils import log_normal_pdf, sample_gaussian
+from shape_completion_training.utils.tf_utils import log_normal_pdf, sample_gaussian, compute_quantiles
 
 
 class Test(TestCase):
@@ -120,3 +120,27 @@ class Test(TestCase):
         #     self.assertAlmostEqual(sample(5, 1), 5, delta=3.5)
         #     self.assertAlmostEqual(sample(0, .1), 0, delta=.35)
         #     self.assertAlmostEqual(sample(5, .1), 5, delta=.35)
+
+    def test_quantiles_1D(self):
+        zero_for_one = .3989
+        one_for_one = .24197
+        zero_for_two = .28209
+        one_for_two = .21970
+        mean = np.array([[0.0]], dtype=np.float32)
+        logvar = np.array([[0.0]], dtype=np.float32)
+        quantiles_log = compute_quantiles(mean, logvar, num_quantiles=100, num_samples=1000)
+        quantiles = np.exp(quantiles_log)
+        self.assertGreater(zero_for_one + 0.0001, quantiles[-1])
+        self.assertGreater(quantiles[-1], zero_for_one - 0.01)
+
+    def test_quantiles_2D(self):
+        zero_for_one = .3989
+        one_for_one = .24197
+        zero_for_two = .28209
+        one_for_two = .21970
+        mean = np.array([[0.0, 0.0]], dtype=np.float32)
+        logvar = np.array([[0.0, 0.0]], dtype=np.float32)
+        quantiles_log = compute_quantiles(mean, logvar, num_quantiles=100, num_samples=1000)
+        quantiles = np.exp(quantiles_log)
+        self.assertGreater(zero_for_one**2 + 0.0001, quantiles[-1])
+        self.assertGreater(quantiles[-1], zero_for_one**2 - 0.01)
