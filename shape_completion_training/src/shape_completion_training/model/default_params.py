@@ -49,6 +49,7 @@ def get_default_params(group_name=None):
                 'flow': 'Flow_shapenet_all/May_24_15-14-58_28829eda5b',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
+                'apply_depth_sensor_noise': True,
                 'dataset': 'shapenet_all',
             },
         "NormalizingAE":
