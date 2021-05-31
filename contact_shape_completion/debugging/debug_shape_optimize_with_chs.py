@@ -9,6 +9,7 @@ from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 from shape_completion_training.model import default_params
+from shape_completion_training.utils.config import lookup_trial
 
 """
 Publish object pointclouds for use in gpu_voxels planning
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     x_bound = [-0.04, 0.04]
 
     goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
-    contact_shape_completer = ContactShapeCompleter(ARGS.trial, goal_generator=goal_generator)
+    contact_shape_completer = ContactShapeCompleter(lookup_trial(ARGS.trial), goal_generator=goal_generator)
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.load_visible_vg(filename='wip_segmented_pts.msg')

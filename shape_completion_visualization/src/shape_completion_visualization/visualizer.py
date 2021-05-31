@@ -6,6 +6,7 @@ from std_msgs.msg import String
 
 from shape_completion_training.model.model_runner import ModelRunner
 # from shape_completion_training.utils.shapenet_storage import ShapenetDatasetSupervisor
+from shape_completion_training.utils.config import lookup_trial
 from shape_completion_training.utils.dataset_loader import get_dataset_supervisor
 # from shape_completion_visualization.shape_selection import send_display_names
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
@@ -72,7 +73,7 @@ class Visualizer:
             self.load_dataset(args['dataset'])
 
         if args['trial']:
-            self.load_model(args['trial'])
+            self.load_model(lookup_trial(args['trial']))
 
     def load_dataset(self, name):
         self.dataset_supervisor = get_dataset_supervisor(name)
