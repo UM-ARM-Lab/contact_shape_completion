@@ -134,6 +134,7 @@ class PSSNet(MyKerasModel):
         return sampled_features
 
     def grad_step_towards_output(self, latent, known_occ, known_free, belief):
+        #TODO: Pass in acceptable prob. Perhaps just the original prob
         acceptable_prob = belief.quantiles_log_pdf[25]
 
         with tf.GradientTape() as tape:
