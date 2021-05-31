@@ -64,6 +64,9 @@ class MetaDataset(abc.ABC):
             elem['bounding_box'] = elem['bounding_box'].numpy()
             ko, kf = simulate_2_5D_input(elem['gt_occ'])
 
+            if self.params['apply_depth_sensor_noise']:
+                ko, kf = data_tools.apply_sensor_noise(ko)
+
             if self.params[f'apply_slit_occlusion']:
                 slit_min, slit_max = data_tools.select_slit_location(elem['gt_occ'], min_slit_width=5,
                                                                      max_slit_width=30, min_observable=5)

@@ -137,6 +137,7 @@ def get_default_params(group_name=None):
                 'translation_pixel_range_y': 10,
                 'translation_pixel_range_z': 10,
                 'apply_slit_occlusion': True,
+                'apply_depth_sensor_noise': True
             },
         "PSSNet_aab":
             {
