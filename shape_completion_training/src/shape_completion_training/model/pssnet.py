@@ -147,7 +147,9 @@ class PSSNet(MyKerasModel):
             loss_known_free = tf.reduce_sum(tf.clip_by_value(known_free * predicted_occ - 0.4, 0.0, 1.0))
 
             log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
-            loss_latent_prob = -log_pdf
+            # loss_latent_prob = -tf.clip_by_value(log_pdf, -10000, acceptable_prob)/100
+            # loss_latent_prob = -log_pdf/1000
+            loss_latent_prob = tf.losses.mse(acceptable_prob,  log_pdf)/100
 
             loss = 1 + loss_known_occ + loss_known_free + loss_latent_prob
 
