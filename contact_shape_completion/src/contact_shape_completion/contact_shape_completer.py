@@ -40,7 +40,14 @@ class ParticleBelief:
         self.particles = []
 
     def get_quantile(self, log_pdf):
-        return tf.where(self.quantiles_log_pdf > log_pdf)[0, 0].numpy()
+        try:
+            gts = self.quantiles_log_pdf > log_pdf
+            if tf.reduce_any(gts):
+                return tf.where(gts)[0, 0].numpy()
+            return len(self.quantiles_log_pdf)
+        except Exception as e:
+            print("I don't know what the error is")
+            raise e
 
 
 class Particle:
@@ -284,8 +291,9 @@ class ContactShapeCompleter:
     def enforce_contact(self, latent, known_free, chss):
         self.robot_view.VG_PUB.publish("aux", 0 * known_free)
         pssnet = self.model_runner.model
-        prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
-        p = log_normal_pdf(latent, prior_mean, prior_logvar)
+        # prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
+        # p = log_normal_pdf(latent, prior_mean, prior_logvar)
+
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
@@ -295,7 +303,7 @@ class ContactShapeCompleter:
             self.robot_view.VG_PUB.publish('chs', chss)
 
         print()
-        log_pdf = log_normal_pdf(latent, prior_mean, prior_logvar)
+        log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
         quantile = self.belief.get_quantile(log_pdf)
         print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
 
@@ -303,10 +311,12 @@ class ContactShapeCompleter:
         for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
             single_free = contact_tools.get_most_wrong_free(pred_occ, known_free)
 
-            # loss = pssnet.grad_step_towards_output(latent, known_contact, known_free)
-            loss = pssnet.grad_step_towards_output(latent, known_contact, single_free)
+            loss = pssnet.grad_step_towards_output(latent, known_contact, known_free, self.belief)
+            # loss = pssnet.grad_step_towards_output(latent, known_contact, single_free)
             print('\rloss: {}'.format(loss), end='')
             pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+            # if loss > 1:
+            #     print(f"{Fore.RED}Loss is greater than 1{Fore.RESET}")
             known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
             self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
             self.robot_view.VG_PUB.publish('known_contact', known_contact)
@@ -322,8 +332,8 @@ class ContactShapeCompleter:
             if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
                     tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
                 print(
-                    f"\tAll known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
-                    f"and chss have value > {KNOWN_OCC_LIMIT}")
+                    f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
+                    f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
                 break
         else:
             print()
@@ -335,7 +345,7 @@ class ContactShapeCompleter:
                 self.robot_view.VG_PUB.publish("aux", (1 - pred_occ) * known_contact)
             print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
 
-        log_pdf = log_normal_pdf(latent, prior_mean, prior_logvar)
+        log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
         quantile = self.belief.get_quantile(log_pdf)
         print(f"Latent logprob {log_pdf} ({quantile} quantile)")
         return latent

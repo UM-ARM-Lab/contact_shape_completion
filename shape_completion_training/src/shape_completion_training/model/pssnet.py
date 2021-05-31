@@ -133,7 +133,8 @@ class PSSNet(MyKerasModel):
             sampled_features = self.apply_flow_to_latent_box(sampled_features)
         return sampled_features
 
-    def grad_step_towards_output(self, latent, known_occ, known_free):
+    def grad_step_towards_output(self, latent, known_occ, known_free, belief):
+        acceptable_prob = belief.quantiles_log_pdf[25]
 
         with tf.GradientTape() as tape:
             # predicted_occ = self.decode(latent, apply_sigmoid=True)
@@ -142,7 +143,13 @@ class PSSNet(MyKerasModel):
             # predicted_occ = self.decode(latent)
             predicted_occ = self.decode(latent, apply_sigmoid=True)
             #TODO: Remove hardcoded numbers and choose grad step size better
-            loss = -1*tf.reduce_sum(known_occ * predicted_occ) + 1*tf.reduce_sum(known_free * predicted_occ)
+            loss_known_occ = -tf.reduce_sum(known_occ * predicted_occ)
+            loss_known_free = tf.reduce_sum(tf.clip_by_value(known_free * predicted_occ - 0.4, 0.0, 1.0))
+
+            log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
+            loss_latent_prob = -log_pdf
+
+            loss = 1 + loss_known_occ + loss_known_free + loss_latent_prob
 
         variables = [latent]
         gradients = tape.gradient(loss, variables)
