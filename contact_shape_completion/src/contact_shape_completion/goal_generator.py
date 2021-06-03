@@ -31,8 +31,8 @@ class CheezeitGoalGenerator(GoalGenerator):
                  z_bound=(-0.05, 0.05)):
         super().__init__()
 
-        self.victor = Victor()
-        self.victor.connect()
+        # self.victor = Victor()
+        # self.victor.connect()
 
         pose = Pose()
         pose.orientation.x = -0.05594805960241513

@@ -1,5 +1,15 @@
 from colorama import Fore
 
+def get_noiseless_params():
+    noiseless = {
+        'translation_pixel_range_x': 0,
+        'translation_pixel_range_y': 0,
+        'translation_pixel_range_z': 0,
+        'apply_slit_occlusion': False,
+        'apply_depth_sensor_noise': False,
+    }
+    return noiseless
+
 
 def get_visualization_params():
     default_params = {

@@ -7,6 +7,7 @@ import rospy
 
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
+from contact_shape_completion.simulation_ground_truth_scenes import LiveScene1
 from shape_completion_training.model import default_params
 
 """
@@ -32,7 +33,8 @@ if __name__ == "__main__":
     x_bound = [-0.04, 0.04]
 
     goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
-    contact_shape_completer = ContactShapeCompleter(ARGS.trial, goal_generator=goal_generator)
+    scene = LiveScene1()
+    contact_shape_completer = ContactShapeCompleter(scene, ARGS.trial, goal_generator=goal_generator)
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()

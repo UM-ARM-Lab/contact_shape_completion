@@ -11,7 +11,7 @@ from sensor_msgs.msg import PointCloud2
 import ros_numpy
 from contact_shape_completion import contact_tools
 from contact_shape_completion.kinect_listener import DepthCameraListener
-from contact_shape_completion.simulation_ground_truth_scenes import scene1_gt
+from contact_shape_completion.simulation_ground_truth_scenes import Scene, LiveScene, SimulationScene
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
     ResetShapeCompleter
@@ -60,7 +60,8 @@ class Particle:
 
 
 class ContactShapeCompleter:
-    def __init__(self, trial=None, goal_generator=None):
+    def __init__(self, scene: Scene, trial=None, goal_generator=None):
+        self.scene = scene
         self.goal_generator = goal_generator  # type GoalGenerator
         self.robot_view = DepthCameraListener()
         self.model_runner = None
@@ -91,26 +92,30 @@ class ContactShapeCompleter:
         """
         if not self.model_runner.params['use_flow_during_inference']:
             return
+        print(f"{Fore.RED}Reloading flow for inference (Are you sure this should be happening?){Fore.RESET}")
         self.model_runner.model.flow = ModelRunner(training=False,
                                                    trial_path=self.model_runner.params['flow']).model.flow
 
     def load_network(self, trial):
         if trial is None:
-            print("Not loading any inference model")
+            print(f"{Fore.RED}Not loading any inference model{Fore.RESET}")
             return
         self.model_runner = ModelRunner(training=False, trial_path=trial)
 
     def get_visible_vg(self):
-        save_path = self.get_wip_save_path() / "latest_segmented_pts.msg"
-        self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
-        # self.save_last_visible_vg()
+        if isinstance(self.scene, LiveScene):
+            save_path = self.get_wip_save_path() / "latest_segmented_pts.msg"
+            self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
+
+        elif isinstance(self.scene, SimulationScene):
+            self.last_visible_vg = self.robot_view.voxelize_visible_element(self.scene.get_segmented_points())
         return self.last_visible_vg
 
     def load_visible_vg(self, filename='latest_segmented_pts.msg'):
         pt_msg = PointCloud2()
         with (self.get_wip_save_path() / filename).open('rb') as f:
             pt_msg.deserialize(f.read())
-        self.last_visible_vg = self.robot_view.get_visible_element()
+        self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
 
     @staticmethod
     def get_wip_save_path():
@@ -135,10 +140,16 @@ class ContactShapeCompleter:
         return RequestShapeResponse(points=pt)
 
     def compute_known_occ(self):
-        pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
-        pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
-        pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256], threshold=100)
-        self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
+
+        if isinstance(self.scene, LiveScene):
+            pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
+            pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
+            pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256],
+                                                   threshold=100)
+            self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
+
+        elif isinstance(self.scene, SimulationScene):
+            self.known_obstacles = self.scene.get_segmented_points()
 
         return self.known_obstacles
 
@@ -149,7 +160,7 @@ class ContactShapeCompleter:
 
     def request_true_world_srv(self, req: RequestShapeRequest):
         # pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
-        pt = scene1_gt()
+        pt = self.scene.get_gt()
         return RequestShapeResponse(points=pt)
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
@@ -297,7 +308,7 @@ class ContactShapeCompleter:
         self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-        any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
+        # any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
         self.robot_view.VG_PUB.publish('known_free', known_free)
         if chss is not None:
             self.robot_view.VG_PUB.publish('chs', chss)
