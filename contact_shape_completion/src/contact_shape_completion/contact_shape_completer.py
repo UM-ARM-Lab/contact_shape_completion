@@ -10,6 +10,8 @@ from sensor_msgs.msg import PointCloud2
 
 import ros_numpy
 from contact_shape_completion import contact_tools
+from contact_shape_completion.beliefs import ParticleBelief, Particle
+from contact_shape_completion.contact_tools import enforce_contact
 from contact_shape_completion.kinect_listener import DepthCameraListener
 from contact_shape_completion.simulation_ground_truth_scenes import Scene, LiveScene, SimulationScene
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
@@ -17,46 +19,10 @@ from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, Co
     ResetShapeCompleter
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from shape_completion_training.model.model_runner import ModelRunner
-from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, log_normal_pdf, compute_quantiles
+from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, compute_quantiles
 from shape_completion_training.voxelgrid import conversions
 
 tf.get_logger().setLevel('ERROR')
-
-GRADIENT_UPDATE_ITERATION_LIMIT = 100
-KNOWN_FREE_LIMIT = 0.4
-KNOWN_OCC_LIMIT = 0.5
-
-
-class ParticleBelief:
-    def __init__(self):
-        self.latent_prior_mean = None
-        self.latent_prior_logvar = None
-        self.particles = []
-        self.quantiles_log_pdf = None
-
-    def reset(self):
-        self.latent_prior_mean = None
-        self.latent_prior_logvar = None
-        self.particles = []
-
-    def get_quantile(self, log_pdf):
-        try:
-            gts = self.quantiles_log_pdf > log_pdf
-            if tf.reduce_any(gts):
-                return tf.where(gts)[0, 0].numpy()
-            return len(self.quantiles_log_pdf)
-        except Exception as e:
-            print("I don't know what the error is")
-            raise e
-
-
-class Particle:
-    def __init__(self):
-        self.sampled_latent = None
-        self.latent = None
-        self.goal = None
-        self.completion = None
-        self.associated_chs_inds = []
 
 
 class ContactShapeCompleter:
@@ -300,63 +266,66 @@ class ContactShapeCompleter:
         self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss):
-        self.robot_view.VG_PUB.publish("aux", 0 * known_free)
-        pssnet = self.model_runner.model
-        # prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
-        # p = log_normal_pdf(latent, prior_mean, prior_logvar)
+        return enforce_contact(latent, known_free, chss, self.model_runner.model, self.belief, self.robot_view.VG_PUB)
 
-        self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-        pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-        known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-        # any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
-        self.robot_view.VG_PUB.publish('known_free', known_free)
-        if chss is not None:
-            self.robot_view.VG_PUB.publish('chs', chss)
-
-        print()
-        log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
-        quantile = self.belief.get_quantile(log_pdf)
-        print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
-
-        prev_loss = 0.0
-        for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
-            single_free = contact_tools.get_most_wrong_free(pred_occ, known_free)
-
-            loss = pssnet.grad_step_towards_output(latent, known_contact, known_free, self.belief)
-            # loss = pssnet.grad_step_towards_output(latent, known_contact, single_free)
-            print('\rloss: {}'.format(loss), end='')
-            pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-            # if loss > 1:
-            #     print(f"{Fore.RED}Loss is greater than 1{Fore.RESET}")
-            known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-            self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
-            self.robot_view.VG_PUB.publish('known_contact', known_contact)
-
-            if loss == prev_loss:
-                print("\tNo progress made. Accepting shape as is")
-                break
-            prev_loss = loss
-            if tf.math.is_nan(loss):
-                print("\tLoss is nan. There is a problem I am not addressing")
-                break
-
-            if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
-                    tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
-                print(
-                    f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
-                    f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
-                break
-        else:
-            print()
-            if np.max(pred_occ * known_free) > KNOWN_FREE_LIMIT:
-                print("Optimization did not satisfy known freespace: ")
-                self.robot_view.VG_PUB.publish("aux", pred_occ * known_free)
-            if tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) < KNOWN_OCC_LIMIT:
-                print("Optimization did not satisfy assumed occ: ")
-                self.robot_view.VG_PUB.publish("aux", (1 - pred_occ) * known_contact)
-            print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
-
-        log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
-        quantile = self.belief.get_quantile(log_pdf)
-        print(f"Latent logprob {log_pdf} ({quantile} quantile)")
-        return latent
+    # def enforce_contact(self, latent, known_free, chss):
+    #     self.robot_view.VG_PUB.publish("aux", 0 * known_free)
+    #     pssnet = self.model_runner.model
+    #     # prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
+    #     # p = log_normal_pdf(latent, prior_mean, prior_logvar)
+    #
+    #     self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
+    #     pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+    #     known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
+    #     # any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
+    #     self.robot_view.VG_PUB.publish('known_free', known_free)
+    #     if chss is not None:
+    #         self.robot_view.VG_PUB.publish('chs', chss)
+    #
+    #     print()
+    #     log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
+    #     quantile = self.belief.get_quantile(log_pdf)
+    #     print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
+    #
+    #     prev_loss = 0.0
+    #     for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
+    #         single_free = contact_tools.get_most_wrong_free(pred_occ, known_free)
+    #
+    #         loss = pssnet.grad_step_towards_output(latent, known_contact, known_free, self.belief)
+    #         # loss = pssnet.grad_step_towards_output(latent, known_contact, single_free)
+    #         print('\rloss: {}'.format(loss), end='')
+    #         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+    #         # if loss > 1:
+    #         #     print(f"{Fore.RED}Loss is greater than 1{Fore.RESET}")
+    #         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
+    #         self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
+    #         self.robot_view.VG_PUB.publish('known_contact', known_contact)
+    #
+    #         if loss == prev_loss:
+    #             print("\tNo progress made. Accepting shape as is")
+    #             break
+    #         prev_loss = loss
+    #         if tf.math.is_nan(loss):
+    #             print("\tLoss is nan. There is a problem I am not addressing")
+    #             break
+    #
+    #         if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
+    #                 tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
+    #             print(
+    #                 f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
+    #                 f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
+    #             break
+    #     else:
+    #         print()
+    #         if np.max(pred_occ * known_free) > KNOWN_FREE_LIMIT:
+    #             print("Optimization did not satisfy known freespace: ")
+    #             self.robot_view.VG_PUB.publish("aux", pred_occ * known_free)
+    #         if tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) < KNOWN_OCC_LIMIT:
+    #             print("Optimization did not satisfy assumed occ: ")
+    #             self.robot_view.VG_PUB.publish("aux", (1 - pred_occ) * known_contact)
+    #         print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
+    #
+    #     log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
+    #     quantile = self.belief.get_quantile(log_pdf)
+    #     print(f"Latent logprob {log_pdf} ({quantile} quantile)")
+    #     return latent
