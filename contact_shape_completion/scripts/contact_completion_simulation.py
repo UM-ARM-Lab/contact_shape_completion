@@ -8,7 +8,7 @@ from contact_shape_completion.contact_shape_completer import ContactShapeComplet
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
-from contact_shape_completion import simulation_ground_truth_scenes
+from contact_shape_completion import scenes
 
 """
 Publish object pointclouds for use in gpu_voxels planning
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
     # scene = simulation_ground_truth_scenes.LiveScene1()
-    scene = simulation_ground_truth_scenes.SimulationCheezit()
+    scene = scenes.SimulationCheezit()
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial), goal_generator=goal_generator)
     # contact_shape_completer.load_network(ARGS.trial)
 

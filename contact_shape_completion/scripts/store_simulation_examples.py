@@ -7,7 +7,7 @@ import rospy
 
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
-from contact_shape_completion.simulation_ground_truth_scenes import SimulationCheezit
+from contact_shape_completion.scenes import SimulationCheezit
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
 
@@ -37,7 +37,8 @@ if __name__ == "__main__":
 
     scene = SimulationCheezit()
 
-    contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial), goal_generator=goal_generator)
+    contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial), goal_generator=goal_generator,
+                                                    store_request=True)
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()

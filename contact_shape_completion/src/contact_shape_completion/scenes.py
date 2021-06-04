@@ -1,4 +1,8 @@
+import abc
+from pathlib import Path
+
 import numpy as np
+import rospkg
 import rospy
 from sensor_msgs.msg import PointCloud2
 
@@ -7,12 +11,12 @@ from rviz_voxelgrid_visuals import conversions as visual_conversions
 from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates
 from shape_completion_training.model import default_params
 from shape_completion_training.utils import dataset_loader
-import abc
 
 
 class Scene(abc.ABC):
     def __init__(self):
         self.use_live = False
+        self.name = None
 
     @abc.abstractmethod
     def get_gt(self):
@@ -20,6 +24,12 @@ class Scene(abc.ABC):
 
     def get_segmented_points(self):
         pass
+
+    def get_save_path(self):
+        path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "saved_requests" / self.name
+        path.parent.mkdir(exist_ok=True)
+        path.mkdir(exist_ok=True)
+        return path
 
 
 class SimulationScene(Scene):
@@ -29,9 +39,10 @@ class SimulationScene(Scene):
 class SimulationCheezit(SimulationScene):
     def __init__(self):
         super().__init__()
+        self.name = "Cheezit_01"
         self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
         params = default_params.get_noiseless_params()
-        params['apply_depth_sensor_noise']= True
+        params['apply_depth_sensor_noise'] = True
         self.elem = self.dataset_supervisor.get_element('003_cracker_box-90_000_000',
                                                         params=params).load()
         self.scale = 0.01

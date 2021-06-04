@@ -7,7 +7,7 @@ import rospy
 
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
-from contact_shape_completion.simulation_ground_truth_scenes import LiveScene1
+from contact_shape_completion.scenes import LiveScene1
 from shape_completion_training.model import default_params
 
 """

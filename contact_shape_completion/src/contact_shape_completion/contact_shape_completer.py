@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -13,7 +14,7 @@ from contact_shape_completion import contact_tools
 from contact_shape_completion.beliefs import ParticleBelief, Particle
 from contact_shape_completion.contact_tools import enforce_contact
 from contact_shape_completion.kinect_listener import DepthCameraListener
-from contact_shape_completion.simulation_ground_truth_scenes import Scene, LiveScene, SimulationScene
+from contact_shape_completion.scenes import Scene, LiveScene, SimulationScene
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
     ResetShapeCompleter
@@ -26,7 +27,7 @@ tf.get_logger().setLevel('ERROR')
 
 
 class ContactShapeCompleter:
-    def __init__(self, scene: Scene, trial=None, goal_generator=None):
+    def __init__(self, scene: Scene, trial=None, goal_generator=None, store_request=False):
         self.scene = scene
         self.goal_generator = goal_generator  # type GoalGenerator
         self.robot_view = DepthCameraListener()
@@ -45,6 +46,8 @@ class ContactShapeCompleter:
         self.swept_freespace = tf.zeros((1, 64, 64, 64, 1))
         self.belief = ParticleBelief()
         self.known_obstacles = None
+        self.should_store_request = store_request
+        self.prev_shape_completion_request = None
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.belief.reset()
@@ -129,9 +132,27 @@ class ContactShapeCompleter:
         pt = self.scene.get_gt()
         return RequestShapeResponse(points=pt)
 
-    def complete_shape_srv(self, req: CompleteShapeRequest):
-        with (self.get_wip_save_path() / "wip_req").open('wb') as f:
+    def save_request(self, req):
+        if self.should_store_request:
+            stamp = "{:%Y_%B_%d_%H-%M-%S}".format(datetime.now())
+            with (self.scene.get_save_path() / f"req_{stamp}.msg").open('wb') as f:
+                req.serialize(f)
+            return
+
+        # By default, store the latest request for use with debugging
+        with (self.get_wip_save_path() / "latest_request.msg").open('wb') as f:
             req.serialize(f)
+
+    def is_new_request(self, req):
+        if req is None:
+            return True
+        if req == self.prev_shape_completion_request:
+            print(f"{Fore.YELLOW}New request is same as previous: Not updating{Fore.RESET}")
+            return False
+        return True
+
+    def complete_shape_srv(self, req: CompleteShapeRequest):
+
 
         print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
 
@@ -149,7 +170,11 @@ class ContactShapeCompleter:
             if tf.reduce_max(known_free * chss) > 0:
                 raise RuntimeError("Known free overlaps with CHSs")
 
-        self.update_belief(known_free, chss, req.num_samples)
+        if self.is_new_request(req):
+            self.save_request(req)
+            self.update_belief(known_free, chss, req.num_samples)
+            self.prev_shape_completion_request = req
+
         resp = CompleteShapeResponse()
         for p in self.belief.particles:
             resp.sampled_completions.append(p.completion)

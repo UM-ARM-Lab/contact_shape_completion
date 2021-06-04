@@ -3,4 +3,5 @@ __pycache__
 *.idea
 shape_completion_training/results
 contact_shape_completion/debugging
+contact_shape_completion/saved_requests
 *.bag
