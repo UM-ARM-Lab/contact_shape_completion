@@ -27,9 +27,12 @@ tf.get_logger().setLevel('ERROR')
 
 
 class ContactShapeCompleter:
-    def __init__(self, scene: Scene, trial=None, goal_generator=None, store_request=False):
+    def __init__(self, scene: Scene, trial=None, goal_generator=None, store_request=False,
+                 completion_density=3):
         self.scene = scene
         self.goal_generator = goal_generator  # type GoalGenerator
+        self.should_store_request = store_request
+        self.completion_density = completion_density
         self.robot_view = DepthCameraListener()
         self.model_runner = None
         if trial is not None:
@@ -46,8 +49,9 @@ class ContactShapeCompleter:
         self.swept_freespace = tf.zeros((1, 64, 64, 64, 1))
         self.belief = ParticleBelief()
         self.known_obstacles = None
-        self.should_store_request = store_request
+
         self.prev_shape_completion_request = None
+
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.belief.reset()
@@ -177,6 +181,8 @@ class ContactShapeCompleter:
 
         resp = CompleteShapeResponse()
         for p in self.belief.particles:
+            if not p.successful_projection:
+                continue
             resp.sampled_completions.append(p.completion)
             resp.goal_tsrs.append(p.goal)
         return resp
@@ -216,7 +222,7 @@ class ContactShapeCompleter:
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
         for particle in self.belief.particles:
             self.goal_generator.clear_goal_markers()
-            particle.latent = self.enforce_contact(particle.latent, known_free, chss)
+            particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss)
             predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
             pts = self.transform_to_gpuvoxels(predicted_occ)
             self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
@@ -261,7 +267,7 @@ class ContactShapeCompleter:
         msg = visual_conversions.vox_to_pointcloud2_msg(vg, frame=self.robot_view.target_frame,
                                                         scale=self.robot_view.scale,
                                                         origin=-self.robot_view.origin / self.robot_view.scale,
-                                                        density_factor=3)
+                                                        density_factor=self.completion_density)
         # pt = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
         #                                          origin=self.robot_view.origin)
 

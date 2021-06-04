@@ -48,10 +48,10 @@ class SimulationCheezit(SimulationScene):
         self.scale = 0.01
         self.origin = get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)
 
-    def get_gt(self):
+    def get_gt(self, density_factor=3):
         pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
                                                         origin=self.origin,
-                                                        density_factor=3)
+                                                        density_factor=density_factor)
         return pts
 
     def get_segmented_points(self):

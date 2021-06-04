@@ -31,3 +31,4 @@ class Particle:
         self.goal = None
         self.completion = None
         self.associated_chs_inds = []
+        self.successful_projection = True

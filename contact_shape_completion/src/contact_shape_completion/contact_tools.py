@@ -49,6 +49,7 @@ def denoise_pointcloud(pts, scale, origin, shape, threshold):
 
 def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belief: ParticleBelief,
                     vg_pub: VoxelgridPublisher):
+    success = True
     vg_pub.publish("aux", 0 * known_free)
 
     vg_pub.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
@@ -56,7 +57,9 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
     known_contact = get_assumed_occ(pred_occ, chss)
     # any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
     vg_pub.publish('known_free', known_free)
-    if chss is not None:
+    if chss is None:
+        vg_pub.publish('chs', known_free * 0)
+    else:
         vg_pub.publish('chs', chss)
 
     print()
@@ -78,21 +81,26 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
         vg_pub.publish('predicted_occ', pred_occ)
         vg_pub.publish('known_contact', known_contact)
 
-        if loss == prev_loss:
-            print("\tNo progress made. Accepting shape as is")
-            break
-        prev_loss = loss
-        if tf.math.is_nan(loss):
-            print("\tLoss is nan. There is a problem I am not addressing")
-            break
-
         if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
                 tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
             print(
                 f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
                 f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
             break
+
+        if loss == prev_loss:
+            print("\tNo progress made. Accepting shape as is")
+            success = False
+            break
+        prev_loss = loss
+
+        if tf.math.is_nan(loss):
+            print("\tLoss is nan. There is a problem I am not addressing")
+            success = False
+            break
+
     else:
+        success = False
         print()
         if np.max(pred_occ * known_free) > KNOWN_FREE_LIMIT:
             print("Optimization did not satisfy known freespace: ")
@@ -105,4 +113,4 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
     log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
     quantile = belief.get_quantile(log_pdf)
     print(f"Latent logprob {log_pdf} ({quantile} quantile)")
-    return latent
+    return latent, success
