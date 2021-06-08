@@ -3,6 +3,8 @@ import unittest
 from contact_shape_completion import contact_tools
 import tensorflow as tf
 
+from contact_shape_completion.contact_tools import are_chss_satisfied
+
 
 def expand(t):
     return tf.expand_dims(tf.expand_dims(t, axis=-1), axis=0)
@@ -43,6 +45,39 @@ class TestPSSNet(unittest.TestCase):
         self.assertEqual(res.shape[0], 1)
         self.assertTrue(tf.reduce_all(res == expected_occ))
 
+    def test_are_chss_satisfied(self):
+        pred_occ = create_tensor([[[0.1, 0.2], [0.3, 0.7]],
+                                  [[0.2, 0.2], [0.21, 0.2]]])
+        chss = None
+        self.assertTrue(are_chss_satisfied(pred_occ, chss))
+
+        chss = create_tensor([[[0.0, 0.0], [0.0, 1.0]],
+                                  [[0.0, 0.0], [0.0, 0.0]]])
+        self.assertTrue(are_chss_satisfied(pred_occ, chss))
+
+        chss = create_tensor([[[0.0, 0.0], [0.0, 0.0]],
+                                  [[0.0, 0.0], [1.0, 0.0]]])
+        self.assertFalse(are_chss_satisfied(pred_occ, chss))
+
+        chss = create_tensor([[[0.0, 0.0], [0.0, 1.0]],
+                                  [[0.0, 0.0], [1.0, 0.0]]])
+        self.assertTrue(are_chss_satisfied(pred_occ, chss))
+
+
+        pred_occ = create_tensor([[[0.4, 0.4], [0.3, 0.7]],
+                                  [[0.7, 0.4], [0.21, 0.4]]])
+
+        chs1 = create_tensor([[[0.0, 0.0], [0.0, 1.0]],
+                                  [[0.0, 0.0], [1.0, 0.0]]])
+        chs2 = create_tensor([[[0.0, 0.0], [0.0, 0.0]],
+                                  [[1.0, 1.0], [1.0, 1.0]]])
+        chss = tf.concat([chs1, chs2], axis=0)
+        self.assertTrue(are_chss_satisfied(pred_occ, chss))
+
+        chs3 = create_tensor([[[0.0, 0.0], [0.0, 0.0]],
+                                  [[0.0, 1.0], [1.0, 1.0]]])
+        chss = tf.concat([chs1, chs2, chs3], axis=0)
+        self.assertFalse(are_chss_satisfied(pred_occ, chss))
 
 if __name__ == '__main__':
     unittest.main()

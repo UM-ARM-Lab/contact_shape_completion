@@ -160,6 +160,32 @@ class PSSNet(MyKerasModel):
         self.contact_optimizer.apply_gradients(zip(gradients, variables))
         return loss
 
+    def grad_step_towards_output_ignore_latent_prior(self, latent, known_occ, known_free, belief):
+        #TODO: Pass in acceptable prob. Perhaps just the original prob
+        acceptable_prob = belief.quantiles_log_pdf[25]
+
+        with tf.GradientTape() as tape:
+            # predicted_occ = self.decode(latent, apply_sigmoid=True)
+            # loss = tf.reduce_sum(known_output - known_output * predicted_occ)
+            # loss = tf.exp(loss)
+            # predicted_occ = self.decode(latent)
+            predicted_occ = self.decode(latent, apply_sigmoid=True)
+            #TODO: Remove hardcoded numbers and choose grad step size better
+            loss_known_occ = -tf.reduce_sum(known_occ * predicted_occ)
+            loss_known_free = tf.reduce_sum(tf.clip_by_value(known_free * predicted_occ - 0.4, 0.0, 1.0))
+
+            # log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
+            # loss_latent_prob = -tf.clip_by_value(log_pdf, -10000, acceptable_prob)/10
+            # loss_latent_prob = -log_pdf/1000
+            # loss_latent_prob = tf.losses.mse(acceptable_prob,  log_pdf)/100
+
+            loss = 1 + loss_known_occ + loss_known_free
+
+        variables = [latent]
+        gradients = tape.gradient(loss, variables)
+        self.contact_optimizer.apply_gradients(zip(gradients, variables))
+        return loss
+
 
 def make_encoder(inp_shape, params):
     """Basic VAE encoder"""

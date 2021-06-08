@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 
@@ -12,7 +13,8 @@ from sensor_msgs.msg import PointCloud2
 import ros_numpy
 from contact_shape_completion import contact_tools
 from contact_shape_completion.beliefs import ParticleBelief, Particle
-from contact_shape_completion.contact_tools import enforce_contact
+from contact_shape_completion.contact_tools import enforce_contact, enforce_contact_ignore_latent_prior, \
+    are_chss_satisfied
 from contact_shape_completion.kinect_listener import DepthCameraListener
 from contact_shape_completion.scenes import Scene, LiveScene, SimulationScene
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
@@ -22,17 +24,21 @@ from rviz_voxelgrid_visuals import conversions as visual_conversions
 from shape_completion_training.model.model_runner import ModelRunner
 from shape_completion_training.utils.tf_utils import add_batch_to_dict, stack_known, compute_quantiles
 from shape_completion_training.voxelgrid import conversions
+from shape_completion_training.voxelgrid.utils import inflate_voxelgrid
 
 tf.get_logger().setLevel('ERROR')
 
 
 class ContactShapeCompleter:
     def __init__(self, scene: Scene, trial=None, goal_generator=None, store_request=False,
-                 completion_density=3):
+                 completion_density=3,
+                 method='proposed'):
         self.scene = scene
         self.goal_generator = goal_generator  # type GoalGenerator
         self.should_store_request = store_request
         self.completion_density = completion_density
+        self.method = method
+
         self.robot_view = DepthCameraListener()
         self.model_runner = None
         if trial is not None:
@@ -51,7 +57,6 @@ class ContactShapeCompleter:
         self.known_obstacles = None
 
         self.prev_shape_completion_request = None
-
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.belief.reset()
@@ -157,7 +162,6 @@ class ContactShapeCompleter:
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
 
-
         print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
 
         if self.model_runner is None:
@@ -203,7 +207,6 @@ class ContactShapeCompleter:
 
     def update_belief(self, known_free, chss, num_particles):
         self.reload_flow()
-        pssnet = self.model_runner.model
 
         if len(self.belief.particles) > num_particles:
             raise RuntimeError("Unexpected situation - we have more particles than requested")
@@ -219,6 +222,21 @@ class ContactShapeCompleter:
         # if chss is not None:
         #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
+        if self.method == "proposed":
+            self.update_belief_proposed(known_free, chss)
+        elif self.method == "baseline_ignore_latent_prior":
+            self.update_belief_proposed(known_free, chss)  # Ablation done in enforce_contact
+        elif self.method == "baseline_OOD_prediction":
+            self.update_belief_OOD_prediction(known_free, chss)
+        elif self.method == "baseline_rejection_sampling":
+            self.update_belief_rejection_sampling(known_free, chss)
+        else:
+            raise RuntimeError(f"Unknown method {self.method}. Cannot update belief")
+
+        for i, p in enumerate(self.belief.particles):
+            self.goal_generator.publish_goal(p.goal, marker_id=i)
+
+    def update_belief_proposed(self, known_free, chss):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
         for particle in self.belief.particles:
             self.goal_generator.clear_goal_markers()
@@ -234,8 +252,66 @@ class ContactShapeCompleter:
             particle.goal = goal_tsr
             particle.completion = pts
 
-        for i, p in enumerate(self.belief.particles):
-            self.goal_generator.publish_goal(p.goal, marker_id=i)
+    def update_belief_OOD_prediction(self, known_free, chss):
+        # raise NotImplementedError(f"OOD prediction is not yet implemented")
+        visible_vg = deepcopy(self.last_visible_vg)
+        visible_vg['known_free'] += known_free
+
+        if chss is not None:
+            gt = self.transform_from_gpuvoxels(self.scene.get_gt())
+            gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
+            contact_voxels = tf.reduce_sum(chss, axis=0)
+            self.robot_view.VG_PUB.publish('chs', contact_voxels)
+            self.robot_view.VG_PUB.publish('gt', gt)
+            visible_vg['known_occ'] = np.clip(contact_voxels * gt + visible_vg['known_occ'], 0.0, 1.0)
+            self.robot_view.VG_PUB.publish('known_contact', contact_voxels * gt)
+
+        for particle in self.belief.particles:
+            self.goal_generator.clear_goal_markers()
+            self.robot_view.VG_PUB.publish('known_free', visible_vg['known_free'])
+            predicted_occ = self.model_runner.model.call(add_batch_to_dict(visible_vg), apply_sigmoid=True)[
+                'predicted_occ']
+            pts = self.transform_to_gpuvoxels(predicted_occ)
+            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+            try:
+                goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+            except RuntimeError as e:
+                print(e)
+                continue
+            particle.goal = goal_tsr
+            particle.completion = pts
+
+    def update_belief_rejection_sampling(self, known_free, chss):
+
+        # if chss is not None:
+        #     gt = self.transform_from_gpuvoxels(self.scene.get_gt())
+        #     gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
+        #     contact_voxels = tf.reduce_sum(chss, axis=0)
+        #     self.robot_view.VG_PUB.publish('chs', contact_voxels)
+        #     self.robot_view.VG_PUB.publish('gt', gt)
+        #     visible_vg['known_occ'] = np.clip(contact_voxels * gt + visible_vg['known_occ'], 0.0, 1.0)
+        #     self.robot_view.VG_PUB.publish('known_contact', contact_voxels * gt)
+
+        for particle in self.belief.particles:
+            self.goal_generator.clear_goal_markers()
+            self.robot_view.VG_PUB.publish('known_free', known_free)
+            predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.last_visible_vg), apply_sigmoid=True)[
+                'predicted_occ']
+            pts = self.transform_to_gpuvoxels(predicted_occ)
+            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+            try:
+                goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+            except RuntimeError as e:
+                print(e)
+                continue
+            particle.goal = goal_tsr
+            particle.completion = pts
+
+            particle.successful_projection = True
+            if tf.reduce_sum(known_free * predicted_occ) >= 1.0:
+                particle.successful_projection = False
+            if not are_chss_satisfied(predicted_occ, chss):
+                particle.successful_projection = False
 
     def debug_repeated_sampling(self, bel: ParticleBelief, known_free, chss):
         pssnet = self.model_runner.model
@@ -297,7 +373,14 @@ class ContactShapeCompleter:
         self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss):
-        return enforce_contact(latent, known_free, chss, self.model_runner.model, self.belief, self.robot_view.VG_PUB)
+        if self.method == "proposed":
+            return enforce_contact(latent, known_free, chss, self.model_runner.model,
+                                   self.belief, self.robot_view.VG_PUB)
+        elif self.method == "baseline_ignore_latent_prior":
+            return enforce_contact_ignore_latent_prior(latent, known_free, chss, self.model_runner.model,
+                                                       self.belief, self.robot_view.VG_PUB)
+        else:
+            raise RuntimeError(f"Not known how to enforce_contact for method {self.method}")
 
     # def enforce_contact(self, latent, known_free, chss):
     #     self.robot_view.VG_PUB.publish("aux", 0 * known_free)

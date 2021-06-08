@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 from pathlib import Path
-from typing import Type
 
 import numpy as np
 import pandas as pd
@@ -17,23 +16,24 @@ from contact_shape_completion import scenes
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.evaluation import pt_cloud_distance, vg_chamfer_distance
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
+
+from contact_shape_completion.contact_shape_completion.src.contact_shape_completion.evaluation_params import \
+    EvaluationDetails
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
-from dataclasses import dataclass
 
 default_dataset_params = default_params.get_default_params()
 
-
-@dataclass()
-class EvaluationDetails:
-    scene_type: Type[scenes.Scene]
-    network: str
-    method: str
+NUM_PARTICLES_IN_TRIAL = 10
 
 
 def get_evaluation_trials():
-    d = [EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed')]
+    d = [EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
+         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+         ]
     return d
 
 
@@ -55,7 +55,8 @@ def generate_evaluation(details):
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(details.network),
                                                     goal_generator=goal_generator,
-                                                    completion_density=1)
+                                                    completion_density=1,
+                                                    method=details.method)
 
     contact_shape_completer.get_visible_vg()
 
@@ -74,7 +75,7 @@ def generate_evaluation(details):
         with file.open('rb') as f:
             completion_req.deserialize(f.read())
 
-        completion_req.num_samples = 100
+        completion_req.num_samples = NUM_PARTICLES_IN_TRIAL
         resp = contact_shape_completer.complete_shape_srv(completion_req)
         dists = []
         for particle_num, completion_pts_msg in enumerate(resp.sampled_completions):
@@ -93,7 +94,6 @@ def generate_evaluation(details):
 
     df.to_csv(get_evaluation_path(details))
     print(df)
-
 
 
 def display_sorted_particles(particles, dists):
@@ -148,7 +148,6 @@ def plot(details: EvaluationDetails):
     ax.set_title(f'{scene.name}: {details.method}')
     plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
     plt.show()
-
 
 
 def main():
