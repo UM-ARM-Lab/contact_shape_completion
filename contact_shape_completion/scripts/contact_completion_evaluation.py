@@ -67,6 +67,7 @@ def generate_evaluation(scene, trial):
         with file.open('rb') as f:
             completion_req.deserialize(f.read())
 
+        completion_req.num_samples = 10
         resp = contact_shape_completer.complete_shape_srv(completion_req)
         dists = []
         for particle_num, completion_pts_msg in enumerate(resp.sampled_completions):
@@ -78,9 +79,19 @@ def generate_evaluation(scene, trial):
             ], index=columns), ignore_index=True)
         print(f"Closest particle has error {np.min(dists)}")
         print(f"Average particle has error {np.mean(dists)}")
+        # display_sorted_particles(contact_shape_completer, resp.sampled_completions, dists)
 
     df.to_csv(get_evaluation_path(scene.name, trial))
     print(df)
+
+def display_sorted_particles(contact_shape_completer: ContactShapeCompleter, particles, dists):
+    ordered_particles = sorted(zip(particles, dists), key=lambda x: x[1])
+    point_pub = ros_helpers.get_connected_publisher('/pointcloud', PointCloud2, queue_size=1)
+    for particle, dist in ordered_particles:
+        point_pub.publish(particle)
+        print(f"Dist {dist}")
+        rospy.sleep(0.1)
+
 
 
 def get_evaluation_path(scene_name: str, trial: str):
@@ -99,6 +110,7 @@ def plot(scene, trial_name):
     err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
     plt.rcParams['errorbar.capsize'] = 10
     sns.barplot(x=('request number', 'first'), y=('chamfer distance', 'mean'), data=df, yerr=err.T.to_numpy())
+    plt.show()
 
 
 def main():
