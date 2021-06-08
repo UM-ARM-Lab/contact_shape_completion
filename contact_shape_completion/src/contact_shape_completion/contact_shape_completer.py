@@ -46,7 +46,7 @@ class ContactShapeCompleter:
 
         self.complete_shape = rospy.Service("complete_shape", CompleteShape, self.complete_shape_srv)
         self.request_shape = rospy.Service("get_known_world", RequestShape, self.request_known_world_srv)
-        self.request_shape = rospy.Service("get_true_world", RequestShape, self.request_true_world_srv)
+        self.request_true_shape = rospy.Service("get_true_world", RequestShape, self.request_true_world_srv)
         self.reset_completer = rospy.Service("reset_completer", ResetShapeCompleter, self.reset_completer_srv)
         self.new_free_sub = rospy.Subscriber("swept_freespace_pointcloud", PointCloud2,
                                              self.new_swept_freespace_callback)
@@ -57,6 +57,15 @@ class ContactShapeCompleter:
         self.known_obstacles = None
 
         self.prev_shape_completion_request = None
+
+    def unsubscribe(self):
+        self.complete_shape.shutdown()
+        self.request_shape.shutdown()
+        self.request_true_shape.shutdown()
+        self.reset_completer.shutdown()
+        self.new_free_sub.unregister()
+
+
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.belief.reset()

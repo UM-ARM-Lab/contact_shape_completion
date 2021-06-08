@@ -25,7 +25,7 @@ from shape_completion_training.utils.config import lookup_trial
 
 default_dataset_params = default_params.get_default_params()
 
-NUM_PARTICLES_IN_TRIAL = 10
+NUM_PARTICLES_IN_TRIAL = 100
 
 
 def get_evaluation_trials():
@@ -88,12 +88,15 @@ def generate_evaluation(details):
             df = df.append(pd.Series([
                 req_number, float(len(completion_req.chss)), particle_num, scene.name, 'wip_method', dist, True
             ], index=columns), ignore_index=True)
+        if len(dists) == 0:
+            continue
         print(f"Closest particle has error {np.min(dists)}")
         print(f"Average particle has error {np.mean(dists)}")
         display_sorted_particles(resp.sampled_completions, dists)
 
     df.to_csv(get_evaluation_path(details))
     print(df)
+    contact_shape_completer.unsubscribe()
 
 
 def display_sorted_particles(particles, dists):
