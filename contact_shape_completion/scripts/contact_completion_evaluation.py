@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from pathlib import Path
+from typing import Type
 
 import numpy as np
 import pandas as pd
@@ -19,16 +20,21 @@ from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
+from dataclasses import dataclass
 
-"""
-Publish object pointclouds for use in gpu_voxels planning
-"""
 
 default_dataset_params = default_params.get_default_params()
 
 
-def get_evaluation_tuples():
-    d = [(scenes.SimulationCheezit(), 'AAB')]
+@dataclass()
+class EvaluationDetails:
+    scene_type: Type[scenes.Scene]
+    network: str
+    method: str
+
+
+def get_evaluation_trials():
+    d = [EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed')]
     return d
 
 
@@ -40,14 +46,16 @@ def parse_command_line_args():
     return parser.parse_args()
 
 
-def generate_evaluation(scene, trial):
+def generate_evaluation(details):
     # x_bound = (-0.004, 0.004)
     x_bound = [-0.04, 0.04]
+    scene = details.scene_type()
 
     goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
     # scene = simulation_ground_truth_scenes.LiveScene1()
 
-    contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(trial), goal_generator=goal_generator,
+    contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(details.network),
+                                                    goal_generator=goal_generator,
                                                     completion_density=1)
 
     contact_shape_completer.get_visible_vg()
@@ -79,12 +87,13 @@ def generate_evaluation(scene, trial):
             ], index=columns), ignore_index=True)
         print(f"Closest particle has error {np.min(dists)}")
         print(f"Average particle has error {np.mean(dists)}")
-        # display_sorted_particles(contact_shape_completer, resp.sampled_completions, dists)
+        # display_sorted_particles(resp.sampled_completions, dists)
 
-    df.to_csv(get_evaluation_path(scene.name, trial))
+    df.to_csv(get_evaluation_path(details))
     print(df)
 
-def display_sorted_particles(contact_shape_completer: ContactShapeCompleter, particles, dists):
+
+def display_sorted_particles(particles, dists):
     ordered_particles = sorted(zip(particles, dists), key=lambda x: x[1])
     point_pub = ros_helpers.get_connected_publisher('/pointcloud', PointCloud2, queue_size=1)
     for particle, dist in ordered_particles:
@@ -93,17 +102,19 @@ def display_sorted_particles(contact_shape_completer: ContactShapeCompleter, par
         rospy.sleep(0.1)
 
 
-
-def get_evaluation_path(scene_name: str, trial: str):
-    path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "evaluations" / scene_name / f'{trial}.csv'
+def get_evaluation_path(details: EvaluationDetails):
+    scene = details.scene_type()
+    path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "evaluations" / scene.name / \
+           f'{details.network}_{details.method}.csv'
     path.parent.parent.mkdir(exist_ok=True)
     path.parent.mkdir(exist_ok=True)
     return path
 
 
-def plot(scene, trial_name):
-    df = pd.read_csv(get_evaluation_path(scene.name, trial_name))
-    print(f"Plotting {scene.name}, {trial_name}")
+def plot(details: EvaluationDetails):
+    scene = details.scene_type()
+    df = pd.read_csv(get_evaluation_path(details))
+    print(f"Plotting {scene.name}, {details.network}, {details.method}")
     df = df[['request number', 'chs count', 'chamfer distance']] \
         .groupby('request number', as_index=False) \
         .agg({'request number': 'first', 'chamfer distance': ['mean', 'min', 'max']})
@@ -120,18 +131,18 @@ def main():
     rospy.loginfo("Contact Completion Evaluation")
 
     # scene = scenes.SimulationCheezit()
-    for scene, trial_name in get_evaluation_tuples():
+    for details in get_evaluation_trials():
         if ARGS.regenerate:
-            print(f'{Fore.CYAN}Regenerating {scene.name}, {trial_name}{Fore.RESET}')
-            generate_evaluation(scene, trial_name)
-        elif not get_evaluation_path(scene.name, trial_name).exists():
-            print(f'{Fore.CYAN}Generating {scene.name}, {trial_name}{Fore.RESET}')
-            generate_evaluation(scene, trial_name)
+            print(f'{Fore.CYAN}Regenerating {details}{Fore.RESET}')
+            generate_evaluation(details)
+        elif not get_evaluation_path(details).exists():
+            print(f'{Fore.CYAN}Generating {details}{Fore.RESET}')
+            generate_evaluation(details)
         else:
-            print(f"{scene.name}, {trial_name} exist. Not generating")
+            print(f"{details} exists. Not generating")
 
         if ARGS.plot:
-            plot(scene, trial_name)
+            plot(details)
 
 
 if __name__ == "__main__":
