@@ -15,13 +15,12 @@ from sensor_msgs.msg import PointCloud2
 from arc_utilities import ros_helpers
 from contact_shape_completion import scenes
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
-from contact_shape_completion.evaluation import pt_cloud_distance
+from contact_shape_completion.evaluation import pt_cloud_distance, vg_chamfer_distance
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
 from dataclasses import dataclass
-
 
 default_dataset_params = default_params.get_default_params()
 
@@ -75,11 +74,14 @@ def generate_evaluation(details):
         with file.open('rb') as f:
             completion_req.deserialize(f.read())
 
-        completion_req.num_samples = 10
+        completion_req.num_samples = 100
         resp = contact_shape_completer.complete_shape_srv(completion_req)
         dists = []
         for particle_num, completion_pts_msg in enumerate(resp.sampled_completions):
             dist = pt_cloud_distance(completion_pts_msg, gt).numpy()
+            dist = vg_chamfer_distance(contact_shape_completer.transform_from_gpuvoxels(completion_pts_msg),
+                                       contact_shape_completer.transform_from_gpuvoxels(gt),
+                                       scale=contact_shape_completer.robot_view.scale).numpy()
             print(f"Errors w.r.t. gt: {dist}")
             dists.append(dist)
             df = df.append(pd.Series([
@@ -87,10 +89,11 @@ def generate_evaluation(details):
             ], index=columns), ignore_index=True)
         print(f"Closest particle has error {np.min(dists)}")
         print(f"Average particle has error {np.mean(dists)}")
-        # display_sorted_particles(resp.sampled_completions, dists)
+        display_sorted_particles(resp.sampled_completions, dists)
 
     df.to_csv(get_evaluation_path(details))
     print(df)
+
 
 
 def display_sorted_particles(particles, dists):
@@ -111,17 +114,41 @@ def get_evaluation_path(details: EvaluationDetails):
     return path
 
 
+def percentile_fun(n):
+    def percentile_(x):
+        return np.percentile(x, n)
+
+    percentile_.__name__ = 'percentile_%s' % n
+    return percentile_
+
+
 def plot(details: EvaluationDetails):
     scene = details.scene_type()
     df = pd.read_csv(get_evaluation_path(details))
+
+    bar_key = ('chamfer distance', 'median')
+    error_key_lower = ('chamfer distance', 'percentile_25')
+    # error_key_lower = ('chamfer distance', 'min')
+    error_key_upper = ('chamfer distance', 'percentile_75')
+
     print(f"Plotting {scene.name}, {details.network}, {details.method}")
     df = df[['request number', 'chs count', 'chamfer distance']] \
         .groupby('request number', as_index=False) \
-        .agg({'request number': 'first', 'chamfer distance': ['mean', 'min', 'max']})
-    err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
+        .agg({'request number': 'first',
+              'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
+    # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
+    df['bar min'] = df[bar_key] - df[error_key_lower]
+    df['bar max'] = df[error_key_upper] - df[bar_key]
+    err = df[['bar min', 'bar max']]
+
     plt.rcParams['errorbar.capsize'] = 10
-    sns.barplot(x=('request number', 'first'), y=('chamfer distance', 'mean'), data=df, yerr=err.T.to_numpy())
+    ax = sns.barplot(x=('request number', 'first'), y=bar_key, data=df, yerr=err.T.to_numpy())
+    ax.set_xlabel('Number of observations')
+    ax.set_ylabel('Chamfer Distance to True Scene')
+    ax.set_title(f'{scene.name}: {details.method}')
+    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
     plt.show()
+
 
 
 def main():
