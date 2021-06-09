@@ -55,15 +55,12 @@ def parse_command_line_args():
 
 
 def generate_evaluation(details):
-    # x_bound = (-0.004, 0.004)
-    x_bound = [-0.04, 0.04]
     scene = details.scene_type()
 
-    goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
+
     # scene = simulation_ground_truth_scenes.LiveScene1()
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(details.network),
-                                                    goal_generator=goal_generator,
                                                     completion_density=1,
                                                     method=details.method)
 
