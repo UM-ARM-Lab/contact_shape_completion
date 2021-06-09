@@ -17,8 +17,7 @@ from contact_shape_completion.contact_shape_completer import ContactShapeComplet
 from contact_shape_completion.evaluation import pt_cloud_distance, vg_chamfer_distance
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
 
-from contact_shape_completion.contact_shape_completion.src.contact_shape_completion.evaluation_params import \
-    EvaluationDetails
+from contact_shape_completion.evaluation_params import EvaluationDetails
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
