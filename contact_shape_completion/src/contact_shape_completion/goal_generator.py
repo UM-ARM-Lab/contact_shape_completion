@@ -1,3 +1,4 @@
+
 import abc
 
 from arm_robots.victor import Victor
@@ -16,8 +17,17 @@ class GoalGenerator(abc.ABC):
     def __init__(self):
         self.goal_pt_pub = rospy.Publisher("goal_pt", Marker, queue_size=10)
 
-    @abc.abstractmethod
     def generate_goal(self, state):
+        goal_pt = self.generate_goal_point(state)
+        goal_config = self.generate_goal_config(goal_pt)
+        return goal_config
+
+    @abc.abstractmethod
+    def generate_goal_point(self, state):
+        pass
+
+    @abc.abstractmethod
+    def generate_goal_config(self, goat_pt):
         pass
 
     @abc.abstractmethod
@@ -25,8 +35,10 @@ class GoalGenerator(abc.ABC):
         pass
 
 
-class CheezeitGoalGenerator(GoalGenerator):
-    def __init__(self, x_bound=(-0.004, 0.004),
+
+
+class BasicGoalGenerator(GoalGenerator):
+    def __init__(self, x_bound=(-0.04, 0.04),
                  y_bound=(-0.1, 0.1),
                  z_bound=(-0.05, 0.05)):
         super().__init__()
@@ -43,11 +55,6 @@ class CheezeitGoalGenerator(GoalGenerator):
         self.x_bound = x_bound
         self.y_bound = y_bound
         self.z_bound = z_bound
-
-    def generate_goal(self, state: PointCloud2):
-        goal_pt = self.generate_goal_point(state)
-        goal_config = self.generate_goal_config(goal_pt)
-        return goal_config
 
     def generate_goal_config(self, goal_pt):
         # goal_config = [0, 0, 0, 0, 0, 0]
@@ -132,3 +139,34 @@ class CheezeitGoalGenerator(GoalGenerator):
         m = Marker(action=Marker.DELETEALL)
         m.ns = "tsr"
         self.goal_pt_pub.publish(m)
+
+
+class CheezeitGoalGenerator(BasicGoalGenerator):
+    pass
+
+
+class PitcherGoalGenerator(BasicGoalGenerator):
+    def generate_goal_point(self, state: PointCloud2):
+        pts = point_cloud2.read_points(state, field_names=('x', 'y', 'z'))
+        pts = np.array([p for p in pts])
+        if len(pts) == 0:
+            raise RuntimeError("Cannot generate a goal from no points")
+
+        centroid = np.mean(pts, axis=0)
+        back = np.max(pts, axis=0)
+
+        goal_pt = [back[0] + 0.1, centroid[1]-0.2, centroid[2]]
+
+        m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
+                   header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),
+                   type=Marker.SPHERE)
+        m.pose.orientation.w = 1.0
+        m.pose.position.x = goal_pt[0]
+        m.pose.position.y = goal_pt[1]
+        m.pose.position.z = goal_pt[2]
+        m.scale.x = 0.1
+        m.scale.y = 0.1
+        m.scale.z = 0.1
+
+        self.goal_pt_pub.publish(m)
+        return goal_pt

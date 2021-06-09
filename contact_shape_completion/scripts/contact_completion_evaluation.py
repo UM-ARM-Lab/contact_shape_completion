@@ -36,6 +36,12 @@ def get_evaluation_trials():
          EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_ignore_latent_prior'),
          EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
          EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
+         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                           method='baseline_ignore_latent_prior'),
+         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
+         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                           method='baseline_rejection_sampling'),
          ]
     return d
 

@@ -213,6 +213,7 @@ if __name__ == "__main__":
     args = vars(parse_visualizer_command_line_args())
     params = default_params.get_visualization_params()
     params.update(overwrite_params)
+    print(f"Using params {params}")
     visualizer = Visualizer(**args, params=params)
 
     rospy.spin()

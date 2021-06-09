@@ -30,11 +30,10 @@ tf.get_logger().setLevel('ERROR')
 
 
 class ContactShapeCompleter:
-    def __init__(self, scene: Scene, trial=None, goal_generator=None, store_request=False,
+    def __init__(self, scene: Scene, trial=None, store_request=False,
                  completion_density=3,
                  method='proposed'):
         self.scene = scene
-        self.goal_generator = goal_generator  # type GoalGenerator
         self.should_store_request = store_request
         self.completion_density = completion_density
         self.method = method
@@ -131,7 +130,10 @@ class ContactShapeCompleter:
         if isinstance(self.scene, LiveScene):
             pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
             pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
-            pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0], shape=[256, 256, 256],
+
+            # Compute pts exactly as gpu voxels would see the obstacles
+            pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
+                                                   shape=[256, 256, 256],
                                                    threshold=100)
             self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
 
@@ -243,18 +245,18 @@ class ContactShapeCompleter:
             raise RuntimeError(f"Unknown method {self.method}. Cannot update belief")
 
         for i, p in enumerate(self.belief.particles):
-            self.goal_generator.publish_goal(p.goal, marker_id=i)
+            self.scene.goal_generator.publish_goal(p.goal, marker_id=i)
 
     def update_belief_proposed(self, known_free, chss):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
         for particle in self.belief.particles:
-            self.goal_generator.clear_goal_markers()
+            self.scene.goal_generator.clear_goal_markers()
             particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss)
             predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
             pts = self.transform_to_gpuvoxels(predicted_occ)
             self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
             try:
-                goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
                 print(e)
                 continue
@@ -276,14 +278,14 @@ class ContactShapeCompleter:
             self.robot_view.VG_PUB.publish('known_contact', contact_voxels * gt)
 
         for particle in self.belief.particles:
-            self.goal_generator.clear_goal_markers()
+            self.scene.goal_generator.clear_goal_markers()
             self.robot_view.VG_PUB.publish('known_free', visible_vg['known_free'])
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(visible_vg), apply_sigmoid=True)[
                 'predicted_occ']
             pts = self.transform_to_gpuvoxels(predicted_occ)
             self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
             try:
-                goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
                 print(e)
                 continue
@@ -302,14 +304,14 @@ class ContactShapeCompleter:
         #     self.robot_view.VG_PUB.publish('known_contact', contact_voxels * gt)
 
         for particle in self.belief.particles:
-            self.goal_generator.clear_goal_markers()
+            self.scene.goal_generator.clear_goal_markers()
             self.robot_view.VG_PUB.publish('known_free', known_free)
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.last_visible_vg), apply_sigmoid=True)[
                 'predicted_occ']
             pts = self.transform_to_gpuvoxels(predicted_occ)
             self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
             try:
-                goal_tsr = self.goal_generator.generate_goal_tsr(pts)
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
                 print(e)
                 continue

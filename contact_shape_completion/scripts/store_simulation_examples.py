@@ -32,15 +32,10 @@ if __name__ == "__main__":
     rospy.init_node('contact_shape_completer_service')
     rospy.loginfo("Data Publisher")
 
-    # x_bound = (-0.004, 0.004)
-    x_bound = [-0.04, 0.04]
-
-    goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
-
     # scene = SimulationCheezit()
     scene = get_scene(ARGS.scene)
 
-    contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial), goal_generator=goal_generator,
+    contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial),
                                                     store_request=ARGS.store)
     # contact_shape_completer.load_network(ARGS.trial)
 

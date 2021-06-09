@@ -9,6 +9,7 @@ from colorama import Fore
 from sensor_msgs.msg import PointCloud2
 
 from arc_utilities import ros_helpers
+from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates
 from shape_completion_training.model import default_params
@@ -33,6 +34,7 @@ class Scene(abc.ABC):
     def __init__(self):
         self.use_live = False
         self.name = None
+        self.goal_generator: GoalGenerator
 
     @abc.abstractmethod
     def get_gt(self):
@@ -46,6 +48,7 @@ class Scene(abc.ABC):
         path.parent.mkdir(exist_ok=True)
         path.mkdir(exist_ok=True)
         return path
+
 
 
 class SimulationScene(Scene):
@@ -63,6 +66,7 @@ class SimulationCheezit(SimulationScene):
                                                         params=params).load()
         self.scale = 0.01
         self.origin = get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)
+        self.goal_generator = CheezeitGoalGenerator()
 
     def get_gt(self, density_factor=3):
         pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
@@ -93,6 +97,7 @@ class SimulationDeepCheezit(SimulationScene):
             self.elem['gt_occ'] = np.clip(self.elem['gt_occ'] + gt, 0.0, 1.0)
         self.scale = 0.01
         self.origin = get_origin_in_voxel_coordinates((1.0, 1.6, 1.2), self.scale)
+        self.goal_generator = CheezeitGoalGenerator()
 
     def get_gt(self, density_factor=3):
         pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
@@ -117,8 +122,9 @@ class SimulationPitcher(SimulationScene):
         params['apply_depth_sensor_noise'] = True
         self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
                                                         params=params).load()
-        self.scale = 0.01
-        self.origin = get_origin_in_voxel_coordinates((1.0, 1.6, 1.2), self.scale)
+        self.scale = 0.007
+        self.origin = get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale)
+        self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
 
     def get_gt(self, density_factor=3):
         pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',

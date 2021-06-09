@@ -12,7 +12,7 @@ import numpy as np
 from shape_completion_training.voxelgrid import conversions
 from shape_completion_training.utils import data_tools
 
-scale = 0.007
+SCALE = 0.007
 # origin = (2.446 - scale * 32, -0.384 - scale * 32, 0.86 - scale * 32)
 x_bounds = (0, 64)
 # x_bounds = (20, 43)
@@ -23,8 +23,8 @@ z_bounds = (0, 64)
 
 
 class DepthCameraListener:
-    def __init__(self):
-        self.scale = 0.007
+    def __init__(self, scale=SCALE):
+        self.scale = scale
         # origin = (2.446 - scale * 32, -0.384 - scale * 32, 0.86 - scale * 32)
         self.x_bounds = (0, 64)
         # x_bounds = (20, 43)
@@ -39,7 +39,7 @@ class DepthCameraListener:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
-        self.VG_PUB = VoxelgridPublisher(frame=self.target_frame, scale=scale, origin=self.origin)
+        self.VG_PUB = VoxelgridPublisher(frame=self.target_frame, scale=self.scale, origin=self.origin)
 
     def transform_pts_to_target(self, pt_msg, target_frame=None):
         if target_frame is None:
