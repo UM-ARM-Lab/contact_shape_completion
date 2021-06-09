@@ -33,6 +33,10 @@ def get_evaluation_trials():
          EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
          EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
          EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_ignore_latent_prior'),
+         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
          ]
     return d
 
@@ -79,7 +83,7 @@ def generate_evaluation(details):
         resp = contact_shape_completer.complete_shape_srv(completion_req)
         dists = []
         for particle_num, completion_pts_msg in enumerate(resp.sampled_completions):
-            dist = pt_cloud_distance(completion_pts_msg, gt).numpy()
+            # dist = pt_cloud_distance(completion_pts_msg, gt).numpy()
             dist = vg_chamfer_distance(contact_shape_completer.transform_from_gpuvoxels(completion_pts_msg),
                                        contact_shape_completer.transform_from_gpuvoxels(gt),
                                        scale=contact_shape_completer.robot_view.scale).numpy()

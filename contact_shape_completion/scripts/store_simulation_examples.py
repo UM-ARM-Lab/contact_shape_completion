@@ -7,7 +7,7 @@ import rospy
 
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.goal_generator import CheezeitGoalGenerator
-from contact_shape_completion.scenes import SimulationCheezit
+from contact_shape_completion.scenes import SimulationCheezit, get_scene
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
 
@@ -20,7 +20,9 @@ default_dataset_params = default_params.get_default_params()
 
 def parse_command_line_args():
     parser = argparse.ArgumentParser(description='Publish shape data to RViz for viewing')
-    parser.add_argument('--trial')
+    parser.add_argument('--trial', required=True)
+    parser.add_argument('--scene', required=True)
+    parser.add_argument('--store', action='store_true')
     return parser.parse_args()
 
 
@@ -35,10 +37,11 @@ if __name__ == "__main__":
 
     goal_generator = CheezeitGoalGenerator(x_bound=x_bound)
 
-    scene = SimulationCheezit()
+    # scene = SimulationCheezit()
+    scene = get_scene(ARGS.scene)
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial), goal_generator=goal_generator,
-                                                    store_request=True)
+                                                    store_request=ARGS.store)
     # contact_shape_completer.load_network(ARGS.trial)
 
     contact_shape_completer.get_visible_vg()
