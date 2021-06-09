@@ -97,7 +97,7 @@ class DepthCameraListener:
 
         if len(xyz_array) != 0:
             self.origin = np.mean(xyz_array, axis=0) - np.array(
-                [self.scale * (32 - 20), self.scale * 32, self.scale * 32])
+                [self.scale * (32 - 10), self.scale * 32, self.scale * 32])
         vg = conversions.pointcloud_to_voxelgrid(xyz_array, scale=self.scale, origin=self.origin,
                                                  add_trailing_dim=True, add_leading_dim=False)
 

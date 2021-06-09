@@ -149,6 +149,7 @@ def shift_dataset_element(elem, x, y, z):
     elem['gt_occ'] = shift_voxelgrid(elem['gt_occ'], dx, dy, dz, 0.0, x, y, z)
     elem['gt_free'] = shift_voxelgrid(elem['gt_free'], dx, dy, dz, 1.0, x, y, z)
     elem['bounding_box'] += tf.cast([[dx, dy, dz]], tf.float64) * PIXELS_TO_METERS
+    # elem['bounding_box'] += tf.cast([[dx, dy, dz]], tf.float64) * PIXELS_TO_METERS * 0
     return elem
 
 

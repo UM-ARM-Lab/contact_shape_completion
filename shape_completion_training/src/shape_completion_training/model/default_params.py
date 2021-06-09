@@ -59,7 +59,7 @@ def get_default_params(group_name=None):
                 'flow': 'Flow_shapenet_mugs/June_03_10-42-08_ad03459844',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
-                'apply_depth_sensor_noise': True,
+                'apply_depth_sensor_noise': False,
                 'dataset': 'shapenet_mugs',
             },
         "PSSNet_shapenet_all":

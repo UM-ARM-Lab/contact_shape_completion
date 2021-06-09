@@ -16,6 +16,7 @@ def lookup_trial(trial_name):
         "YCB": "PSSNet_YCB/May_24_14-37-51_28829eda5b",
         # "AAB": "PSSNet_aab/May_27_11-10-21_226da3b642",
         "AAB": "PSSNet_aab/May_28_17-09-55_226da3b642",
+        "shapenet_mugs": "PSSNet_shapenet_mugs/June_03_16-01-28_437be1a85f",
     }
     if trial_name in named_trials:
         return named_trials[trial_name]

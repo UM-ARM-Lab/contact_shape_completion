@@ -19,7 +19,9 @@ from shape_completion_training.utils.data_tools import shift_voxelgrid
 def get_scene(scene_name: str):
     scene_map = {"live_01": LiveScene1,
                  "cheezit_01": SimulationCheezit,
-                 "cheezit_deep": SimulationDeepCheezit}
+                 "cheezit_deep": SimulationDeepCheezit,
+                 "pitcher": SimulationPitcher,
+                 }
     if scene_name not in scene_map:
         print(f"{Fore.RED}Unknown scene name {scene_name}\nValid scene names are:")
         print(f"{list(scene_map.keys())}{Fore.RESET}")
@@ -89,6 +91,32 @@ class SimulationDeepCheezit(SimulationScene):
         for _ in range(3):
             gt = shift_voxelgrid(gt, 4, 0, 0, pad_value=0, max_x=4, max_y=0, max_z=0)
             self.elem['gt_occ'] = np.clip(self.elem['gt_occ'] + gt, 0.0, 1.0)
+        self.scale = 0.01
+        self.origin = get_origin_in_voxel_coordinates((1.0, 1.6, 1.2), self.scale)
+
+    def get_gt(self, density_factor=3):
+        pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
+                                                        origin=self.origin,
+                                                        density_factor=density_factor)
+        return pts
+
+    def get_segmented_points(self):
+        pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['known_occ'], scale=self.scale,
+                                                        frame='gpu_voxel_world',
+                                                        origin=self.origin,
+                                                        density_factor=3)
+        return pts
+
+
+class SimulationPitcher(SimulationScene):
+    def __init__(self):
+        super().__init__()
+        self.name = "pitcher"
+        self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
+        params = default_params.get_noiseless_params()
+        params['apply_depth_sensor_noise'] = True
+        self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
+                                                        params=params).load()
         self.scale = 0.01
         self.origin = get_origin_in_voxel_coordinates((1.0, 1.6, 1.2), self.scale)
 

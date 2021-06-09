@@ -27,10 +27,10 @@ sampling_thread = None
 default_dataset_params = default_params.get_default_params()
 
 overwrite_params = {
-    'translation_pixel_range_x': 15,
+    'translation_pixel_range_x': 10,
     'translation_pixel_range_y': 10,
     'translation_pixel_range_z': 10,
-    'apply_depth_sensor_noise': True
+    'apply_depth_sensor_noise': False
 }
 
 
