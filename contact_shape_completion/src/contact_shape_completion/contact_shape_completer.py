@@ -64,8 +64,6 @@ class ContactShapeCompleter:
         self.reset_completer.shutdown()
         self.new_free_sub.unregister()
 
-
-
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.belief.reset()
         return ResetShapeCompleterResponse(reset_complete=True)
@@ -196,10 +194,9 @@ class ContactShapeCompleter:
 
         resp = CompleteShapeResponse()
         for p in self.belief.particles:
-            if not p.successful_projection:
-                continue
-            resp.sampled_completions.append(p.completion)
-            resp.goal_tsrs.append(p.goal)
+            if p.successful_projection or self.method == 'baseline_accept_failed_projections':
+                resp.sampled_completions.append(p.completion)
+                resp.goal_tsrs.append(p.goal)
         return resp
 
     def initialize_belief(self, num_particles):
@@ -237,6 +234,8 @@ class ContactShapeCompleter:
             self.update_belief_proposed(known_free, chss)
         elif self.method == "baseline_ignore_latent_prior":
             self.update_belief_proposed(known_free, chss)  # Ablation done in enforce_contact
+        elif self.method == "baseline_accept_failed_projections":
+            self.update_belief_proposed(known_free, chss)  # Difference comes when returning message
         elif self.method == "baseline_OOD_prediction":
             self.update_belief_OOD_prediction(known_free, chss)
         elif self.method == "baseline_rejection_sampling":
@@ -384,7 +383,8 @@ class ContactShapeCompleter:
         self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss):
-        if self.method == "proposed":
+        if self.method == "proposed" or \
+                self.method == 'baseline_accept_failed_projections':
             return enforce_contact(latent, known_free, chss, self.model_runner.model,
                                    self.belief, self.robot_view.VG_PUB)
         elif self.method == "baseline_ignore_latent_prior":
