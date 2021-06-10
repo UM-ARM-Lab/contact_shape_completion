@@ -35,6 +35,7 @@ class Scene(abc.ABC):
         self.use_live = False
         self.name = None
         self.goal_generator: GoalGenerator
+        self.forward_shift_for_voxelgrid = 0.1
 
     @abc.abstractmethod
     def get_gt(self):
@@ -98,6 +99,7 @@ class SimulationDeepCheezit(SimulationScene):
         self.scale = 0.01
         self.origin = get_origin_in_voxel_coordinates((1.0, 1.6, 1.2), self.scale)
         self.goal_generator = CheezeitGoalGenerator()
+        self.forward_shift_for_voxelgrid = 0.2
 
     def get_gt(self, density_factor=3):
         pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',

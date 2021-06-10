@@ -26,25 +26,29 @@ NUM_PARTICLES_IN_TRIAL = 100
 
 
 def get_evaluation_trials():
-    d = [EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
-         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
-         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
-         EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_accept_failed_projections'),
-         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
-         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_ignore_latent_prior'),
-         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
-         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
-         EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_accept_failed_projections'),
-         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
-         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                           method='baseline_ignore_latent_prior'),
-         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
-         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                           method='baseline_rejection_sampling'),
-         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                           method='baseline_accept_failed_projections'),
-         ]
+    d = [
+        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
+        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                          method='baseline_accept_failed_projections'),
+        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                          method='baseline_ignore_latent_prior'),
+        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
+        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                          method='baseline_accept_failed_projections'),
+        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                          method='baseline_ignore_latent_prior'),
+        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
+        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                          method='baseline_rejection_sampling'),
+        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                          method='baseline_accept_failed_projections'),
+    ]
     return d
 
 

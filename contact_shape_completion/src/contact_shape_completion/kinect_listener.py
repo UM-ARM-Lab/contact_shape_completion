@@ -23,7 +23,7 @@ z_bounds = (0, 64)
 
 
 class DepthCameraListener:
-    def __init__(self, scale=SCALE):
+    def __init__(self, voxelgrid_forward_shift=0, scale=SCALE):
         self.scale = scale
         # origin = (2.446 - scale * 32, -0.384 - scale * 32, 0.86 - scale * 32)
         self.x_bounds = (0, 64)
@@ -40,6 +40,7 @@ class DepthCameraListener:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.VG_PUB = VoxelgridPublisher(frame=self.target_frame, scale=self.scale, origin=self.origin)
+        self.voxelgrid_forward_shift = voxelgrid_forward_shift
 
     def transform_pts_to_target(self, pt_msg, target_frame=None):
         if target_frame is None:
@@ -97,7 +98,7 @@ class DepthCameraListener:
 
         if len(xyz_array) != 0:
             self.origin = np.mean(xyz_array, axis=0) - np.array(
-                [self.scale * (32 - 10), self.scale * 32, self.scale * 32])
+                [self.scale * 32 - self.voxelgrid_forward_shift, self.scale * 32, self.scale * 32])
         vg = conversions.pointcloud_to_voxelgrid(xyz_array, scale=self.scale, origin=self.origin,
                                                  add_trailing_dim=True, add_leading_dim=False)
 
