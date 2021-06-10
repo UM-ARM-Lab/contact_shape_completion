@@ -8,5 +8,5 @@
 
 ## Running with live kinect data (simulated robot)
 Same as above, except instead of running the rosbag do:
-1. `ssh loki; rc blizzard; roslaunch mps_launch_files kinect_vicon_real_robot.launch pov:="victor_head"`
-2. `ssh armada; rc blizzard; roslaunch object_segmentation ycb_segmentation.launch`
+1. `ssh loki; rcblizzard; roslaunch mps_launch_files kinect_vicon_real_robot.launch pov:="victor_head"`
+2. `ssh armada; rcblizzard; roslaunch object_segmentation ycb_segmentation.launch`
