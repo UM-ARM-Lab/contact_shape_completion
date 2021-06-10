@@ -18,7 +18,7 @@ from shape_completion_training.utils.data_tools import shift_voxelgrid
 
 
 def get_scene(scene_name: str):
-    scene_map = {"live_01": LiveScene1,
+    scene_map = {"live_cheezit": LiveScene1,
                  "cheezit_01": SimulationCheezit,
                  "cheezit_deep": SimulationDeepCheezit,
                  "pitcher": SimulationPitcher,
@@ -144,13 +144,20 @@ class LiveScene(Scene):
     def __init__(self):
         super().__init__()
         self.use_live = True
+        self.goal_generator = CheezeitGoalGenerator()
 
 
 class LiveScene1(LiveScene):
+    def __init__(self):
+        super().__init__()
+        self.name = "live_cheezit"
+
     def get_gt(self):
-        vg = np.ones((5, 9, 17))
-        pts = visual_conversions.vox_to_pointcloud2_msg(vg, scale=0.02, frame='gpu_voxel_world',
-                                                        origin=(-72, -100, -65),
+        vg = np.ones((5, 8, 11))
+        scale = 0.02
+        origin = visual_conversions.get_origin_in_voxel_coordinates((1.4, 1.87, 1.17), scale=scale)
+        pts = visual_conversions.vox_to_pointcloud2_msg(vg, scale=scale, frame='gpu_voxel_world',
+                                                        origin=origin,
                                                         density_factor=3)
         return pts
 

@@ -53,6 +53,11 @@ def denoise_pointcloud(pts, scale, origin, shape, threshold):
     return conversions.sparse_voxelgrid_to_pointcloud(vg, scale=scale, origin=origin, threshold=threshold)
 
 
+def satisfies_constraints(pred_occ, known_contact, known_free):
+    return np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
+                tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT
+
+
 def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belief: ParticleBelief,
                     vg_pub: VoxelgridPublisher):
     success = True
@@ -73,6 +78,10 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
     quantile = belief.get_quantile(log_pdf)
     print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
 
+    if satisfies_constraints(pred_occ, known_contact, known_free):
+        print(f"{Fore.GREEN}Particle satisfies constraints without any gradient needed{Fore.RESET}")
+        return latent, True
+
     prev_loss = 0.0
     for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
         # single_free = get_most_wrong_free(pred_occ, known_free)
@@ -84,8 +93,7 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
         vg_pub.publish('predicted_occ', pred_occ)
         vg_pub.publish('known_contact', known_contact)
 
-        if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
-                tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
+        if satisfies_constraints(pred_occ, known_contact, known_free):
             print(
                 f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
                 f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
@@ -139,6 +147,10 @@ def enforce_contact_ignore_latent_prior(latent: tf.Variable, known_free, chss, p
     quantile = belief.get_quantile(log_pdf)
     print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
 
+    if satisfies_constraints(pred_occ, known_contact, known_free):
+        print(f"{Fore.GREEN}Particle satisfies constraints without any gradient needed{Fore.RESET}")
+        return latent, True
+
     prev_loss = 0.0
     for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
         # single_free = get_most_wrong_free(pred_occ, known_free)
@@ -150,8 +162,7 @@ def enforce_contact_ignore_latent_prior(latent: tf.Variable, known_free, chss, p
         vg_pub.publish('predicted_occ', pred_occ)
         vg_pub.publish('known_contact', known_contact)
 
-        if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
-                tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
+        if satisfies_constraints(pred_occ, known_contact, known_free):
             print(
                 f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
                 f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")

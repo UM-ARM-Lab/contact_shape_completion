@@ -103,7 +103,7 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /known_occ_voxel_grid
       Value: true
-    - Alpha Multiple: 0.30000001192092896
+    - Alpha Multiple: 0.10000000149011612
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
       Color: 204; 51; 204
@@ -167,13 +167,13 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 238; 238; 236
-      Enabled: false
+      Enabled: true
       Hide: false
       Name: Active Robot
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/active_robot
-      Value: false
+      Value: true
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -253,7 +253,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -268,7 +268,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -389,13 +389,14 @@ Visualization Manager:
       Topic: /voxelgrid/belief_obstacles
       Value: false
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /goal_pt
       Name: Goal
       Namespaces:
-        {}
+        "": true
+        tsr: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Alpha Multiple: 0.30000001192092896
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -419,7 +420,7 @@ Visualization Manager:
       Color: 0; 0; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -434,7 +435,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -463,7 +464,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.41989845037460327
+      Distance: 0.9938312768936157
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -471,17 +472,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.5414307713508606
-        Y: 0.11531680077314377
-        Z: 1.5623862743377686
+        X: 0.44755518436431885
+        Y: 0.10639301687479019
+        Z: 1.3228929042816162
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.460202693939209
+      Pitch: 0.19020143151283264
       Target Frame: <Fixed Frame>
-      Yaw: 1.986467719078064
+      Yaw: 1.698272705078125
     Saved: ~
 Window Geometry:
   Displays:
@@ -503,5 +504,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1848
-  X: 3912
+  X: 72
   Y: 0

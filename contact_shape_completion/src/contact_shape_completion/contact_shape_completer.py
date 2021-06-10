@@ -132,7 +132,7 @@ class ContactShapeCompleter:
             # Compute pts exactly as gpu voxels would see the obstacles
             pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
                                                    shape=[256, 256, 256],
-                                                   threshold=100)
+                                                   threshold=50)
             self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
 
         elif isinstance(self.scene, SimulationScene):

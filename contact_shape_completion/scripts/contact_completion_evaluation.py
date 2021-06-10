@@ -59,7 +59,6 @@ def parse_command_line_args():
 def generate_evaluation(details):
     scene = details.scene_type()
 
-
     # scene = simulation_ground_truth_scenes.LiveScene1()
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(details.network),
@@ -94,7 +93,7 @@ def generate_evaluation(details):
             print(f"Errors w.r.t. gt: {dist}")
             dists.append(dist)
             df = df.append(pd.Series([
-                req_number, float(len(completion_req.chss)), particle_num, scene.name, 'wip_method', dist, True
+                req_number, float(len(completion_req.chss)), particle_num, scene.name, details.method, dist, True
             ], index=columns), ignore_index=True)
         if len(dists) == 0:
             continue
