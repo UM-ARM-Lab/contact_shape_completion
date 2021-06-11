@@ -77,8 +77,9 @@ class DepthCameraListener:
 
          #pt_msg = self.point_cloud_creator.filter_pointcloud()
         if save_file is not None:
+            saved_msg = self.transform_pts_to_target(pt_msg)
             with save_file.open('wb') as f:
-                pt_msg.serialize(f)
+                saved_msg.serialize(f)
 
         return self.voxelize_visible_element(pt_msg)
 
