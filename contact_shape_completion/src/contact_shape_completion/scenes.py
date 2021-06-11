@@ -9,7 +9,8 @@ from colorama import Fore
 from sensor_msgs.msg import PointCloud2
 
 from arc_utilities import ros_helpers
-from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator
+from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator, \
+    LiveCheezitGoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates
 from shape_completion_training.model import default_params
@@ -146,7 +147,7 @@ class LiveScene(Scene):
     def __init__(self):
         super().__init__()
         self.use_live = True
-        self.goal_generator = CheezeitGoalGenerator()
+        self.goal_generator = LiveCheezitGoalGenerator(x_bound=(-0.01, 0.01))
 
 
 class LiveScene1(LiveScene):
@@ -154,10 +155,10 @@ class LiveScene1(LiveScene):
         super().__init__()
         self.name = "live_cheezit"
 
-    def get_gt(self):
-        vg = np.ones((5, 8, 11))
+    def get_gt(self, density_factor=3):
+        vg = np.ones((8, 8, 11))
         scale = 0.02
-        origin = visual_conversions.get_origin_in_voxel_coordinates((1.4, 1.87, 1.17), scale=scale)
+        origin = visual_conversions.get_origin_in_voxel_coordinates((1.45, 1.92, 1.43), scale=scale)
         pts = visual_conversions.vox_to_pointcloud2_msg(vg, scale=scale, frame='gpu_voxel_world',
                                                         origin=origin,
                                                         density_factor=3)

@@ -86,26 +86,36 @@ class ContactShapeCompleter:
             return
         self.model_runner = ModelRunner(training=False, trial_path=trial)
 
-    def get_visible_vg(self):
+    def get_visible_vg(self, load=False):
         if isinstance(self.scene, LiveScene):
-            save_path = self.get_wip_save_path() / "latest_segmented_pts.msg"
-            self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
+            save_name =  f"{self.scene.name}_latest_segmented_pts.msg"
+            if load:
+                self.load_visible_vg(save_name)
+            else:
+                save_path = self.get_wip_save_path() / save_name
+                self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
 
         elif isinstance(self.scene, SimulationScene):
             self.last_visible_vg = self.robot_view.voxelize_visible_element(self.scene.get_segmented_points())
         return self.last_visible_vg
 
-    def load_visible_vg(self, filename='latest_segmented_pts.msg'):
-        pt_msg = PointCloud2()
-        with (self.get_wip_save_path() / filename).open('rb') as f:
-            pt_msg.deserialize(f.read())
-        self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
+    def load_visible_vg(self, filename):
+        if isinstance(self.scene, LiveScene):
+            pt_msg = PointCloud2()
+            with (self.scene.get_save_path() / filename).open('rb') as f:
+                pt_msg.deserialize(f.read())
+            self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
+        elif isinstance(self.scene, SimulationScene):
+            raise RuntimeError("What are you doing loading the visible_vg from a simulation scene?")
+        else:
+            raise RuntimeError("Unknown scene type")
 
     @staticmethod
     def get_wip_save_path():
         path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "debugging/files"
         path.mkdir(exist_ok=True)
         return path
+
 
     @deprecated
     def save_last_visible_vg(self):
@@ -133,6 +143,12 @@ class ContactShapeCompleter:
             pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
                                                    shape=[256, 256, 256],
                                                    threshold=50)
+
+            box_bounds = contact_tools.BoxBounds(x_lower=0, x_upper=3,
+                                                 y_lower=0, y_upper=5,
+                                                 z_lower=0, z_upper=1.2)
+            pts = contact_tools.remove_points_outside_box(pts, box_bounds)
+
             self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
 
         elif isinstance(self.scene, SimulationScene):

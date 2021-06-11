@@ -18,6 +18,7 @@ from contact_shape_completion import scenes
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.evaluation import vg_chamfer_distance
 from contact_shape_completion.evaluation_params import EvaluationDetails
+from contact_shape_completion.scenes import LiveScene
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
@@ -69,8 +70,7 @@ def generate_evaluation(details):
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(details.network),
                                                     completion_density=1,
                                                     method=details.method)
-
-    contact_shape_completer.get_visible_vg()
+    contact_shape_completer.get_visible_vg(load=True)
 
     columns = ['request number', 'chs count', 'particle num', 'scene', 'method', 'chamfer distance',
                'projection succeeded?']
@@ -80,7 +80,7 @@ def generate_evaluation(details):
     point_pub = ros_helpers.get_connected_publisher('/pointcloud', PointCloud2, queue_size=1)
     point_pub.publish(gt)
 
-    files = sorted([f for f in scene.get_save_path().glob('*')])
+    files = sorted([f for f in scene.get_save_path().glob('req_*')])
     for req_number, file in enumerate(files):
         print(f"{Fore.CYAN}Loading stored request{file}{Fore.RESET}")
         completion_req = CompleteShapeRequest()

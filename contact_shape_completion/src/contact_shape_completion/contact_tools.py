@@ -1,3 +1,5 @@
+import dataclasses
+
 import numpy as np
 import tensorflow as tf
 from colorama import Fore
@@ -51,6 +53,30 @@ def denoise_pointcloud(pts, scale, origin, shape, threshold):
     vg = conversions.pointcloud_to_sparse_voxelgrid(ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts),
                                                     scale=scale, origin=origin, shape=shape)
     return conversions.sparse_voxelgrid_to_pointcloud(vg, scale=scale, origin=origin, threshold=threshold)
+
+
+@dataclasses.dataclass
+class BoxBounds:
+    x_lower: float
+    x_upper: float
+    y_lower: float
+    y_upper: float
+    z_lower: float
+    z_upper: float
+
+    def is_in_box(self, pt):
+        if not self.x_lower < pt[0] < self.x_upper:
+            return False
+        if not self.y_lower < pt[1] < self.y_upper:
+            return False
+        if not self.z_lower < pt[2] < self.z_upper:
+            return False
+        return True
+
+def remove_points_outside_box(pts, box_bounds: BoxBounds):
+    pts_filtered = np.array(list(pt for pt in pts if box_bounds.is_in_box(pt)))
+    return pts_filtered
+
 
 
 def satisfies_constraints(pred_occ, known_contact, known_free):
