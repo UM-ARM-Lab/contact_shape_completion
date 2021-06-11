@@ -27,25 +27,25 @@ NUM_PARTICLES_IN_TRIAL = 100
 
 def get_evaluation_trials():
     d = [
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-                          method='baseline_accept_failed_projections'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                          method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                          method='baseline_accept_failed_projections'),
+        # EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+        # EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
+        # EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+        # EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+        # EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+        #                   method='baseline_accept_failed_projections'),
+        # EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+        # EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+        #                   method='baseline_ignore_latent_prior'),
+        # EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+        # EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
+        # EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+        #                   method='baseline_accept_failed_projections'),
         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                          method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                          method='baseline_rejection_sampling'),
+        # EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+        #                   method='baseline_ignore_latent_prior'),
+        # EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
+        # EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+        #                   method='baseline_rejection_sampling'),
         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
                           method='baseline_accept_failed_projections'),
     ]
@@ -81,6 +81,11 @@ def generate_evaluation(details):
 
     files = sorted([f for f in scene.get_save_path().glob('*')])
     for req_number, file in enumerate(files):
+
+        # TODO: Debugging only
+        if req_number > 0:
+            break
+
         print(f"{Fore.CYAN}Loading stored request{file}{Fore.RESET}")
         completion_req = CompleteShapeRequest()
         with file.open('rb') as f:
