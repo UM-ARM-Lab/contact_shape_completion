@@ -164,6 +164,8 @@ class ContactShapeCompleter:
     def is_new_request(self, req):
         if req is None:
             return True
+        if len(self.belief.particles) == 0:
+            return True
         if req == self.prev_shape_completion_request:
             print(f"{Fore.YELLOW}New request is same as previous: Not updating{Fore.RESET}")
             return False
