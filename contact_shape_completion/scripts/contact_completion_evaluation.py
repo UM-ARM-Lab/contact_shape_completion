@@ -11,6 +11,8 @@ from colorama import Fore
 from matplotlib import pyplot as plt
 from sensor_msgs.msg import PointCloud2
 
+import tensorflow as tf
+
 from arc_utilities import ros_helpers
 from contact_shape_completion import scenes
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
@@ -61,9 +63,8 @@ def parse_command_line_args():
 
 
 def generate_evaluation(details):
+    tf.random.set_seed(20210108)
     scene = details.scene_type()
-
-    # scene = simulation_ground_truth_scenes.LiveScene1()
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(details.network),
                                                     completion_density=1,
