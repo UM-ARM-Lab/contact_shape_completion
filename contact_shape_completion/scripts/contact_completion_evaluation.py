@@ -18,7 +18,6 @@ from contact_shape_completion import scenes
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
 from contact_shape_completion.evaluation import vg_chamfer_distance
 from contact_shape_completion.evaluation_params import EvaluationDetails
-from contact_shape_completion.scenes import LiveScene
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
@@ -50,6 +49,18 @@ def get_evaluation_trials():
         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
                           method='baseline_rejection_sampling'),
         EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                          method='baseline_accept_failed_projections'),
+        # EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
+        #                   method='proposed'),
+        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                          method='proposed'),
+        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                          method='baseline_ignore_latent_prior'),
+        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                          method='baseline_OOD_prediction'),
+        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                          method='baseline_rejection_sampling'),
+        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
                           method='baseline_accept_failed_projections'),
     ]
     return d
