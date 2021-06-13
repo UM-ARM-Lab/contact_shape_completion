@@ -56,7 +56,7 @@ def get_default_params(group_name=None):
         "PSSNet_shapenet_mugs":
             {
                 'num_latent_layers': 200,
-                'flow': 'Flow_shapenet_mugs/June_03_10-42-08_ad03459844',
+                'flow': 'Flow_shapenet_mugs/June_13_09-20-53_68965399a8',
                 'network': 'PSSNet',
                 'use_flow_during_inference': False,
                 'apply_depth_sensor_noise': False,
