@@ -19,7 +19,7 @@ from shape_completion_training.utils import dataset_storage, obj_tools
 
 config = get_config()
 
-HARDCODED_BOUNDARY = '-bb -1.0 -1.0 -1.0 1.0 1.0 1.0'
+HARDCODED_BOUNDARY = '-bb -0.6 -0.6 -0.6 0.6 0.6 0.6'
 NUM_THREADS_PER_CATEGORY = config["augmentation"]["num_threads_per_category"]
 NUM_THREADS_PER_OBJECT = config["augmentation"]["num_threads_per_object"]
 NUM_THREADS = NUM_THREADS_PER_CATEGORY * NUM_THREADS_PER_OBJECT

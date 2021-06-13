@@ -37,10 +37,10 @@ if __name__ == "__main__":
     ds_path = dataset_supervisor.get_shapenet_path()
     shape_map = dataset_supervisor.get_shapenet_map()
 
-    categories = list(shape_map.keys())
-    categories.remove('car')
+    # categories = list(shape_map.keys())
+    # categories.remove('car')
+    categories = ['mug']
 
-    category = ['table']
     if args.reverse:
         categories.reverse()
 
