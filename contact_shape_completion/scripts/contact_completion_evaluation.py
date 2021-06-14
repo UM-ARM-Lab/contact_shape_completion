@@ -34,44 +34,44 @@ def get_evaluation_trial_groups():
             EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
             EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
                               method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
             EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
                               method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
         ],
         [
             EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
             EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
                               method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_accept_failed_projections'),
             EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
             EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
                               method='baseline_rejection_sampling'),
-            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                              method='baseline_accept_failed_projections'),
         ],
         [
             EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
             EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
                               method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_accept_failed_projections'),
             EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
             EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
                               method='baseline_rejection_sampling'),
-            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                              method='baseline_accept_failed_projections'),
         ],
         [
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
-                              method='proposed'),
+            # EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
+            #                   method='proposed'),
             EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
                               method='proposed'),
             EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
                               method='baseline_ignore_latent_prior'),
             EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
                               method='baseline_OOD_prediction'),
             EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
                               method='baseline_rejection_sampling'),
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                              method='baseline_accept_failed_projections'),
         ]
     ]
     return d
@@ -160,32 +160,75 @@ def percentile_fun(n):
 
 
 def plot(group: List[EvaluationDetails]):
+
+    y_key = ('chamfer distance', 'median')
+    error_key_lower = ('chamfer distance', 'percentile_25')
+    # error_key_lower = ('chamfer distance', 'min')
+    error_key_upper = ('chamfer distance', 'percentile_75')
+
+    grouped_dfs = dict()
     for details in group:
         scene = details.scene_type()
         df = pd.read_csv(get_evaluation_path(details))
-
-        bar_key = ('chamfer distance', 'median')
-        error_key_lower = ('chamfer distance', 'percentile_25')
-        # error_key_lower = ('chamfer distance', 'min')
-        error_key_upper = ('chamfer distance', 'percentile_75')
-
         print(f"Plotting {scene.name}, {details.network}, {details.method}")
-        df = df[['request number', 'chs count', 'chamfer distance']] \
+        df = df[['request number', 'chs count', 'chamfer distance', 'method']] \
             .groupby('request number', as_index=False) \
             .agg({'request number': 'first',
+                  'method': 'first',
                   'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
+        df.rename(columns={('chamfer distance', 'median'): y_key}, inplace=True, level=0)
         # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
-        df['bar min'] = df[bar_key] - df[error_key_lower]
-        df['bar max'] = df[error_key_upper] - df[bar_key]
-        err = df[['bar min', 'bar max']]
+        df['bar min'] = df[y_key] - df[error_key_lower]
+        df['bar max'] = df[error_key_upper] - df[y_key]
+        grouped_dfs[details.method] = df
 
-        plt.rcParams['errorbar.capsize'] = 10
-        ax = sns.barplot(x=('request number', 'first'), y=bar_key, data=df, yerr=err.T.to_numpy())
-        ax.set_xlabel('Number of observations')
-        ax.set_ylabel('Chamfer Distance to True Scene')
-        ax.set_title(f'{scene.name}: {details.method}')
-        plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
-        plt.show()
+        # err = df[['bar min', 'bar max']]
+        #
+        # plt.rcParams['errorbar.capsize'] = 10
+        # ax = sns.barplot(x=('request number', 'first'), y=bar_key, data=df, yerr=err.T.to_numpy())
+        # ax.set_xlabel('Number of observations')
+        # ax.set_ylabel('Chamfer Distance to True Scene')
+        # ax.set_title(f'{scene.name}: {details.method}')
+        # plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
+        # plt.show()
+    df = pd.concat(grouped_dfs)
+    # tidy = df.melt(id_vars=[('method', 'first')])
+    # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df)
+    # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df,
+    #                  yerr = df[['bar min', 'bar max']].T.to_numpy())
+    fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
+                              err_key=['bar min', 'bar max'])
+    ax.set_title(f'{scene.name}')
+
+    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
+    plt.show()
+
+
+def grouped_barplot(df, cat, subcat, val, err_key):
+    u = df[cat].unique()
+    x = np.arange(len(u))
+    subx = df[subcat].unique()
+    offsets = (np.arange(len(subx)) - np.arange(len(subx)).mean()) / (len(subx) + 1.)
+    width = np.diff(offsets).mean()
+    fig, ax = plt.subplots()
+    plt.rcParams['errorbar.capsize'] = 2
+    for i, gr in enumerate(subx):
+        dfg = df[df[subcat] == gr]
+        y = dfg[val].values
+        y = np.pad(y, (0, len(x) - len(y)))
+        err = dfg[err_key].values.T
+        err = np.pad(err, [(0, 0), (0, len(x) - len(err[0]))])
+        ax.bar(x + offsets[i], y, width=width,
+               label="{} {}".format(subcat, gr), yerr=err)
+    plt.xlabel("Observation Number")
+    plt.ylabel('Chamfer Distance (m)')
+    plt.xticks(x, u)
+    legend = plt.legend()
+    for h in legend.get_texts():
+        txt = h.get_text()
+        ind = txt.find(')')
+        h.set_text(txt[ind+2:])
+    return fig, ax
 
 
 def main():
