@@ -90,6 +90,14 @@ def get_default_params(group_name=None):
                 'learning_rate': 0.0001,
                 'discriminator_learning_rate': 0.00005,
             },
+        "VAE_GAN_shapenet_mugs":
+            {
+                'num_latent_layers': 200,
+                'network': 'VAE_GAN',
+                'learning_rate': 0.0001,
+                'discriminator_learning_rate': 0.00005,
+                'dataset': 'shapenet_mugs',
+            },
         "Flow":
             {
                 'batch_size': 1500,
