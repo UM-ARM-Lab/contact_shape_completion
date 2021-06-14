@@ -28,6 +28,14 @@ default_dataset_params = default_params.get_default_params()
 NUM_PARTICLES_IN_TRIAL = 100
 
 
+display_names_map = {
+    'live_cheezit': 'Live Cheezit',
+    'Cheezit_01': 'Simulation Cheezit (Shallow)',
+    'Cheezit_deep': 'Simulation Cheezit (Deep)',
+    'pitcher': 'Simulation Pitcher'
+}
+
+
 def get_evaluation_trial_groups():
     d = [
         [
@@ -165,21 +173,23 @@ def plot(group: List[EvaluationDetails]):
     error_key_lower = ('chamfer distance', 'percentile_25')
     # error_key_lower = ('chamfer distance', 'min')
     error_key_upper = ('chamfer distance', 'percentile_75')
+    y_label = "Chamfer Distance (cm)"
+    x_label = "Observation Number"
 
     grouped_dfs = dict()
     for details in group:
         scene = details.scene_type()
         df = pd.read_csv(get_evaluation_path(details))
-        print(f"Plotting {scene.name}, {details.network}, {details.method}")
-        df = df[['request number', 'chs count', 'chamfer distance', 'method']] \
-            .groupby('request number', as_index=False) \
-            .agg({'request number': 'first',
-                  'method': 'first',
-                  'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
-        df.rename(columns={('chamfer distance', 'median'): y_key}, inplace=True, level=0)
-        # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
-        df['bar min'] = df[y_key] - df[error_key_lower]
-        df['bar max'] = df[error_key_upper] - df[y_key]
+        # print(f"Plotting {scene.name}, {details.network}, {details.method}")
+        # df = df[['request number', 'chs count', 'chamfer distance', 'method']] \
+        #     .groupby('request number', as_index=False) \
+        #     .agg({'request number': 'first',
+        #           'method': 'first',
+        #           'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
+        # df.rename(columns={('chamfer distance', 'median'): y_key}, inplace=True, level=0)
+        # # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
+        # df['bar min'] = df[y_key] - df[error_key_lower]
+        # df['bar max'] = df[error_key_upper] - df[y_key]
         grouped_dfs[details.method] = df
 
         # err = df[['bar min', 'bar max']]
@@ -196,9 +206,14 @@ def plot(group: List[EvaluationDetails]):
     # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df)
     # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df,
     #                  yerr = df[['bar min', 'bar max']].T.to_numpy())
-    fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
-                              err_key=['bar min', 'bar max'])
-    ax.set_title(f'{scene.name}')
+    df.rename(columns={'chamfer distance': y_label,
+                       'request number': x_label}, inplace=True)
+    df[y_label] = 100 * df[y_label]
+    ax = sns.boxplot(x=x_label, y=y_label, hue='method', data=df,
+                     showfliers=False)
+    # fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
+    #                           err_key=['bar min', 'bar max'])
+    ax.set_title(f'{display_names_map[scene.name]}')
 
     plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
     plt.show()
@@ -218,8 +233,9 @@ def grouped_barplot(df, cat, subcat, val, err_key):
         y = np.pad(y, (0, len(x) - len(y)))
         err = dfg[err_key].values.T
         err = np.pad(err, [(0, 0), (0, len(x) - len(err[0]))])
-        ax.bar(x + offsets[i], y, width=width,
-               label="{} {}".format(subcat, gr), yerr=err)
+        # ax.bar(x + offsets[i], y, width=width,
+        #        label="{} {}".format(subcat, gr), yerr=err)
+        ax.boxplot(x + offsets[i], usermedians=y)
     plt.xlabel("Observation Number")
     plt.ylabel('Chamfer Distance (m)')
     plt.xticks(x, u)
