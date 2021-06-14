@@ -23,6 +23,7 @@ def get_scene(scene_name: str):
                  "cheezit_01": SimulationCheezit,
                  "cheezit_deep": SimulationDeepCheezit,
                  "pitcher": SimulationPitcher,
+                 "mug": SimulationMug,
                  }
     if scene_name not in scene_map:
         print(f"{Fore.RED}Unknown scene name {scene_name}\nValid scene names are:")
@@ -124,6 +125,33 @@ class SimulationPitcher(SimulationScene):
         params = default_params.get_noiseless_params()
         params['apply_depth_sensor_noise'] = True
         self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
+                                                        params=params).load()
+        self.scale = 0.007
+        self.origin = get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale)
+        self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
+
+    def get_gt(self, density_factor=3):
+        pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
+                                                        origin=self.origin,
+                                                        density_factor=density_factor)
+        return pts
+
+    def get_segmented_points(self):
+        pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['known_occ'], scale=self.scale,
+                                                        frame='gpu_voxel_world',
+                                                        origin=self.origin,
+                                                        density_factor=3)
+        return pts
+
+
+class SimulationMug(SimulationScene):
+    def __init__(self):
+        super().__init__()
+        self.name = "mug"
+        self.dataset_supervisor = dataset_loader.get_dataset_supervisor('shapenet_mugs')
+        params = default_params.get_noiseless_params()
+        params['apply_depth_sensor_noise'] = True
+        self.elem = self.dataset_supervisor.get_element('10c2b3eac377b9084b3c42e318f3affc000_260_000',
                                                         params=params).load()
         self.scale = 0.007
         self.origin = get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale)

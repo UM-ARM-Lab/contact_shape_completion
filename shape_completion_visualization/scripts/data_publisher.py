@@ -30,7 +30,8 @@ overwrite_params = {
     'translation_pixel_range_x': 10,
     'translation_pixel_range_y': 10,
     'translation_pixel_range_z': 10,
-    'apply_depth_sensor_noise': False
+    'apply_depth_sensor_noise': False,
+    'apply_slit_occlusion': False
 }
 
 
