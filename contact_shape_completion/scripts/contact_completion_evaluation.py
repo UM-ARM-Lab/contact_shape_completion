@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -27,41 +28,51 @@ default_dataset_params = default_params.get_default_params()
 NUM_PARTICLES_IN_TRIAL = 100
 
 
-def get_evaluation_trials():
+def get_evaluation_trial_groups():
     d = [
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
-        EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-                          method='baseline_accept_failed_projections'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                          method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_rejection_sampling'),
-        EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                          method='baseline_accept_failed_projections'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                          method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                          method='baseline_rejection_sampling'),
-        EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                          method='baseline_accept_failed_projections'),
-        EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
-                          method='proposed'),
-        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                          method='proposed'),
-        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                          method='baseline_ignore_latent_prior'),
-        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                          method='baseline_OOD_prediction'),
-        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                          method='baseline_rejection_sampling'),
-        EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                          method='baseline_accept_failed_projections'),
+        [
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                              method='baseline_accept_failed_projections'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_accept_failed_projections'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_accept_failed_projections'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
+                              method='proposed'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='proposed'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_accept_failed_projections'),
+        ]
     ]
     return d
 
@@ -148,32 +159,33 @@ def percentile_fun(n):
     return percentile_
 
 
-def plot(details: EvaluationDetails):
-    scene = details.scene_type()
-    df = pd.read_csv(get_evaluation_path(details))
+def plot(group: List[EvaluationDetails]):
+    for details in group:
+        scene = details.scene_type()
+        df = pd.read_csv(get_evaluation_path(details))
 
-    bar_key = ('chamfer distance', 'median')
-    error_key_lower = ('chamfer distance', 'percentile_25')
-    # error_key_lower = ('chamfer distance', 'min')
-    error_key_upper = ('chamfer distance', 'percentile_75')
+        bar_key = ('chamfer distance', 'median')
+        error_key_lower = ('chamfer distance', 'percentile_25')
+        # error_key_lower = ('chamfer distance', 'min')
+        error_key_upper = ('chamfer distance', 'percentile_75')
 
-    print(f"Plotting {scene.name}, {details.network}, {details.method}")
-    df = df[['request number', 'chs count', 'chamfer distance']] \
-        .groupby('request number', as_index=False) \
-        .agg({'request number': 'first',
-              'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
-    # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
-    df['bar min'] = df[bar_key] - df[error_key_lower]
-    df['bar max'] = df[error_key_upper] - df[bar_key]
-    err = df[['bar min', 'bar max']]
+        print(f"Plotting {scene.name}, {details.network}, {details.method}")
+        df = df[['request number', 'chs count', 'chamfer distance']] \
+            .groupby('request number', as_index=False) \
+            .agg({'request number': 'first',
+                  'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
+        # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
+        df['bar min'] = df[bar_key] - df[error_key_lower]
+        df['bar max'] = df[error_key_upper] - df[bar_key]
+        err = df[['bar min', 'bar max']]
 
-    plt.rcParams['errorbar.capsize'] = 10
-    ax = sns.barplot(x=('request number', 'first'), y=bar_key, data=df, yerr=err.T.to_numpy())
-    ax.set_xlabel('Number of observations')
-    ax.set_ylabel('Chamfer Distance to True Scene')
-    ax.set_title(f'{scene.name}: {details.method}')
-    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
-    plt.show()
+        plt.rcParams['errorbar.capsize'] = 10
+        ax = sns.barplot(x=('request number', 'first'), y=bar_key, data=df, yerr=err.T.to_numpy())
+        ax.set_xlabel('Number of observations')
+        ax.set_ylabel('Chamfer Distance to True Scene')
+        ax.set_title(f'{scene.name}: {details.method}')
+        plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
+        plt.show()
 
 
 def main():
@@ -183,18 +195,20 @@ def main():
     rospy.loginfo("Contact Completion Evaluation")
 
     # scene = scenes.SimulationCheezit()
-    for details in get_evaluation_trials():
-        if ARGS.regenerate:
-            print(f'{Fore.CYAN}Regenerating {details}{Fore.RESET}')
-            generate_evaluation(details)
-        elif not get_evaluation_path(details).exists():
-            print(f'{Fore.CYAN}Generating {details}{Fore.RESET}')
-            generate_evaluation(details)
-        else:
-            print(f"{details} exists. Not generating")
+    for groups in get_evaluation_trial_groups():
+        for details in groups:
+            if ARGS.regenerate:
+                print(f'{Fore.CYAN}Regenerating {details}{Fore.RESET}')
+                generate_evaluation(details)
+            elif not get_evaluation_path(details).exists():
+                print(f'{Fore.CYAN}Generating {details}{Fore.RESET}')
+                generate_evaluation(details)
+            else:
+                print(f"{details} exists. Not generating")
 
+    for group in get_evaluation_trial_groups():
         if ARGS.plot:
-            plot(details)
+            plot(group)
 
 
 if __name__ == "__main__":
