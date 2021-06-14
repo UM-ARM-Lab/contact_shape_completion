@@ -23,7 +23,7 @@ z_bounds = (0, 64)
 
 
 class DepthCameraListener:
-    def __init__(self, voxelgrid_forward_shift=0, scale=SCALE):
+    def __init__(self, voxelgrid_forward_shift=0, scale=SCALE, object_categories=[]):
         self.scale = scale
         # origin = (2.446 - scale * 32, -0.384 - scale * 32, 0.86 - scale * 32)
         self.x_bounds = (0, 64)
@@ -34,7 +34,7 @@ class DepthCameraListener:
 
         self.target_frame = "victor_root"
 
-        self.point_cloud_creator = PointcloudCreator([i for i in range(1, 3)],
+        self.point_cloud_creator = PointcloudCreator(object_categories,
                                                      topic_prefix="/kinect2_victor_head/qhd/")
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)

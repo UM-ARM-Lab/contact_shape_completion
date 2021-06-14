@@ -38,7 +38,9 @@ class ContactShapeCompleter:
         self.completion_density = completion_density
         self.method = method
 
-        self.robot_view = DepthCameraListener(voxelgrid_forward_shift=scene.forward_shift_for_voxelgrid)
+        self.robot_view = DepthCameraListener(voxelgrid_forward_shift=scene.forward_shift_for_voxelgrid,
+                                              object_categories=self.scene.segmented_object_categories,
+                                              scale=scene.scale)
         self.model_runner = None
         if trial is not None:
             self.load_network(trial)

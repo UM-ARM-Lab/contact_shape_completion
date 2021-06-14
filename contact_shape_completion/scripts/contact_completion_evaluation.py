@@ -33,7 +33,8 @@ display_names_map = {
     'Cheezit_01': 'Simulation Cheezit (Shallow)',
     'Cheezit_deep': 'Simulation Cheezit (Deep)',
     'pitcher': 'Simulation Pitcher',
-    'mug': 'Simulation Mug'
+    'mug': 'Simulation Mug',
+    'live_pitcher': 'Live Pitcher',
 }
 
 
@@ -93,7 +94,19 @@ def get_evaluation_trial_groups():
                               method='baseline_OOD_prediction'),
             EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
                               method='baseline_rejection_sampling'),
-        ]
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='proposed'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_rejection_sampling'),
+        ],
     ]
     return d
 

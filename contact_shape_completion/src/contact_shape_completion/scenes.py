@@ -10,7 +10,7 @@ from sensor_msgs.msg import PointCloud2
 
 from arc_utilities import ros_helpers
 from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator, \
-    LiveCheezitGoalGenerator
+    LiveCheezitGoalGenerator, LivePitcherGoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates
 from shape_completion_training.model import default_params
@@ -24,6 +24,7 @@ def get_scene(scene_name: str):
                  "cheezit_deep": SimulationDeepCheezit,
                  "pitcher": SimulationPitcher,
                  "mug": SimulationMug,
+                 "live_pitcher": LivePitcher,
                  }
     if scene_name not in scene_map:
         print(f"{Fore.RED}Unknown scene name {scene_name}\nValid scene names are:")
@@ -38,6 +39,7 @@ class Scene(abc.ABC):
         self.name = None
         self.goal_generator: GoalGenerator
         self.forward_shift_for_voxelgrid = 0.1
+        self.segmented_object_categories = [1, 2] #Cheezit
 
     @abc.abstractmethod
     def get_gt(self):
@@ -190,6 +192,27 @@ class LiveScene1(LiveScene):
         pts = visual_conversions.vox_to_pointcloud2_msg(vg, scale=scale, frame='gpu_voxel_world',
                                                         origin=origin,
                                                         density_factor=3)
+        return pts
+
+
+class LivePitcher(LiveScene):
+    def __init__(self):
+        super().__init__()
+        self.name = "live_pitcher"
+        self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
+        params = default_params.get_noiseless_params()
+        params['apply_depth_sensor_noise'] = True
+        self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_330',
+                                                        params=params).load()
+        self.scale = 0.0065
+        self.origin = get_origin_in_voxel_coordinates((1.3, 1.67, 1.33), self.scale)
+        self.goal_generator = LivePitcherGoalGenerator(x_bound=(-0.01, 0.01))
+        self.segmented_object_categories = [11]
+
+    def get_gt(self, density_factor=3):
+        pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
+                                                        origin=self.origin,
+                                                        density_factor=density_factor)
         return pts
 
 
