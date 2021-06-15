@@ -102,7 +102,7 @@ class BasicGoalGenerator(GoalGenerator):
         self.goal_pt_pub.publish(m)
         return goal_pt
 
-    def generate_goal_tsr(self, pts):
+    def generate_goal_tsr(self, pts, publish=True):
         pt = self.generate_goal_point(pts)
         # x_bound = [-0.1, 0.1]
         x_bound = self.x_bound
@@ -115,7 +115,8 @@ class BasicGoalGenerator(GoalGenerator):
                   )
         tsr.header.frame_id = pts.header.frame_id
 
-        self.publish_goal(tsr)
+        if publish:
+            self.publish_goal(tsr)
 
         return tsr
 

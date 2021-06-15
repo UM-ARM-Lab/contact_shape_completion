@@ -218,7 +218,7 @@ class SimulationMultiObject(SimulationScene):
 
         self.scale = 0.007
         self.origins = [get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale),
-                        get_origin_in_voxel_coordinates((1.2, 3.0, 1.2), self.scale)]
+                        get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)]
 
         self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
 

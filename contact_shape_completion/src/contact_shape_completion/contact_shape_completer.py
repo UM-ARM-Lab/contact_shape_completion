@@ -203,21 +203,51 @@ class ContactShapeCompleter:
             self.prev_shape_completion_request = req
 
         for obj_index in range(len(self.robot_views)):
-            known_free = self.transform_from_gpuvoxels(self.robot_views[obj_index], req.known_free)
-            if len(req.chss) == 0:
-                chss = None
-            else:
-                chss = tf.concat(
-                    [tf.expand_dims(self.transform_from_gpuvoxels(self.robot_views[obj_index], chs), axis=0) for chs in
-                     req.chss], axis=0)
-
-                if tf.reduce_max(known_free * chss) > 0:
-                    raise RuntimeError("Known free overlaps with CHSs")
             if len(self.belief.particle_beliefs) == 0:
                 self.initialize_belief(req.num_samples)
 
-            if is_new_request:
+            bel = self.belief.particle_beliefs[obj_index]
+            robot_view = self.robot_views[obj_index]
+            known_free = self.transform_from_gpuvoxels(robot_view, req.known_free)
+
+            if len(req.chss) == 0:
+                chss = None
+            else:
+                # chss = tf.concat(
+                #     [tf.expand_dims(self.transform_from_gpuvoxels(self.robot_views[obj_index], chs), axis=0) for chs in
+                #      req.chss], axis=0)
+
+                full_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
+                                 for chs in req.chss]
+                if len(full_chs_list) > len(bel.assigned_chss):
+                    bel.assigned_chss.append(np.sum(full_chs_list[-1]) > 0)
+                if not any(bel.assigned_chss):
+                    chss = None
+                else:
+                    chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.assigned_chss) if assigned],
+                                     axis=0)
+
+                    if tf.reduce_max(known_free * chss) > 0:
+                        raise RuntimeError("Known free overlaps with CHSs")
+
+                print(f"{Fore.CYAN}CHSs assigned for object {obj_index}: {bel.assigned_chss}{Fore.RESET}")
+
+
+
+            if not is_new_request:
+                continue
+
+            self.update_belief(obj_index, known_free, chss, req.num_samples)
+            if all([not p.successful_projection for p in bel.particles]):
+                print(f"{Fore.CYAN} No successful completions. Removing last CHS{Fore.RESET}")
+                bel.assigned_chss[-1] = False
+                if not any(bel.assigned_chss):
+                    chss = None
+                else:
+                    chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.assigned_chss) if assigned],
+                                     axis=0)
                 self.update_belief(obj_index, known_free, chss, req.num_samples)
+
 
         resp = CompleteShapeResponse()
 
@@ -288,8 +318,9 @@ class ContactShapeCompleter:
         else:
             raise RuntimeError(f"Unknown method {self.method}. Cannot update belief")
 
-        for i, p in enumerate(bel.particles):
-            self.scene.goal_generator.publish_goal(p.goal, marker_id=i)
+        if obj_index == 0:
+            for i, p in enumerate(bel.particles):
+                self.scene.goal_generator.publish_goal(p.goal, marker_id=i)
 
     def update_belief_proposed(self, obj_index, known_free, chss):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
@@ -301,7 +332,7 @@ class ContactShapeCompleter:
             pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
-                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts, publish=obj_index==0)
             except RuntimeError as e:
                 print(e)
                 continue

@@ -17,11 +17,7 @@ class ParticleBelief:
         self.latent_prior_logvar = None
         self.particles = []
         self.quantiles_log_pdf = None
-
-    def reset(self):
-        self.latent_prior_mean = None
-        self.latent_prior_logvar = None
-        self.particles = []
+        self.assigned_chss = []
 
     def get_quantile(self, log_pdf):
         try:
