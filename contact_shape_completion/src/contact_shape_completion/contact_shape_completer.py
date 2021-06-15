@@ -7,7 +7,6 @@ import rospkg
 import rospy
 import tensorflow as tf
 from colorama import Fore
-from deprecated import deprecated
 from sensor_msgs.msg import PointCloud2
 
 import ros_numpy
@@ -16,7 +15,7 @@ from contact_shape_completion.beliefs import ParticleBelief, Particle
 from contact_shape_completion.contact_tools import enforce_contact, enforce_contact_ignore_latent_prior, \
     are_chss_satisfied
 from contact_shape_completion.kinect_listener import DepthCameraListener
-from contact_shape_completion.scenes import Scene, LiveScene, SimulationScene
+from contact_shape_completion.scenes import Scene, LiveScene, SimulationScene, SceneType
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
     ResetShapeCompleter
@@ -49,11 +48,7 @@ class ContactShapeCompleter:
         self.request_shape = rospy.Service("get_known_world", RequestShape, self.request_known_world_srv)
         self.request_true_shape = rospy.Service("get_true_world", RequestShape, self.request_true_world_srv)
         self.reset_completer = rospy.Service("reset_completer", ResetShapeCompleter, self.reset_completer_srv)
-        self.new_free_sub = rospy.Subscriber("swept_freespace_pointcloud", PointCloud2,
-                                             self.new_swept_freespace_callback)
-        self.pointcloud_repub = rospy.Publisher("swept_volume_republisher", PointCloud2, queue_size=10)
         self.last_visible_vg = None
-        self.swept_freespace = tf.zeros((1, 64, 64, 64, 1))
         self.belief = ParticleBelief()
         self.known_obstacles = None
 
@@ -64,7 +59,6 @@ class ContactShapeCompleter:
         self.request_shape.shutdown()
         self.request_true_shape.shutdown()
         self.reset_completer.shutdown()
-        self.new_free_sub.unregister()
 
     def reset_completer_srv(self, req: ResetShapeCompleterRequest):
         self.belief.reset()
@@ -89,54 +83,43 @@ class ContactShapeCompleter:
         self.model_runner = ModelRunner(training=False, trial_path=trial)
 
     def get_visible_vg(self, load=False):
-        if isinstance(self.scene, LiveScene):
-            save_name =  f"{self.scene.name}_latest_segmented_pts.msg"
+        if self.scene.scene_type == SceneType.LIVE:
+            save_name = f"{self.scene.name}_latest_segmented_pts.msg"
             if load:
                 self.load_visible_vg(save_name)
             else:
-                save_path = self.get_wip_save_path() / save_name
+                if self.should_store_request:
+                    save_path = self.scene.get_save_path() / save_name
+                else:
+                    save_path = self.get_debug_save_path() / save_name
                 self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
 
-        elif isinstance(self.scene, SimulationScene):
+        elif self.scene.scene_type == SceneType.SIMULATION:
             self.last_visible_vg = self.robot_view.voxelize_visible_element(self.scene.get_segmented_points())
         return self.last_visible_vg
 
     def load_visible_vg(self, filename):
-        if isinstance(self.scene, LiveScene):
+        if self.scene.scene_type == SceneType.LIVE:
             pt_msg = PointCloud2()
             with (self.scene.get_save_path() / filename).open('rb') as f:
                 pt_msg.deserialize(f.read())
             self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
-        elif isinstance(self.scene, SimulationScene):
+        elif self.scene.scene_type == SceneType.SIMULATION:
             raise RuntimeError("What are you doing loading the visible_vg from a simulation scene?")
         else:
             raise RuntimeError("Unknown scene type")
 
     @staticmethod
-    def get_wip_save_path():
+    def get_debug_save_path():
         path = Path(rospkg.RosPack().get_path("contact_shape_completion")) / "debugging/files"
         path.mkdir(exist_ok=True)
         return path
-
-
-    @deprecated
-    def save_last_visible_vg(self):
-        path = self.get_wip_save_path() / "wip_visible_vg.npz"
-
-        with path.open('wb') as f:
-            np.savez_compressed(f, **self.last_visible_vg)
-
-    @deprecated
-    def load_last_visible_vg(self, filename="wip_visible_vg.npz"):
-        path = self.get_wip_save_path() / filename
-        self.last_visible_vg = np.load(path.as_posix())
 
     def request_shape_srv(self, req: RequestShapeRequest):
         pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
         return RequestShapeResponse(points=pt)
 
     def compute_known_occ(self):
-
         if isinstance(self.scene, LiveScene):
             pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
             pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
@@ -159,12 +142,9 @@ class ContactShapeCompleter:
         return self.known_obstacles
 
     def request_known_world_srv(self, req: RequestShapeRequest):
-        # pt = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
-        # pt = self.robot_view.transform_pts_to_target(pt, target_frame="gpu_voxel_world")
         return RequestShapeResponse(points=self.known_obstacles)
 
     def request_true_world_srv(self, req: RequestShapeRequest):
-        # pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
         pt = self.scene.get_gt()
         return RequestShapeResponse(points=pt)
 
@@ -176,7 +156,7 @@ class ContactShapeCompleter:
             return
 
         # By default, store the latest request for use with debugging
-        with (self.get_wip_save_path() / "latest_request.msg").open('wb') as f:
+        with (self.get_debug_save_path() / "latest_request.msg").open('wb') as f:
             req.serialize(f)
 
     def is_new_request(self, req):
@@ -190,7 +170,6 @@ class ContactShapeCompleter:
         return True
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
-
         print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
 
         if self.model_runner is None:
@@ -283,7 +262,6 @@ class ContactShapeCompleter:
             particle.completion = pts
 
     def update_belief_OOD_prediction(self, known_free, chss):
-        # raise NotImplementedError(f"OOD prediction is not yet implemented")
         visible_vg = deepcopy(self.last_visible_vg)
         visible_vg['known_free'] += known_free
 
@@ -312,16 +290,6 @@ class ContactShapeCompleter:
             particle.completion = pts
 
     def update_belief_rejection_sampling(self, known_free, chss):
-
-        # if chss is not None:
-        #     gt = self.transform_from_gpuvoxels(self.scene.get_gt())
-        #     gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
-        #     contact_voxels = tf.reduce_sum(chss, axis=0)
-        #     self.robot_view.VG_PUB.publish('chs', contact_voxels)
-        #     self.robot_view.VG_PUB.publish('gt', gt)
-        #     visible_vg['known_occ'] = np.clip(contact_voxels * gt + visible_vg['known_occ'], 0.0, 1.0)
-        #     self.robot_view.VG_PUB.publish('known_contact', contact_voxels * gt)
-
         for particle in self.belief.particles:
             self.scene.goal_generator.clear_goal_markers()
             self.robot_view.VG_PUB.publish('known_free', known_free)
@@ -380,23 +348,7 @@ class ContactShapeCompleter:
         msg = self.robot_view.transform_pts_to_target(msg, target_frame="gpu_voxel_world")
         return msg
 
-    # TODO: This function is not necessary for the algorithm, just helps debug
-    def new_swept_freespace_callback(self, pt_msg: PointCloud2):
-        self.pointcloud_repub.publish(pt_msg)
-        elem = self.last_visible_vg
-        if elem is None:
-            print("No visible vg to update")
-            return
-        #
-        vg = self.transform_from_gpuvoxels(pt_msg)
-        # visual_vg = visuals_conversions.pointcloud2_msg_to_vox(transformed_cloud, scale=self.robot_view.scale, origin=self.robot_view.origin)
-        #
-        # elem['known_occ'] = vg
-        self.swept_freespace = vg
-        self.robot_view.VG_PUB.publish_elem_cautious(elem)
-
     def do_some_completions_debug(self):
-
         known_free = np.zeros((64, 64, 64, 1), dtype=np.float32)
         self.update_belief(known_free, None, 10)
         rospy.sleep(5)
@@ -412,65 +364,3 @@ class ContactShapeCompleter:
                                                        self.belief, self.robot_view.VG_PUB)
         else:
             raise RuntimeError(f"Not known how to enforce_contact for method {self.method}")
-
-    # def enforce_contact(self, latent, known_free, chss):
-    #     self.robot_view.VG_PUB.publish("aux", 0 * known_free)
-    #     pssnet = self.model_runner.model
-    #     # prior_mean, prior_logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
-    #     # p = log_normal_pdf(latent, prior_mean, prior_logvar)
-    #
-    #     self.robot_view.VG_PUB.publish('predicted_occ', pssnet.decode(latent, apply_sigmoid=True))
-    #     pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-    #     known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-    #     # any_chs = tf.reduce_max(chss, axis=-1, keepdims=True)
-    #     self.robot_view.VG_PUB.publish('known_free', known_free)
-    #     if chss is not None:
-    #         self.robot_view.VG_PUB.publish('chs', chss)
-    #
-    #     print()
-    #     log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
-    #     quantile = self.belief.get_quantile(log_pdf)
-    #     print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
-    #
-    #     prev_loss = 0.0
-    #     for i in range(GRADIENT_UPDATE_ITERATION_LIMIT):
-    #         single_free = contact_tools.get_most_wrong_free(pred_occ, known_free)
-    #
-    #         loss = pssnet.grad_step_towards_output(latent, known_contact, known_free, self.belief)
-    #         # loss = pssnet.grad_step_towards_output(latent, known_contact, single_free)
-    #         print('\rloss: {}'.format(loss), end='')
-    #         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-    #         # if loss > 1:
-    #         #     print(f"{Fore.RED}Loss is greater than 1{Fore.RESET}")
-    #         known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-    #         self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
-    #         self.robot_view.VG_PUB.publish('known_contact', known_contact)
-    #
-    #         if loss == prev_loss:
-    #             print("\tNo progress made. Accepting shape as is")
-    #             break
-    #         prev_loss = loss
-    #         if tf.math.is_nan(loss):
-    #             print("\tLoss is nan. There is a problem I am not addressing")
-    #             break
-    #
-    #         if np.max(pred_occ * known_free) <= KNOWN_FREE_LIMIT and \
-    #                 tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) >= KNOWN_OCC_LIMIT:
-    #             print(
-    #                 f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
-    #                 f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
-    #             break
-    #     else:
-    #         print()
-    #         if np.max(pred_occ * known_free) > KNOWN_FREE_LIMIT:
-    #             print("Optimization did not satisfy known freespace: ")
-    #             self.robot_view.VG_PUB.publish("aux", pred_occ * known_free)
-    #         if tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) < KNOWN_OCC_LIMIT:
-    #             print("Optimization did not satisfy assumed occ: ")
-    #             self.robot_view.VG_PUB.publish("aux", (1 - pred_occ) * known_contact)
-    #         print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
-    #
-    #     log_pdf = log_normal_pdf(latent, self.belief.latent_prior_mean, self.belief.latent_prior_logvar)
-    #     quantile = self.belief.get_quantile(log_pdf)
-    #     print(f"Latent logprob {log_pdf} ({quantile} quantile)")
-    #     return latent

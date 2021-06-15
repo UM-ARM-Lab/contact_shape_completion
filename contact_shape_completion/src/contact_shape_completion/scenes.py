@@ -8,6 +8,8 @@ import rospy
 from colorama import Fore
 from sensor_msgs.msg import PointCloud2
 
+from enum import Enum
+
 from arc_utilities import ros_helpers
 from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator, \
     LiveCheezitGoalGenerator, LivePitcherGoalGenerator
@@ -33,13 +35,22 @@ def get_scene(scene_name: str):
     return scene_map[scene_name]()
 
 
+class SceneType(Enum):
+    LIVE = 1
+    SIMULATION = 2
+    UNSPECIFIED = 3
+
+
 class Scene(abc.ABC):
+    scene_type = SceneType.UNSPECIFIED
+
     def __init__(self):
-        self.use_live = False
+        self.goal_generator = None
+        self.scale = None
         self.name = None
         self.goal_generator: GoalGenerator
         self.forward_shift_for_voxelgrid = 0.1
-        self.segmented_object_categories = [1, 2] #Cheezit
+        self.segmented_object_categories = [1, 2]  # Cheezit
 
     @abc.abstractmethod
     def get_gt(self):
@@ -55,9 +66,8 @@ class Scene(abc.ABC):
         return path
 
 
-
 class SimulationScene(Scene):
-    pass
+    scene_type = SceneType.SIMULATION
 
 
 class SimulationCheezit(SimulationScene):
@@ -174,9 +184,10 @@ class SimulationMug(SimulationScene):
 
 
 class LiveScene(Scene):
+    scene_type = SceneType.LIVE
+
     def __init__(self):
         super().__init__()
-        self.use_live = True
         self.goal_generator = LiveCheezitGoalGenerator(x_bound=(-0.01, 0.01))
 
 
