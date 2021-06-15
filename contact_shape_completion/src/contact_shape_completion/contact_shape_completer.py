@@ -11,11 +11,11 @@ from sensor_msgs.msg import PointCloud2
 
 import ros_numpy
 from contact_shape_completion import contact_tools
-from contact_shape_completion.beliefs import ParticleBelief, Particle
+from contact_shape_completion.beliefs import ParticleBelief, Particle, MultiObjectParticleBelief
 from contact_shape_completion.contact_tools import enforce_contact, enforce_contact_ignore_latent_prior, \
     are_chss_satisfied
 from contact_shape_completion.kinect_listener import DepthCameraListener
-from contact_shape_completion.scenes import Scene, LiveScene, SimulationScene, SceneType
+from contact_shape_completion.scenes import Scene, LiveScene, SimulationScene, SceneType, combine_pointcloud2s
 from gpu_voxel_planning_msgs.srv import CompleteShape, CompleteShapeResponse, CompleteShapeRequest, RequestShape, \
     RequestShapeResponse, RequestShapeRequest, ResetShapeCompleterRequest, ResetShapeCompleterResponse, \
     ResetShapeCompleter
@@ -37,9 +37,12 @@ class ContactShapeCompleter:
         self.completion_density = completion_density
         self.method = method
 
-        self.robot_view = DepthCameraListener(voxelgrid_forward_shift=scene.forward_shift_for_voxelgrid,
-                                              object_categories=self.scene.segmented_object_categories,
-                                              scale=scene.scale)
+        self.robot_views = []
+        for _ in range(scene.num_objects):
+            self.robot_views.append(DepthCameraListener(voxelgrid_forward_shift=scene.forward_shift_for_voxelgrid,
+                                                        object_categories=scene.segmented_object_categories,
+                                                        scale=scene.scale,
+                                                        scene_type=scene.scene_type))
         self.model_runner = None
         if trial is not None:
             self.load_network(trial)
@@ -48,8 +51,8 @@ class ContactShapeCompleter:
         self.request_shape = rospy.Service("get_known_world", RequestShape, self.request_known_world_srv)
         self.request_true_shape = rospy.Service("get_true_world", RequestShape, self.request_true_world_srv)
         self.reset_completer = rospy.Service("reset_completer", ResetShapeCompleter, self.reset_completer_srv)
-        self.last_visible_vg = None
-        self.belief = ParticleBelief()
+        # self.last_visible_vgs = None
+        self.belief = MultiObjectParticleBelief()
         self.known_obstacles = None
 
         self.prev_shape_completion_request = None
@@ -84,26 +87,34 @@ class ContactShapeCompleter:
 
     def get_visible_vg(self, load=False):
         if self.scene.scene_type == SceneType.LIVE:
-            save_name = f"{self.scene.name}_latest_segmented_pts.msg"
-            if load:
-                self.load_visible_vg(save_name)
-            else:
-                if self.should_store_request:
-                    save_path = self.scene.get_save_path() / save_name
-                else:
-                    save_path = self.get_debug_save_path() / save_name
-                self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
+            raise RuntimeError("Live scene not updated after multiobject refactor")
+            # save_name = f"{self.scene.name}_latest_segmented_pts.msg"
+            # if load:
+            #     self.load_visible_vg(save_name)
+            # else:
+            #     if self.should_store_request:
+            #         save_path = self.scene.get_save_path() / save_name
+            #     else:
+            #         save_path = self.get_debug_save_path() / save_name
+            #     self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
 
         elif self.scene.scene_type == SceneType.SIMULATION:
-            self.last_visible_vg = self.robot_view.voxelize_visible_element(self.scene.get_segmented_points())
-        return self.last_visible_vg
+            segmented_objects = self.scene.get_segmented_points()
+            if len(segmented_objects) != len(self.robot_views):
+                raise RuntimeError("Different number of segemented objects and robot views")
+            for view, pts in zip(self.robot_views, segmented_objects):
+                view.voxelize_visible_element(pts)
+
+            # self.last_visible_vg = self.robot_view.voxelize_visible_element(self.scene.get_segmented_points())
+        return [view.last_visible for view in self.robot_views]
 
     def load_visible_vg(self, filename):
         if self.scene.scene_type == SceneType.LIVE:
-            pt_msg = PointCloud2()
-            with (self.scene.get_save_path() / filename).open('rb') as f:
-                pt_msg.deserialize(f.read())
-            self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
+            raise RuntimeError("Live scene not updated after multiobject refactor")
+            # pt_msg = PointCloud2()
+            # with (self.scene.get_save_path() / filename).open('rb') as f:
+            #     pt_msg.deserialize(f.read())
+            # self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
         elif self.scene.scene_type == SceneType.SIMULATION:
             raise RuntimeError("What are you doing loading the visible_vg from a simulation scene?")
         else:
@@ -116,25 +127,27 @@ class ContactShapeCompleter:
         return path
 
     def request_shape_srv(self, req: RequestShapeRequest):
-        pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
-        return RequestShapeResponse(points=pt)
+        raise RuntimeError("request_shape_srv not updated after multiobject refactor")
+        # pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
+        # return RequestShapeResponse(points=pt)
 
     def compute_known_occ(self):
         if isinstance(self.scene, LiveScene):
-            pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
-            pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
-
-            # Compute pts exactly as gpu voxels would see the obstacles
-            pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
-                                                   shape=[256, 256, 256],
-                                                   threshold=50)
-
-            box_bounds = contact_tools.BoxBounds(x_lower=0, x_upper=3,
-                                                 y_lower=0, y_upper=5,
-                                                 z_lower=0, z_upper=1.2)
-            pts = contact_tools.remove_points_outside_box(pts, box_bounds)
-
-            self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
+            raise RuntimeError("Live scene not updated after multiobject refactor")
+            # pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
+            # pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
+            #
+            # # Compute pts exactly as gpu voxels would see the obstacles
+            # pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
+            #                                        shape=[256, 256, 256],
+            #                                        threshold=50)
+            #
+            # box_bounds = contact_tools.BoxBounds(x_lower=0, x_upper=3,
+            #                                      y_lower=0, y_upper=5,
+            #                                      z_lower=0, z_upper=1.2)
+            # pts = contact_tools.remove_points_outside_box(pts, box_bounds)
+            #
+            # self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
 
         elif isinstance(self.scene, SimulationScene):
             self.known_obstacles = self.scene.get_segmented_points()
@@ -142,7 +155,10 @@ class ContactShapeCompleter:
         return self.known_obstacles
 
     def request_known_world_srv(self, req: RequestShapeRequest):
-        return RequestShapeResponse(points=self.known_obstacles)
+        return combine_pointcloud2s(self.known_obstacles)
+        # if len(self.known_obstacles) == 1:
+        #     return RequestShapeResponse(points=self.known_obstacles[0])
+        # raise RuntimeError("request known world not implemented for multiobject scenes")
 
     def request_true_world_srv(self, req: RequestShapeRequest):
         pt = self.scene.get_gt()
@@ -162,8 +178,11 @@ class ContactShapeCompleter:
     def is_new_request(self, req):
         if req is None:
             return True
-        if len(self.belief.particles) == 0:
+        if len(self.belief.particle_beliefs) == 0:
             return True
+        for single_object_belief in self.belief.particle_beliefs:
+            if len(single_object_belief.particles) == 0:
+                return True
         if req == self.prev_shape_completion_request:
             print(f"{Fore.YELLOW}New request is same as previous: Not updating{Fore.RESET}")
             return False
@@ -178,50 +197,77 @@ class ContactShapeCompleter:
         if req.num_samples <= 0:
             raise ValueError(f"{req.num_samples} samples requested. Probably a mistake")
 
-        known_free = self.transform_from_gpuvoxels(req.known_free)
-        if len(req.chss) == 0:
-            chss = None
-        else:
-            chss = tf.concat([tf.expand_dims(self.transform_from_gpuvoxels(chs), axis=0) for chs in req.chss], axis=0)
-            if tf.reduce_max(known_free * chss) > 0:
-                raise RuntimeError("Known free overlaps with CHSs")
-
-        if self.is_new_request(req):
+        is_new_request = self.is_new_request(req)
+        if is_new_request:
             self.save_request(req)
-            self.update_belief(known_free, chss, req.num_samples)
             self.prev_shape_completion_request = req
 
+        for obj_index in range(len(self.robot_views)):
+            known_free = self.transform_from_gpuvoxels(self.robot_views[obj_index], req.known_free)
+            if len(req.chss) == 0:
+                chss = None
+            else:
+                chss = tf.concat(
+                    [tf.expand_dims(self.transform_from_gpuvoxels(self.robot_views[obj_index], chs), axis=0) for chs in
+                     req.chss], axis=0)
+
+                if tf.reduce_max(known_free * chss) > 0:
+                    raise RuntimeError("Known free overlaps with CHSs")
+            if len(self.belief.particle_beliefs) == 0:
+                self.initialize_belief(req.num_samples)
+
+            if is_new_request:
+                self.update_belief(obj_index, known_free, chss, req.num_samples)
+
         resp = CompleteShapeResponse()
-        for p in self.belief.particles:
-            if p.successful_projection or self.method == 'baseline_accept_failed_projections':
-                resp.sampled_completions.append(p.completion)
-                resp.goal_tsrs.append(p.goal)
+
+        # if len(self.belief.particle_beliefs) == 1:
+        #     for p in self.belief.particle_beliefs[0].particles:
+        #         if p.successful_projection or self.method == 'baseline_accept_failed_projections':
+        #             resp.sampled_completions.append(p.completion)
+        #             resp.goal_tsrs.append(p.goal)
+        # else:
+        #     raise RuntimeError("Not yet supporting multiple objects")
+        #     # TODO: Combine points from multiple particles into single return response
+        #     # TODO: Figure out goals from multiple particles
+        for particle_num in range(req.num_samples):
+            full_scene_particle = [p.particles[particle_num] for p in self.belief.particle_beliefs]
+            if all([p.successful_projection for p in full_scene_particle]) or \
+                    self.method == 'baseline_accept_failed_projections':
+                resp.sampled_completions.append(combine_pointcloud2s([p.completion for p in full_scene_particle]))
+                resp.goal_tsrs.append(full_scene_particle[0].goal)  # TODO: This hardcoded uses the first object as goal
+
         return resp
 
     def initialize_belief(self, num_particles):
         pssnet = self.model_runner.model
-        mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(self.last_visible_vg)))
-        self.belief.latent_prior_mean = mean
-        self.belief.latent_prior_logvar = logvar
-        self.belief.quantiles_log_pdf = compute_quantiles(mean, logvar, num_quantiles=100, num_samples=1000)
+        for view in self.robot_views:
+            mean, logvar = pssnet.encode(stack_known(add_batch_to_dict(view.last_visible)))
+            single_object_bel = ParticleBelief()
+            single_object_bel.latent_prior_mean = mean
+            single_object_bel.latent_prior_logvar = logvar
+            single_object_bel.quantiles_log_pdf = compute_quantiles(mean, logvar, num_quantiles=100, num_samples=1000)
 
-        for _ in range(num_particles):
-            p = Particle()
-            latent = pssnet.sample_latent_from_mean_and_logvar(mean, logvar)
-            p.latent = tf.Variable(latent)
-            p.sampled_latent = latent
-            self.belief.particles.append(p)
+            for _ in range(num_particles):
+                p = Particle()
+                latent = pssnet.sample_latent_from_mean_and_logvar(mean, logvar)
+                p.latent = tf.Variable(latent)
+                p.sampled_latent = latent
+                single_object_bel.particles.append(p)
+            self.belief.particle_beliefs.append(single_object_bel)
 
-    def update_belief(self, known_free, chss, num_particles):
+    def update_belief(self, obj_index: int, known_free, chss, num_particles):
         self.reload_flow()
+        bel = self.belief.particle_beliefs[obj_index]
 
-        if len(self.belief.particles) > num_particles:
+        if len(bel.particles) > num_particles:
             raise RuntimeError("Unexpected situation - we have more particles than requested")
 
-        if self.belief.latent_prior_mean is None:
-            self.initialize_belief(num_particles)
+        if bel.latent_prior_mean is None:
+            raise RuntimeError("Particle Belief was not initialized as expected")
+            # self.initialize_belief(num_particles)
 
-        if len(self.belief.particles) != num_particles:
+        if len(bel.particles) != num_particles:
             raise RuntimeError("Unexpected situation - number of particles does not match request")
 
         # TODO: This is a debugging script only
@@ -230,29 +276,30 @@ class ContactShapeCompleter:
         #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
         if self.method == "proposed":
-            self.update_belief_proposed(known_free, chss)
+            self.update_belief_proposed(obj_index, known_free, chss)
         elif self.method == "baseline_ignore_latent_prior":
-            self.update_belief_proposed(known_free, chss)  # Ablation done in enforce_contact
+            self.update_belief_proposed(obj_index, known_free, chss)  # Ablation done in enforce_contact
         elif self.method == "baseline_accept_failed_projections":
-            self.update_belief_proposed(known_free, chss)  # Difference comes when returning message
+            self.update_belief_proposed(obj_index, known_free, chss)  # Difference comes when returning message
         elif self.method == "baseline_OOD_prediction":
-            self.update_belief_OOD_prediction(known_free, chss)
+            self.update_belief_OOD_prediction(obj_index, known_free, chss)
         elif self.method == "baseline_rejection_sampling":
-            self.update_belief_rejection_sampling(known_free, chss)
+            self.update_belief_rejection_sampling(obj_index, known_free, chss)
         else:
             raise RuntimeError(f"Unknown method {self.method}. Cannot update belief")
 
-        for i, p in enumerate(self.belief.particles):
+        for i, p in enumerate(bel.particles):
             self.scene.goal_generator.publish_goal(p.goal, marker_id=i)
 
-    def update_belief_proposed(self, known_free, chss):
+    def update_belief_proposed(self, obj_index, known_free, chss):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
-        for particle in self.belief.particles:
+        for particle in self.belief.particle_beliefs[obj_index].particles:
             self.scene.goal_generator.clear_goal_markers()
-            particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss)
+            particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
+                                                                                   obj_index)
             predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
-            pts = self.transform_to_gpuvoxels(predicted_occ)
-            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
                 goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
@@ -261,26 +308,26 @@ class ContactShapeCompleter:
             particle.goal = goal_tsr
             particle.completion = pts
 
-    def update_belief_OOD_prediction(self, known_free, chss):
-        visible_vg = deepcopy(self.last_visible_vg)
+    def update_belief_OOD_prediction(self, obj_index, known_free, chss):
+        visible_vg = deepcopy(self.robot_views[obj_index].last_visible)
         visible_vg['known_free'] += known_free
 
         if chss is not None:
             gt = self.transform_from_gpuvoxels(self.scene.get_gt())
             gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
             contact_voxels = tf.reduce_sum(chss, axis=0)
-            self.robot_view.VG_PUB.publish('chs', contact_voxels)
-            self.robot_view.VG_PUB.publish('gt', gt)
+            self.robot_views[obj_index].VG_PUB.publish('chs', contact_voxels)
+            self.robot_views[obj_index].VG_PUB.publish('gt', gt)
             visible_vg['known_occ'] = np.clip(contact_voxels * gt + visible_vg['known_occ'], 0.0, 1.0)
-            self.robot_view.VG_PUB.publish('known_contact', contact_voxels * gt)
+            self.robot_views[obj_index].VG_PUB.publish('known_contact', contact_voxels * gt)
 
-        for particle in self.belief.particles:
+        for particle in self.belief.particle_beliefs[obj_index].particles:
             self.scene.goal_generator.clear_goal_markers()
-            self.robot_view.VG_PUB.publish('known_free', visible_vg['known_free'])
+            self.robot_views[obj_index].VG_PUB.publish('known_free', visible_vg['known_free'])
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(visible_vg), apply_sigmoid=True)[
                 'predicted_occ']
             pts = self.transform_to_gpuvoxels(predicted_occ)
-            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
                 goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
@@ -289,14 +336,15 @@ class ContactShapeCompleter:
             particle.goal = goal_tsr
             particle.completion = pts
 
-    def update_belief_rejection_sampling(self, known_free, chss):
-        for particle in self.belief.particles:
+    def update_belief_rejection_sampling(self, obj_index, known_free, chss):
+        for particle in self.belief.particle_beliefs[obj_index].particles:
             self.scene.goal_generator.clear_goal_markers()
-            self.robot_view.VG_PUB.publish('known_free', known_free)
-            predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.last_visible_vg), apply_sigmoid=True)[
-                'predicted_occ']
+            self.robot_views[obj_index].VG_PUB.publish('known_free', known_free)
+            predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.robot_views[obj_index].last_visible),
+                                                         apply_sigmoid=True)['predicted_occ']
+
             pts = self.transform_to_gpuvoxels(predicted_occ)
-            self.robot_view.VG_PUB.publish('predicted_occ', predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
                 goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
             except RuntimeError as e:
@@ -311,41 +359,42 @@ class ContactShapeCompleter:
             if not are_chss_satisfied(predicted_occ, chss):
                 particle.successful_projection = False
 
-    def debug_repeated_sampling(self, bel: ParticleBelief, known_free, chss):
-        pssnet = self.model_runner.model
-        latent = tf.Variable(pssnet.sample_latent_from_mean_and_logvar(bel.latent_prior_mean, bel.latent_prior_logvar))
-        pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-        # known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-        self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
-        # self.robot_view.VG_PUB.publish('known_contact', known_contact)
-        # latent = self.enforce_contact(latent, known_free, chss)
+    # def debug_repeated_sampling(self, bel: ParticleBelief, known_free, chss):
+    #     pssnet = self.model_runner.model
+    #     latent = tf.Variable(pssnet.sample_latent_from_mean_and_logvar(bel.latent_prior_mean, bel.latent_prior_logvar))
+    #     pred_occ = pssnet.decode(latent, apply_sigmoid=True)
+    #     # known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
+    #     self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
+    #     # self.robot_view.VG_PUB.publish('known_contact', known_contact)
+    #     # latent = self.enforce_contact(latent, known_free, chss)
 
-    def transform_from_gpuvoxels(self, pt_msg: PointCloud2):
-        transformed_cloud = self.robot_view.transform_pts_to_target(pt_msg)
+    @staticmethod
+    def transform_from_gpuvoxels(view, pt_msg: PointCloud2):
+        transformed_cloud = view.transform_pts_to_target(pt_msg)
         xyz_array = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(transformed_cloud)
         # TODO: visual_conversions produces the wrong result cause the transforms are calculated differently.
         #  Look into this
-        vg = conversions.pointcloud_to_voxelgrid(xyz_array, scale=self.robot_view.scale,
-                                                 origin=self.robot_view.origin,
+        vg = conversions.pointcloud_to_voxelgrid(xyz_array, scale=view.scale,
+                                                 origin=view.origin,
                                                  add_trailing_dim=True, add_leading_dim=False,
                                                  )
         return vg
 
-    def transform_to_gpuvoxels(self, vg) -> PointCloud2:
+    def transform_to_gpuvoxels(self, view, vg) -> PointCloud2:
         # pt_cloud = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
         #                                                origin=self.robot_view.origin)
 
         # TODO: It is odd that I use visual_conversions here, since I used conversions (not visual, different package
         #  of mine) get the pointcloud in the first place. However, visual_conversions has this nice function which
         #  densifies the points
-        msg = visual_conversions.vox_to_pointcloud2_msg(vg, frame=self.robot_view.target_frame,
-                                                        scale=self.robot_view.scale,
-                                                        origin=-self.robot_view.origin / self.robot_view.scale,
+        msg = visual_conversions.vox_to_pointcloud2_msg(vg, frame=view.target_frame,
+                                                        scale=view.scale,
+                                                        origin=-view.origin / view.scale,
                                                         density_factor=self.completion_density)
         # pt = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
         #                                          origin=self.robot_view.origin)
 
-        msg = self.robot_view.transform_pts_to_target(msg, target_frame="gpu_voxel_world")
+        msg = view.transform_pts_to_target(msg, target_frame="gpu_voxel_world")
         return msg
 
     def do_some_completions_debug(self):
@@ -354,13 +403,14 @@ class ContactShapeCompleter:
         rospy.sleep(5)
         self.update_belief(known_free, None, 10)
 
-    def enforce_contact(self, latent, known_free, chss):
+    def enforce_contact(self, latent, known_free, chss, obj_index):
         if self.method == "proposed" or \
                 self.method == 'baseline_accept_failed_projections':
             return enforce_contact(latent, known_free, chss, self.model_runner.model,
-                                   self.belief, self.robot_view.VG_PUB)
+                                   self.belief.particle_beliefs[obj_index], self.robot_views[obj_index].VG_PUB)
         elif self.method == "baseline_ignore_latent_prior":
             return enforce_contact_ignore_latent_prior(latent, known_free, chss, self.model_runner.model,
-                                                       self.belief, self.robot_view.VG_PUB)
+                                                       self.belief.particle_beliefs[obj_index],
+                                                       self.robot_views[obj_index].VG_PUB)
         else:
             raise RuntimeError(f"Not known how to enforce_contact for method {self.method}")

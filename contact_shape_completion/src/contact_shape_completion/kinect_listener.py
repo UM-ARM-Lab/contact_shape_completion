@@ -5,6 +5,8 @@ import tf2_py as tf2
 from sensor_msgs.msg import PointCloud2
 import message_filters
 from sensor_msgs.msg import CompressedImage
+
+from contact_shape_completion.scenes import SceneType
 from object_segmentation.pointcloud_utils import PointcloudCreator
 from shape_completion_visualization.voxelgrid_publisher import VoxelgridPublisher
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
@@ -19,11 +21,12 @@ x_bounds = (0, 64)
 y_bounds = (0, 64)
 z_bounds = (0, 64)
 
+
 # target_frame = "victor_root"
 
 
 class DepthCameraListener:
-    def __init__(self, voxelgrid_forward_shift=0, scale=SCALE, object_categories=[]):
+    def __init__(self, voxelgrid_forward_shift=0, scale=SCALE, object_categories=(), scene_type=SceneType.LIVE):
         self.scale = scale
         # origin = (2.446 - scale * 32, -0.384 - scale * 32, 0.86 - scale * 32)
         self.x_bounds = (0, 64)
@@ -33,14 +36,16 @@ class DepthCameraListener:
         self.origin = (0, 0, 0)
 
         self.target_frame = "victor_root"
-
-        self.point_cloud_creator = PointcloudCreator(object_categories,
-                                                     topic_prefix="/kinect2_victor_head/qhd/")
+        self.point_cloud_creator = None
+        if scene_type == SceneType.LIVE:
+            self.point_cloud_creator = PointcloudCreator(object_categories,
+                                                         topic_prefix="/kinect2_victor_head/qhd/")
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        # self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.VG_PUB = VoxelgridPublisher(frame=self.target_frame, scale=self.scale, origin=self.origin)
         self.voxelgrid_forward_shift = voxelgrid_forward_shift
+        self.last_visible = None
 
     def transform_pts_to_target(self, pt_msg, target_frame=None):
         if target_frame is None:
@@ -69,13 +74,16 @@ class DepthCameraListener:
         return cloud_out
 
     def get_visible_element(self, save_file=None):
+        if self.point_cloud_creator is None:
+            raise RuntimeError("point_cloud_creator was never initialized. Are you sure this is a live scene?")
+
         while self.point_cloud_creator.img_msgs_to_process is None:
             print("Waiting for kinect image")
             rospy.sleep(0.5)
         while (pt_msg := self.point_cloud_creator.filter_pointcloud()) is None:
             rospy.sleep(0.5)
 
-         #pt_msg = self.point_cloud_creator.filter_pointcloud()
+        # pt_msg = self.point_cloud_creator.filter_pointcloud()
         if save_file is not None:
             saved_msg = self.transform_pts_to_target(pt_msg)
             with save_file.open('wb') as f:
@@ -84,16 +92,15 @@ class DepthCameraListener:
         return self.voxelize_visible_element(pt_msg)
 
     def voxelize_visible_element(self, pt_msg):
-
         cloud_out = self.transform_pts_to_target(pt_msg)
 
         elem = self.voxelize_point_cloud(cloud_out)
         self.VG_PUB.origin = self.origin
         self.VG_PUB.publish_elem_cautious(elem)
+        self.last_visible = elem
         return elem
 
     def voxelize_point_cloud(self, pts):
-        # global origin
         xyz_array = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts)
         occluding_xyz_array = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts)
 

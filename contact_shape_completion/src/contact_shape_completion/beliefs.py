@@ -1,4 +1,14 @@
+from typing import List
+
 import tensorflow as tf
+
+
+class MultiObjectParticleBelief:
+    def __init__(self):
+        self.particle_beliefs: List[ParticleBelief] = []
+
+    def reset(self):
+        self.particle_beliefs = []
 
 
 class ParticleBelief:

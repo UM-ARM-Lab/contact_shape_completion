@@ -1,6 +1,7 @@
 import abc
 import argparse
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import rospkg
@@ -10,11 +11,12 @@ from sensor_msgs.msg import PointCloud2
 
 from enum import Enum
 
+import ros_numpy
 from arc_utilities import ros_helpers
 from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator, \
     LiveCheezitGoalGenerator, LivePitcherGoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
-from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates
+from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates, points_to_pointcloud2_msg
 from shape_completion_training.model import default_params
 from shape_completion_training.utils import dataset_loader
 from shape_completion_training.utils.data_tools import shift_voxelgrid
@@ -27,12 +29,26 @@ def get_scene(scene_name: str):
                  "pitcher": SimulationPitcher,
                  "mug": SimulationMug,
                  "live_pitcher": LivePitcher,
+                 "multiobject": SimulationMultiObject,
                  }
     if scene_name not in scene_map:
         print(f"{Fore.RED}Unknown scene name {scene_name}\nValid scene names are:")
         print(f"{list(scene_map.keys())}{Fore.RESET}")
         raise RuntimeError(f"Unknown scene name {scene_name}")
     return scene_map[scene_name]()
+
+
+def combine_pointcloud2s(pt_clouds: List[PointCloud2]):
+    if len(pt_clouds) == 1:
+        return pt_clouds[0]
+
+    xyz_array = np.zeros((0, 3))
+    frame = pt_clouds[0].header.frame_id
+    for pts in pt_clouds:
+        if pts.header.frame_id != frame:
+            raise RuntimeError(f"Cannot combine pointclouds with frames {frame} and {pts.header.frame_id}")
+        xyz_array = np.concatenate([xyz_array, ros_numpy.point_cloud2.pointcloud2_to_xyz_array(pts)], axis=0)
+    return points_to_pointcloud2_msg(xyz_array, frame=frame)
 
 
 class SceneType(Enum):
@@ -43,6 +59,7 @@ class SceneType(Enum):
 
 class Scene(abc.ABC):
     scene_type = SceneType.UNSPECIFIED
+    num_objects = 1
 
     def __init__(self):
         self.goal_generator = None
@@ -94,7 +111,7 @@ class SimulationCheezit(SimulationScene):
                                                         frame='gpu_voxel_world',
                                                         origin=self.origin,
                                                         density_factor=3)
-        return pts
+        return [pts]
 
 
 class SimulationDeepCheezit(SimulationScene):
@@ -126,7 +143,7 @@ class SimulationDeepCheezit(SimulationScene):
                                                         frame='gpu_voxel_world',
                                                         origin=self.origin,
                                                         density_factor=3)
-        return pts
+        return [pts]
 
 
 class SimulationPitcher(SimulationScene):
@@ -153,7 +170,7 @@ class SimulationPitcher(SimulationScene):
                                                         frame='gpu_voxel_world',
                                                         origin=self.origin,
                                                         density_factor=3)
-        return pts
+        return [pts]
 
 
 class SimulationMug(SimulationScene):
@@ -180,6 +197,47 @@ class SimulationMug(SimulationScene):
                                                         frame='gpu_voxel_world',
                                                         origin=self.origin,
                                                         density_factor=3)
+        return [pts]
+
+
+class SimulationMultiObject(SimulationScene):
+    num_objects = 2
+
+    def __init__(self):
+        super().__init__()
+
+        self.name = "multiobject"
+        self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
+        params = default_params.get_noiseless_params()
+        params['apply_depth_sensor_noise'] = True
+        self.elems = [self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
+                                                          params=params).load(),
+                      self.dataset_supervisor.get_element('003_cracker_box-90_000_000',
+                                                          params=params).load()
+                      ]
+
+        self.scale = 0.007
+        self.origins = [get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale),
+                        get_origin_in_voxel_coordinates((1.2, 3.0, 1.2), self.scale)]
+
+        self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
+
+    def get_gt(self, density_factor=3):
+        def conv(elem, origin):
+            return visual_conversions.vox_to_pointcloud2_msg(elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
+                                                             origin=origin,
+                                                             density_factor=density_factor)
+        pts_all_objects = [conv(elem, origin) for elem, origin in zip(self.elems, self.origins)]
+        return combine_pointcloud2s(pts_all_objects)
+
+    def get_segmented_points(self):
+        def conv(elem, origin):
+            return visual_conversions.vox_to_pointcloud2_msg(elem['known_occ'], scale=self.scale,
+                                                             frame='gpu_voxel_world',
+                                                             origin=origin,
+                                                             density_factor=3)
+
+        pts = [conv(elem, origin) for elem, origin in zip(self.elems, self.origins)]
         return pts
 
 
