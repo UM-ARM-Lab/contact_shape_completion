@@ -1,5 +1,6 @@
 from colorama import Fore
 
+
 def get_noiseless_params():
     noiseless = {
         'translation_pixel_range_x': 0,

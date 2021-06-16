@@ -209,7 +209,7 @@ class SimulationMultiObject(SimulationScene):
         self.name = "multiobject"
         self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
         params = default_params.get_noiseless_params()
-        params['apply_depth_sensor_noise'] = True
+        # params['apply_depth_sensor_noise'] = True
         self.elems = [self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
                                                           params=params).load(),
                       self.dataset_supervisor.get_element('003_cracker_box-90_000_000',
@@ -217,7 +217,7 @@ class SimulationMultiObject(SimulationScene):
                       ]
 
         self.scale = 0.007
-        self.origins = [get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale),
+        self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
                         get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)]
 
         self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
