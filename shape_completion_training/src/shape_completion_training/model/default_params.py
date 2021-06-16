@@ -40,6 +40,7 @@ def get_default_params(group_name=None):
         'dataset': 'shapenet_mugs',
         'apply_slit_occlusion': False,
         'apply_depth_sensor_noise': False,
+        'use_flow_during_inference': False
     }
 
     if group_name is None:
@@ -222,6 +223,18 @@ def get_default_params(group_name=None):
                 'learning_rate': 0.0001,
                 'discriminator_learning_rate': 0.00005,
                 'dataset': 'ycb_all',
+                'apply_slit_occlusion': True,
+                'translation_pixel_range_x': 15,
+                'translation_pixel_range_y': 10,
+                'translation_pixel_range_z': 10,
+            },
+        "VAE_GAN_aab":
+            {
+                'num_latent_layers': 200,
+                'network': 'VAE_GAN',
+                'learning_rate': 0.0001,
+                'discriminator_learning_rate': 0.00005,
+                'dataset': 'aab'
                 'apply_slit_occlusion': True,
                 'translation_pixel_range_x': 15,
                 'translation_pixel_range_y': 10,
