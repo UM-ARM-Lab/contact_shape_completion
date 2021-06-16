@@ -172,6 +172,32 @@ class PitcherGoalGenerator(BasicGoalGenerator):
         self.goal_pt_pub.publish(m)
         return goal_pt
 
+class MultiObjectPitcherGoalGenerator(BasicGoalGenerator):
+    def generate_goal_point(self, state: PointCloud2):
+        pts = point_cloud2.read_points(state, field_names=('x', 'y', 'z'))
+        pts = np.array([p for p in pts])
+        if len(pts) == 0:
+            raise RuntimeError("Cannot generate a goal from no points")
+
+        centroid = np.mean(pts, axis=0)
+        back = np.max(pts, axis=0)
+
+        goal_pt = [back[0] + 0.07, centroid[1]-0.25, centroid[2]]
+
+        m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
+                   header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),
+                   type=Marker.SPHERE)
+        m.pose.orientation.w = 1.0
+        m.pose.position.x = goal_pt[0]
+        m.pose.position.y = goal_pt[1]
+        m.pose.position.z = goal_pt[2]
+        m.scale.x = 0.1
+        m.scale.y = 0.1
+        m.scale.z = 0.1
+
+        self.goal_pt_pub.publish(m)
+        return goal_pt
+
 class LiveCheezitGoalGenerator(BasicGoalGenerator):
     def generate_goal_point(self, state: PointCloud2):
         pts = point_cloud2.read_points(state, field_names=('x', 'y', 'z'))

@@ -14,7 +14,7 @@ from enum import Enum
 import ros_numpy
 from arc_utilities import ros_helpers
 from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator, \
-    LiveCheezitGoalGenerator, LivePitcherGoalGenerator
+    LiveCheezitGoalGenerator, LivePitcherGoalGenerator, MultiObjectPitcherGoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates, points_to_pointcloud2_msg
 from shape_completion_training.model import default_params
@@ -209,18 +209,17 @@ class SimulationMultiObject(SimulationScene):
         self.name = "multiobject"
         self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
         params = default_params.get_noiseless_params()
-        # params['apply_depth_sensor_noise'] = True
-        self.elems = [self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
-                                                          params=params).load(),
-                      self.dataset_supervisor.get_element('003_cracker_box-90_000_000',
-                                                          params=params).load()
+        params['apply_depth_sensor_noise'] = True
+        self.elems = [self.dataset_supervisor.get_element('019_pitcher_base-90_000_000', params=params).load(),
+                      # self.dataset_supervisor.get_element('003_cracker_box-90_000_000', params=params).load(),
+                      self.dataset_supervisor.get_element('006_mustard_bottle-90_000_000', params=params).load(),
                       ]
 
         self.scale = 0.007
         self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
                         get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)]
 
-        self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
+        self.goal_generator = MultiObjectPitcherGoalGenerator(x_bound=(-0.01, 0.01))
 
     def get_gt(self, density_factor=3):
         def conv(elem, origin):

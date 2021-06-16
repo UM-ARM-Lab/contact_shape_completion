@@ -35,78 +35,83 @@ display_names_map = {
     'pitcher': 'Simulation Pitcher',
     'mug': 'Simulation Mug',
     'live_pitcher': 'Live Pitcher',
+    'multiobject': 'MultiObject',
 }
 
 
 def get_evaluation_trial_groups():
     d = [
+        # [
+        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+        #                       method='baseline_ignore_latent_prior'),
+        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+        #                       method='baseline_accept_failed_projections'),
+        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+        # ],
+        # [
+        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+        #                       method='baseline_ignore_latent_prior'),
+        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+        #                       method='baseline_accept_failed_projections'),
+        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+        #                       method='baseline_rejection_sampling'),
+        # ],
+        # [
+        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+        #                       method='baseline_ignore_latent_prior'),
+        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+        #                       method='baseline_accept_failed_projections'),
+        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
+        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+        #                       method='baseline_rejection_sampling'),
+        # ],
+        # [
+        #     # EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
+        #     #                   method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+        #                       method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+        #                       method='baseline_ignore_latent_prior'),
+        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+        #                       method='baseline_accept_failed_projections'),
+        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+        #                       method='baseline_OOD_prediction'),
+        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+        #                       method='baseline_rejection_sampling'),
+        # ],
+        # [
+        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+        #                       method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+        #                       method='baseline_ignore_latent_prior'),
+        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+        #                       method='baseline_accept_failed_projections'),
+        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+        #                       method='baseline_OOD_prediction'),
+        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+        #                       method='baseline_rejection_sampling'),
+        # ],
+        # [
+        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+        #                       method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+        #                       method='baseline_ignore_latent_prior'),
+        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+        #                       method='baseline_accept_failed_projections'),
+        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+        #                       method='baseline_OOD_prediction'),
+        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+        #                       method='baseline_rejection_sampling'),
+        # ],
         [
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-                              method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-                              method='baseline_accept_failed_projections'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
-        ],
-        [
-            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
-            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                              method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                              method='baseline_accept_failed_projections'),
-            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-                              method='baseline_rejection_sampling'),
-        ],
-        [
-            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
-            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                              method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                              method='baseline_accept_failed_projections'),
-            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-                              method='baseline_rejection_sampling'),
-        ],
-        [
-            # EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
-            #                   method='proposed'),
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
                               method='proposed'),
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                              method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                              method='baseline_accept_failed_projections'),
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                              method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-                              method='baseline_rejection_sampling'),
-        ],
-        [
-            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-                              method='proposed'),
-            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-                              method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-                              method='baseline_accept_failed_projections'),
-            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-                              method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-                              method='baseline_rejection_sampling'),
-        ],
-        [
-            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-                              method='proposed'),
-            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-                              method='baseline_ignore_latent_prior'),
-            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-                              method='baseline_accept_failed_projections'),
-            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-                              method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-                              method='baseline_rejection_sampling'),
-        ],
+        ]
     ]
     return d
 
@@ -148,11 +153,14 @@ def generate_evaluation(details):
         dists = []
         for particle_num, completion_pts_msg in enumerate(resp.sampled_completions):
             # dist = pt_cloud_distance(completion_pts_msg, gt).numpy()
-            dist = vg_chamfer_distance(contact_shape_completer.transform_from_gpuvoxels(completion_pts_msg),
-                                       contact_shape_completer.transform_from_gpuvoxels(gt),
-                                       scale=contact_shape_completer.robot_view.scale).numpy()
-            print(f"Errors w.r.t. gt: {dist}")
-            dists.append(dist)
+            total_dist = 0
+            for view in contact_shape_completer.robot_views:
+                dist = vg_chamfer_distance(contact_shape_completer.transform_from_gpuvoxels(view, completion_pts_msg),
+                                           contact_shape_completer.transform_from_gpuvoxels(view, gt),
+                                           scale=view.scale).numpy()
+                print(f"Errors w.r.t. gt: {dist}")
+                total_dist += dist
+            dists.append(total_dist)
             df = df.append(pd.Series([
                 req_number, float(len(completion_req.chss)), particle_num, scene.name, details.method, dist, True
             ], index=columns), ignore_index=True)
