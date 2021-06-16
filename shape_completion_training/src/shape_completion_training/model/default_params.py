@@ -234,7 +234,7 @@ def get_default_params(group_name=None):
                 'network': 'VAE_GAN',
                 'learning_rate': 0.0001,
                 'discriminator_learning_rate': 0.00005,
-                'dataset': 'aab'
+                'dataset': 'aab',
                 'apply_slit_occlusion': True,
                 'translation_pixel_range_x': 15,
                 'translation_pixel_range_y': 10,
