@@ -36,6 +36,7 @@ display_names_map = {
     'mug': 'Simulation Mug',
     'live_pitcher': 'Live Pitcher',
     'multiobject': 'MultiObject',
+    'live_multiobject': 'Live MultiObject',
     'proposed': 'PSSNet + CLASP',
     'baseline_ignore_latent_prior': 'PSSNet + CLASP: ignore prior',
     'baseline_accept_failed_projections': 'PSSNet + CLASP: accept failed projections',
@@ -127,13 +128,21 @@ def get_evaluation_trial_groups():
         #     EvaluationDetails(scene_type=scenes.LivePitcher, network='VAE_GAN_YCB',
         #                       method='VAE_GAN'),
         # ],
+        # [
+        #     EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+        #                       method='proposed'),
+        #     EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+        #                       method='assign_all_CHS'),
+        #     EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
+        #                       method='VAE_GAN'),
+        # ]
         [
-            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+            EvaluationDetails(scene_type=scenes.LiveMultiObject, network='YCB',
                               method='proposed'),
-            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
-                              method='assign_all_CHS'),
-            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
-                              method='VAE_GAN'),
+            # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+            #                   method='assign_all_CHS'),
+            # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
+            #                   method='VAE_GAN'),
         ]
     ]
     return d

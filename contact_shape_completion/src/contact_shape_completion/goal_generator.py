@@ -1,5 +1,5 @@
-
 import abc
+from random import random
 
 from arm_robots.victor import Victor
 from sensor_msgs.msg import PointCloud2
@@ -33,8 +33,6 @@ class GoalGenerator(abc.ABC):
     @abc.abstractmethod
     def publish_goal(self, tsr: TSR, marker_id=0):
         pass
-
-
 
 
 class BasicGoalGenerator(GoalGenerator):
@@ -127,9 +125,9 @@ class BasicGoalGenerator(GoalGenerator):
                    ns="tsr",
                    id=marker_id)
         m.pose.orientation.w = 1.0
-        m.pose.position.x = (tsr.x_lower + tsr.x_upper)/2
-        m.pose.position.y = (tsr.y_lower + tsr.y_upper)/2
-        m.pose.position.z = (tsr.z_lower + tsr.z_upper)/2
+        m.pose.position.x = (tsr.x_lower + tsr.x_upper) / 2
+        m.pose.position.y = (tsr.y_lower + tsr.y_upper) / 2
+        m.pose.position.z = (tsr.z_lower + tsr.z_upper) / 2
         m.scale.x = tsr.x_upper - tsr.x_lower
         m.scale.y = tsr.y_upper - tsr.y_lower
         m.scale.z = tsr.z_upper - tsr.z_lower
@@ -156,7 +154,7 @@ class PitcherGoalGenerator(BasicGoalGenerator):
         centroid = np.mean(pts, axis=0)
         back = np.max(pts, axis=0)
 
-        goal_pt = [back[0] + 0.1, centroid[1]-0.2, centroid[2]]
+        goal_pt = [back[0] + 0.1, centroid[1] - 0.2, centroid[2]]
 
         m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
                    header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),
@@ -171,6 +169,7 @@ class PitcherGoalGenerator(BasicGoalGenerator):
 
         self.goal_pt_pub.publish(m)
         return goal_pt
+
 
 class MultiObjectPitcherGoalGenerator(BasicGoalGenerator):
     def generate_goal_point(self, state: PointCloud2):
@@ -182,7 +181,7 @@ class MultiObjectPitcherGoalGenerator(BasicGoalGenerator):
         centroid = np.mean(pts, axis=0)
         back = np.max(pts, axis=0)
 
-        goal_pt = [back[0] + 0.1, centroid[1]-0.2, centroid[2]]
+        goal_pt = [back[0] + 0.1, centroid[1] - 0.2, centroid[2]]
 
         m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
                    header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),
@@ -197,6 +196,7 @@ class MultiObjectPitcherGoalGenerator(BasicGoalGenerator):
 
         self.goal_pt_pub.publish(m)
         return goal_pt
+
 
 class LiveCheezitGoalGenerator(BasicGoalGenerator):
     def generate_goal_point(self, state: PointCloud2):
@@ -236,6 +236,33 @@ class LivePitcherGoalGenerator(BasicGoalGenerator):
         back = np.max(pts, axis=0)
 
         goal_pt = [back[0] + 0.15, centroid[1], centroid[2]]
+
+        m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
+                   header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),
+                   type=Marker.SPHERE)
+        m.pose.orientation.w = 1.0
+        m.pose.position.x = goal_pt[0]
+        m.pose.position.y = goal_pt[1]
+        m.pose.position.z = goal_pt[2]
+        m.scale.x = 0.1
+        m.scale.y = 0.1
+        m.scale.z = 0.1
+
+        self.goal_pt_pub.publish(m)
+        return goal_pt
+
+
+class LiveMultiObjectGoalGenerator(BasicGoalGenerator):
+    def generate_goal_point(self, state: PointCloud2):
+        pts = point_cloud2.read_points(state, field_names=('x', 'y', 'z'))
+        pts = np.array([p for p in pts])
+        if len(pts) == 0:
+            raise RuntimeError("Cannot generate a goal from no points")
+
+        centroid = np.mean(pts, axis=0)
+        back = np.max(pts, axis=0)
+
+        goal_pt = [back[0] + 0.1, centroid[1] - 0.3, centroid[2]] # + 0.1 * (np.random.random([3]) - 0.5)
 
         m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
                    header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),

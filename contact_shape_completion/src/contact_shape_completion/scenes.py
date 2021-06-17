@@ -14,7 +14,7 @@ from enum import Enum
 import ros_numpy
 from arc_utilities import ros_helpers
 from contact_shape_completion.goal_generator import GoalGenerator, CheezeitGoalGenerator, PitcherGoalGenerator, \
-    LiveCheezitGoalGenerator, LivePitcherGoalGenerator, MultiObjectPitcherGoalGenerator
+    LiveCheezitGoalGenerator, LivePitcherGoalGenerator, MultiObjectPitcherGoalGenerator, LiveMultiObjectGoalGenerator
 from rviz_voxelgrid_visuals import conversions as visual_conversions
 from rviz_voxelgrid_visuals.conversions import get_origin_in_voxel_coordinates, points_to_pointcloud2_msg
 from shape_completion_training.model import default_params
@@ -31,6 +31,7 @@ def get_scene(scene_name: str):
                  "live_pitcher": LivePitcher,
                  "multiobject": SimulationMultiObject,
                  "multiobject2": SimulationMultiObject2,
+                 "live_multiobject": LiveMultiObject,
                  }
     if scene_name not in scene_map:
         print(f"{Fore.RED}Unknown scene name {scene_name}\nValid scene names are:")
@@ -300,6 +301,7 @@ class LiveScene1(LiveScene):
         super().__init__()
         self.name = "live_cheezit"
         self.num_objects = 1
+        self.segmented_object_categories = [[1, 2]]
 
     def get_gt(self, density_factor=3):
         vg = np.ones((8, 8, 11))
@@ -323,7 +325,7 @@ class LivePitcher(LiveScene):
         self.scale = 0.0065
         self.origin = get_origin_in_voxel_coordinates((1.3, 1.67, 1.33), self.scale)
         self.goal_generator = LivePitcherGoalGenerator(x_bound=(-0.01, 0.01))
-        self.segmented_object_categories = [11]
+        self.segmented_object_categories = [[11]]
         self.num_objects = 1
 
     def get_gt(self, density_factor=3):
@@ -331,6 +333,40 @@ class LivePitcher(LiveScene):
                                                         origin=self.origin,
                                                         density_factor=density_factor)
         return pts
+
+
+class LiveMultiObject(LiveScene):
+    def __init__(self):
+        super().__init__()
+        self.name = "live_multiobject"
+        self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
+        params = default_params.get_noiseless_params()
+        params['apply_depth_sensor_noise'] = True
+        self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_330',
+                                                        params=params).load()
+        self.scale = 0.0055
+        # self.origin =
+        self.goal_generator = LiveMultiObjectGoalGenerator(x_bound=(-0.01, 0.01))
+        self.segmented_object_categories = [[1, 2], [11]]
+        self.num_objects = 2
+
+    def get_gt(self, density_factor=3):
+        # CHEEZITs
+        vg = np.ones((3, 8, 10))
+        scale = 0.02
+        # cheezit cheezit cheezit cheezit cheezit cheezit cheezit cheezit cheezit
+        origin = visual_conversions.get_origin_in_voxel_coordinates((1.55, 2.01, 1.17), scale=scale)
+        cheezit_pts = visual_conversions.vox_to_pointcloud2_msg(vg, scale=scale, frame='gpu_voxel_world',
+                                                                origin=origin,
+                                                                density_factor=3)
+
+        # Pitcher Pitcher Pitcher Pitcher Pitcher Pitcher Pitcher Pitcher Pitcher
+        origin = get_origin_in_voxel_coordinates((1.43, 1.60, 1.05), self.scale)
+        pitcher_pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale,
+                                                                frame='gpu_voxel_world',
+                                                                origin=origin,
+                                                                density_factor=density_factor)
+        return combine_pointcloud2s([cheezit_pts, pitcher_pts])
 
 
 def visualize(pts, point_pub: rospy.Publisher):

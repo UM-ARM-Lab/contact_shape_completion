@@ -39,9 +39,9 @@ class ContactShapeCompleter:
         self.method = method
 
         self.robot_views = []
-        for _ in range(scene.num_objects):
+        for i in range(scene.num_objects):
             self.robot_views.append(DepthCameraListener(voxelgrid_forward_shift=scene.forward_shift_for_voxelgrid,
-                                                        object_categories=scene.segmented_object_categories,
+                                                        object_categories=scene.segmented_object_categories[i],
                                                         scale=scene.scale,
                                                         scene_type=scene.scene_type))
         self.model_runner = None
@@ -88,16 +88,22 @@ class ContactShapeCompleter:
 
     def get_visible_vg(self, load=False):
         if self.scene.scene_type == SceneType.LIVE:
-
+            #TODO Update for multiobject
             save_name = f"{self.scene.name}_latest_segmented_pts.msg"
             if load:
                 self.load_visible_vg(save_name)
             else:
-                raise RuntimeError("Live scene not updated after multiobject refactor")
-            #     if self.should_store_request:
-            #         save_path = self.scene.get_save_path() / save_name
-            #     else:
-            #         save_path = self.get_debug_save_path() / save_name
+                # raise RuntimeError("Live scene not updated after multiobject refactor")
+
+                for i in range(self.scene.num_objects):
+                    save_name = f"{self.scene.name}_latest_segmented_pts_{i}.msg"
+                    if self.should_store_request:
+                        save_path = self.scene.get_save_path() / save_name
+                    else:
+                        save_path = self.get_debug_save_path() / save_name
+                    self.robot_views[i].get_visible_element(save_file=save_path)
+
+
             #     self.last_visible_vg = self.robot_view.get_visible_element(save_file=save_path)
 
         elif self.scene.scene_type == SceneType.SIMULATION:
@@ -113,12 +119,26 @@ class ContactShapeCompleter:
     def load_visible_vg(self, filename):
         if self.scene.scene_type == SceneType.LIVE:
             # raise RuntimeError("Live scene not updated after multiobject refactor")
-            pt_msg = PointCloud2()
-            with (self.scene.get_save_path() / filename).open('rb') as f:
-                pt_msg.deserialize(f.read())
-            if len(self.robot_views) != 1:
-                raise RuntimeError("Live scene with multiple objects not yet supported")
-            self.robot_views[0].voxelize_visible_element(pt_msg)
+            try:
+                pt_msg = PointCloud2()
+                with (self.scene.get_save_path() / filename).open('rb') as f:
+                    pt_msg.deserialize(f.read())
+                if len(self.robot_views) != 1:
+                    raise RuntimeError("Live scene with multiple objects, yet single latest segmented point found")
+                self.robot_views[0].voxelize_visible_element(pt_msg)
+            except FileNotFoundError as e:
+                print("Single latest segmeented points not found. You are probably doing this after the refactor")
+
+            for i in range(self.scene.num_objects):
+                filename = f"{self.scene.name}_latest_segmented_pts_{i}.msg"
+                pt_msg = PointCloud2()
+                with (self.scene.get_save_path() / filename).open('rb') as f:
+                    pt_msg.deserialize(f.read())
+                self.robot_views[i].voxelize_visible_element(pt_msg)
+
+                # self.robot_views[i].get_visible_element(save_file=save_path)
+
+
         elif self.scene.scene_type == SceneType.SIMULATION:
             raise RuntimeError("What are you doing loading the visible_vg from a simulation scene?")
         else:
@@ -131,27 +151,41 @@ class ContactShapeCompleter:
         return path
 
     def request_shape_srv(self, req: RequestShapeRequest):
-        raise RuntimeError("request_shape_srv not updated after multiobject refactor")
+        # raise RuntimeError("request_shape_srv not updated after multiobject refactor")
         # pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
         # return RequestShapeResponse(points=pt)
+        pts = [self.transform_from_gpuvoxels(view=view, pt_msg=view.last_visible) for view in self.robot_views]
+        return RequestShapeResponse(points=combine_pointcloud2s(pts))
 
     def compute_known_occ(self):
         if isinstance(self.scene, LiveScene):
-            raise RuntimeError("Live scene not updated after multiobject refactor")
-            # pts = self.robot_view.point_cloud_creator.unfiltered_pointcloud()
-            # pts = self.robot_view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
-            #
-            # # Compute pts exactly as gpu voxels would see the obstacles
-            # pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
-            #                                        shape=[256, 256, 256],
-            #                                        threshold=50)
-            #
-            # box_bounds = contact_tools.BoxBounds(x_lower=0, x_upper=3,
-            #                                      y_lower=0, y_upper=5,
-            #                                      z_lower=0, z_upper=1.2)
-            # pts = contact_tools.remove_points_outside_box(pts, box_bounds)
-            #
-            # self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(pts, frame="gpu_voxel_world")
+            # all_pts = []
+            self.known_obstacles = []
+            # raise RuntimeError("Live scene not updated after multiobject refactor")
+            for i in range(self.scene.num_objects):
+                view = self.robot_views[i]
+                pts = view.point_cloud_creator.unfiltered_pointcloud()
+                pts = view.transform_pts_to_target(pts, target_frame="gpu_voxel_world")
+
+                # Compute pts exactly as gpu voxels would see the obstacles
+                pts = contact_tools.denoise_pointcloud(pts, scale=0.02, origin=[0, 0, 0],
+                                                       shape=[256, 256, 256],
+                                                       threshold=50)
+
+                box_bounds = contact_tools.BoxBounds(x_lower=0, x_upper=3,
+                                                     y_lower=0, y_upper=5,
+                                                     z_lower=0, z_upper=1.2)
+                pts = contact_tools.remove_points_outside_box(pts, box_bounds)
+                # all_pts.append(pts)
+                self.known_obstacles.append(visual_conversions.points_to_pointcloud2_msg(pts,
+                                                                                         frame="gpu_voxel_world"))
+
+            # combined_pts = np.concatenate(all_pts)
+
+            # for i in range(self.scene.num_objects):
+            #     self.
+
+            # self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(combined_pts, frame="gpu_voxel_world")
 
         elif isinstance(self.scene, SimulationScene):
             self.known_obstacles = self.scene.get_segmented_points()
