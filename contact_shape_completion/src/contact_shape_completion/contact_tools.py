@@ -85,7 +85,7 @@ def satisfies_constraints(pred_occ, known_contact, known_free):
 
 
 def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belief: ParticleBelief,
-                    vg_pub: VoxelgridPublisher):
+                    vg_pub: VoxelgridPublisher, verbose=True):
     success = True
     vg_pub.publish("aux", 0 * known_free)
 
@@ -99,13 +99,16 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
     else:
         vg_pub.publish('chs', chss)
 
-    print()
+    if verbose:
+        print()
     log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
     quantile = belief.get_quantile(log_pdf)
-    print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
+    if verbose:
+        print(f"Before optimization logprob: {log_pdf} ({quantile} quantile)")
 
     if satisfies_constraints(pred_occ, known_contact, known_free):
-        print(f"{Fore.GREEN}Particle satisfies constraints without any gradient needed{Fore.RESET}")
+        if verbose:
+            print(f"{Fore.GREEN}Particle satisfies constraints without any gradient needed{Fore.RESET}")
         return latent, True
 
     prev_loss = 0.0
@@ -113,43 +116,52 @@ def enforce_contact(latent: tf.Variable, known_free, chss, pssnet: PSSNet, belie
         # single_free = get_most_wrong_free(pred_occ, known_free)
 
         loss = pssnet.grad_step_towards_output(latent, known_contact, known_free, belief)
-        print('\rloss: {}'.format(loss), end='')
+        if verbose:
+            print('\rloss: {}'.format(loss), end='')
         pred_occ = pssnet.decode(latent, apply_sigmoid=True)
         known_contact = get_assumed_occ(pred_occ, chss)
         vg_pub.publish('predicted_occ', pred_occ)
         vg_pub.publish('known_contact', known_contact)
 
         if satisfies_constraints(pred_occ, known_contact, known_free):
-            print(
-                f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
-                f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
+            if verbose:
+                print(
+                    f"\t{Fore.GREEN}All known free have less that {KNOWN_FREE_LIMIT} prob occupancy, "
+                    f"and chss have value > {KNOWN_OCC_LIMIT}{Fore.RESET}")
             break
 
         if loss == prev_loss:
-            print("\tNo progress made. Accepting shape as is")
+            if verbose:
+                print("\tNo progress made. Accepting shape as is")
             success = False
             break
         prev_loss = loss
 
         if tf.math.is_nan(loss):
-            print("\tLoss is nan. There is a problem I am not addressing")
+            if verbose:
+                print("\tLoss is nan. There is a problem I am not addressing")
             success = False
             break
 
     else:
         success = False
-        print()
+        if verbose:
+            print()
         if np.max(pred_occ * known_free) > KNOWN_FREE_LIMIT:
-            print("Optimization did not satisfy known freespace: ")
+            if verbose:
+                print("Optimization did not satisfy known freespace: ")
             vg_pub.publish("aux", pred_occ * known_free)
         if tf.reduce_min(tf.boolean_mask(pred_occ, known_contact)) < KNOWN_OCC_LIMIT:
-            print("Optimization did not satisfy assumed occ: ")
+            if verbose:
+                print("Optimization did not satisfy assumed occ: ")
             vg_pub.publish("aux", (1 - pred_occ) * known_contact)
-        print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
+        if verbose:
+            print('\tWarning, enforcing contact terminated due to max iterations, not actually satisfying contact')
 
     log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
     quantile = belief.get_quantile(log_pdf)
-    print(f"Latent logprob {log_pdf} ({quantile} quantile)")
+    if verbose:
+        print(f"Latent logprob {log_pdf} ({quantile} quantile)")
     return latent, success
 
 

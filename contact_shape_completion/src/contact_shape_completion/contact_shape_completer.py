@@ -1,3 +1,4 @@
+import random
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -188,6 +189,77 @@ class ContactShapeCompleter:
             return False
         return True
 
+    def update_possible_chs_assignments(self, req):
+
+        # If there are no new chss, no need to update
+        if all([len(req.chss) == len(p.chs_possible) for p in self.belief.particle_beliefs]):
+            return False
+
+        if any([len(req.chss) != (len(p.chs_possible) + 1) for p in self.belief.particle_beliefs]):
+            print(f"{len(req.chss)}")
+            print(f"{[len(p.chs_possible) for p in self.belief.particle_beliefs]}")
+            raise RuntimeError("Unexpected case, there is a new chs but the length of the particle beliefs are "
+                               "unexpected")
+
+        # Only one particle belief, so the new chs must be assigned to it
+        if len(self.belief.particle_beliefs) == 1:
+            self.belief.particle_beliefs[0].chs_possible.append(True)
+            return True
+
+        # Initially, assume the new chs could be assigned to any object, then prune
+        for object_ind, object_bel in enumerate(self.belief.particle_beliefs):
+            object_bel.chs_possible.append(True)
+            robot_view = self.robot_views[object_ind]
+
+            latest_chs = self.transform_from_gpuvoxels(robot_view, req.chss[-1])
+
+            # If the CHS has no points in the object's voxelgrid, assignment is not possible
+            if np.sum(latest_chs) == 0:
+                object_bel.chs_possible[-1] = False
+                continue
+
+            # If all projections fail, object assignment is not possible
+            known_free = self.transform_from_gpuvoxels(robot_view, req.known_free)
+
+            # TODO: I don't actually want to update here, I just want to see if updates are possible
+            # Maybe I could deepcopy the belief, but I don't know if that would work with tensorflow latent vectors
+            if self.is_projection_possible(object_ind, known_free, tf.expand_dims(latest_chs, axis=0),
+                                               req.num_samples):
+                print(f'{Fore.CYAN}Object {object_ind} can be projection to new CHS{Fore.RESET}')
+            else:
+                print(f'{Fore.RED}Object {object_ind} can NOT be projection to new CHS{Fore.RESET}')
+                object_bel.chs_possible[-1] = False
+        return True
+
+    def is_projection_possible(self, obj_index, known_free, chss, num_samples):
+        # First update current particles (If current particles exist, the prior mean and logvar must have been set
+        object_bel = deepcopy(self.belief.particle_beliefs[obj_index])
+        for particle_num, particle in enumerate(object_bel.particles):
+            self.scene.goal_generator.clear_goal_markers()
+            # particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
+            #                                                                        obj_index)
+            _, successful_projection = self.enforce_contact(particle.latent, known_free, chss, obj_index, verbose=False)
+            if successful_projection:
+                return True
+
+        return False
+
+    def update_chs_assignments(self, req):
+        if not self.update_possible_chs_assignments(req):
+            return
+        possible_new_assignments = [i for i, p in enumerate(self.belief.particle_beliefs) if p.chs_possible[-1]]
+        for sampled_assignment in self.belief.sampled_assignments:
+            sampled_assignment.append(random.choice(possible_new_assignments))
+
+    def get_assigned_chss(self, obj_index, req, particle_num):
+        robot_view = self.robot_views[obj_index]
+        assigned_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
+                             for i, chs in enumerate(req.chss)
+                             if self.belief.sampled_assignments[particle_num][i] == obj_index]
+        if len(assigned_chs_list) == 0:
+            return None
+        return tf.concat(assigned_chs_list, axis=0)
+
     def complete_shape_srv(self, req: CompleteShapeRequest):
         print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
 
@@ -202,6 +274,8 @@ class ContactShapeCompleter:
             self.save_request(req)
             self.prev_shape_completion_request = req
 
+        self.update_chs_assignments(req)
+
         for obj_index in range(len(self.robot_views)):
             if len(self.belief.particle_beliefs) == 0:
                 self.initialize_belief(req.num_samples)
@@ -210,44 +284,42 @@ class ContactShapeCompleter:
             robot_view = self.robot_views[obj_index]
             known_free = self.transform_from_gpuvoxels(robot_view, req.known_free)
 
-            if len(req.chss) == 0:
-                chss = None
-            else:
-                # chss = tf.concat(
-                #     [tf.expand_dims(self.transform_from_gpuvoxels(self.robot_views[obj_index], chs), axis=0) for chs in
-                #      req.chss], axis=0)
-
-                full_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
-                                 for chs in req.chss]
-                if len(full_chs_list) > len(bel.assigned_chss):
-                    bel.assigned_chss.append(np.sum(full_chs_list[-1]) > 0)
-                if not any(bel.assigned_chss):
-                    chss = None
-                else:
-                    chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.assigned_chss) if assigned],
-                                     axis=0)
-
-                    if tf.reduce_max(known_free * chss) > 0:
-                        raise RuntimeError("Known free overlaps with CHSs")
-
-                print(f"{Fore.CYAN}CHSs assigned for object {obj_index}: {bel.assigned_chss}{Fore.RESET}")
-
-
+            # if len(req.chss) == 0:
+            #     chss = None
+            # else:
+            #     # chss = tf.concat(
+            #     #     [tf.expand_dims(self.transform_from_gpuvoxels(self.robot_views[obj_index], chs), axis=0) for chs in
+            #     #      req.chss], axis=0)
+            #
+            #     full_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
+            #                      for chs in req.chss]
+            #     if len(full_chs_list) > len(bel.chs_possible):
+            #         bel.chs_possible.append(np.sum(full_chs_list[-1]) > 0)
+            #     if not any(bel.chs_possible):
+            #         chss = None
+            #     else:
+            #         chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.chs_possible) if assigned],
+            #                          axis=0)
+            #
+            #         if tf.reduce_max(known_free * chss) > 0:
+            #             raise RuntimeError("Known free overlaps with CHSs")
+            #
+            #     print(f"{Fore.CYAN}CHSs assigned for object {obj_index}: {bel.chs_possible}{Fore.RESET}")
+            # chss = self.get_assigned_chss(obj_index, req)
 
             if not is_new_request:
                 continue
 
-            self.update_belief(obj_index, known_free, chss, req.num_samples)
-            if all([not p.successful_projection for p in bel.particles]):
-                print(f"{Fore.CYAN} No successful completions. Removing last CHS{Fore.RESET}")
-                bel.assigned_chss[-1] = False
-                if not any(bel.assigned_chss):
-                    chss = None
-                else:
-                    chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.assigned_chss) if assigned],
-                                     axis=0)
-                self.update_belief(obj_index, known_free, chss, req.num_samples)
-
+            self.update_belief(obj_index, known_free, req, req.num_samples)
+            # if all([not p.successful_projection for p in bel.particles]):
+            #     print(f"{Fore.CYAN} No successful completions. Removing last CHS{Fore.RESET}")
+            #     bel.chs_possible[-1] = False
+            #     if not any(bel.chs_possible):
+            #         chss = None
+            #     else:
+            #         chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.chs_possible) if assigned],
+            #                          axis=0)
+            #     self.update_belief(obj_index, known_free, chss, req.num_samples)
 
         resp = CompleteShapeResponse()
 
@@ -285,8 +357,10 @@ class ContactShapeCompleter:
                 p.sampled_latent = latent
                 single_object_bel.particles.append(p)
             self.belief.particle_beliefs.append(single_object_bel)
+        for _ in range(num_particles):
+            self.belief.sampled_assignments.append([])
 
-    def update_belief(self, obj_index: int, known_free, chss, num_particles):
+    def update_belief(self, obj_index: int, known_free, req, num_particles):
         self.reload_flow()
         bel = self.belief.particle_beliefs[obj_index]
 
@@ -306,15 +380,15 @@ class ContactShapeCompleter:
         #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
         if self.method == "proposed":
-            self.update_belief_proposed(obj_index, known_free, chss)
+            self.update_belief_proposed(obj_index, known_free, req)
         elif self.method == "baseline_ignore_latent_prior":
-            self.update_belief_proposed(obj_index, known_free, chss)  # Ablation done in enforce_contact
+            self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
         elif self.method == "baseline_accept_failed_projections":
-            self.update_belief_proposed(obj_index, known_free, chss)  # Difference comes when returning message
+            self.update_belief_proposed(obj_index, known_free, req)  # Difference comes when returning message
         elif self.method == "baseline_OOD_prediction":
-            self.update_belief_OOD_prediction(obj_index, known_free, chss)
+            self.update_belief_OOD_prediction(obj_index, known_free, req)
         elif self.method == "baseline_rejection_sampling":
-            self.update_belief_rejection_sampling(obj_index, known_free, chss)
+            self.update_belief_rejection_sampling(obj_index, known_free, req)
         else:
             raise RuntimeError(f"Unknown method {self.method}. Cannot update belief")
 
@@ -322,9 +396,10 @@ class ContactShapeCompleter:
             for i, p in enumerate(bel.particles):
                 self.scene.goal_generator.publish_goal(p.goal, marker_id=i)
 
-    def update_belief_proposed(self, obj_index, known_free, chss):
+    def update_belief_proposed(self, obj_index, known_free, req):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
-        for particle in self.belief.particle_beliefs[obj_index].particles:
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
             self.scene.goal_generator.clear_goal_markers()
             particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
                                                                                    obj_index)
@@ -332,27 +407,29 @@ class ContactShapeCompleter:
             pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
-                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts, publish=obj_index==0)
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts, publish=obj_index == 0)
             except RuntimeError as e:
                 print(e)
                 continue
             particle.goal = goal_tsr
             particle.completion = pts
 
-    def update_belief_OOD_prediction(self, obj_index, known_free, chss):
+    def update_belief_OOD_prediction(self, obj_index, known_free, req):
         visible_vg = deepcopy(self.robot_views[obj_index].last_visible)
         visible_vg['known_free'] += known_free
 
-        if chss is not None:
-            gt = self.transform_from_gpuvoxels(self.scene.get_gt())
-            gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
-            contact_voxels = tf.reduce_sum(chss, axis=0)
-            self.robot_views[obj_index].VG_PUB.publish('chs', contact_voxels)
-            self.robot_views[obj_index].VG_PUB.publish('gt', gt)
-            visible_vg['known_occ'] = np.clip(contact_voxels * gt + visible_vg['known_occ'], 0.0, 1.0)
-            self.robot_views[obj_index].VG_PUB.publish('known_contact', contact_voxels * gt)
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
 
-        for particle in self.belief.particle_beliefs[obj_index].particles:
+            if chss is not None:
+                gt = self.transform_from_gpuvoxels(self.scene.get_gt())
+                gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
+                contact_voxels = tf.reduce_sum(chss, axis=0)
+                self.robot_views[obj_index].VG_PUB.publish('chs', contact_voxels)
+                self.robot_views[obj_index].VG_PUB.publish('gt', gt)
+                visible_vg['known_occ'] = np.clip(contact_voxels * gt + visible_vg['known_occ'], 0.0, 1.0)
+                self.robot_views[obj_index].VG_PUB.publish('known_contact', contact_voxels * gt)
+
             self.scene.goal_generator.clear_goal_markers()
             self.robot_views[obj_index].VG_PUB.publish('known_free', visible_vg['known_free'])
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(visible_vg), apply_sigmoid=True)[
@@ -367,8 +444,9 @@ class ContactShapeCompleter:
             particle.goal = goal_tsr
             particle.completion = pts
 
-    def update_belief_rejection_sampling(self, obj_index, known_free, chss):
-        for particle in self.belief.particle_beliefs[obj_index].particles:
+    def update_belief_rejection_sampling(self, obj_index, known_free, req):
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
             self.scene.goal_generator.clear_goal_markers()
             self.robot_views[obj_index].VG_PUB.publish('known_free', known_free)
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.robot_views[obj_index].last_visible),
@@ -428,17 +506,17 @@ class ContactShapeCompleter:
         msg = view.transform_pts_to_target(msg, target_frame="gpu_voxel_world")
         return msg
 
-    def do_some_completions_debug(self):
-        known_free = np.zeros((64, 64, 64, 1), dtype=np.float32)
-        self.update_belief(known_free, None, 10)
-        rospy.sleep(5)
-        self.update_belief(known_free, None, 10)
+    # def do_some_completions_debug(self):
+    #     known_free = np.zeros((64, 64, 64, 1), dtype=np.float32)
+    #     self.update_belief(known_free, None, 10)
+    #     rospy.sleep(5)
+    #     self.update_belief(known_free, None, 10)
 
-    def enforce_contact(self, latent, known_free, chss, obj_index):
+    def enforce_contact(self, latent, known_free, chss, obj_index, verbose=True):
         if self.method == "proposed" or \
                 self.method == 'baseline_accept_failed_projections':
             return enforce_contact(latent, known_free, chss, self.model_runner.model,
-                                   self.belief.particle_beliefs[obj_index], self.robot_views[obj_index].VG_PUB)
+                                   self.belief.particle_beliefs[obj_index], self.robot_views[obj_index].VG_PUB, verbose)
         elif self.method == "baseline_ignore_latent_prior":
             return enforce_contact_ignore_latent_prior(latent, known_free, chss, self.model_runner.model,
                                                        self.belief.particle_beliefs[obj_index],

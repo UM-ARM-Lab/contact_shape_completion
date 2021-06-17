@@ -6,9 +6,11 @@ import tensorflow as tf
 class MultiObjectParticleBelief:
     def __init__(self):
         self.particle_beliefs: List[ParticleBelief] = []
+        self.sampled_assignments: List[List[int]] = []
 
     def reset(self):
         self.particle_beliefs = []
+        self.sampled_assignments = []
 
 
 class ParticleBelief:
@@ -17,7 +19,7 @@ class ParticleBelief:
         self.latent_prior_logvar = None
         self.particles = []
         self.quantiles_log_pdf = None
-        self.assigned_chss = []
+        self.chs_possible: List[bool] = []
 
     def get_quantile(self, log_pdf):
         try:
