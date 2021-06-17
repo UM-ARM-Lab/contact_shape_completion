@@ -252,7 +252,10 @@ class ContactShapeCompleter:
             return
         possible_new_assignments = [i for i, p in enumerate(self.belief.particle_beliefs) if p.chs_possible[-1]]
         for sampled_assignment in self.belief.sampled_assignments:
-            sampled_assignment.append(random.choice(possible_new_assignments))
+            if len(possible_new_assignments) == 0:
+                sampled_assignment.append(-1)
+            else:
+                sampled_assignment.append(random.choice(possible_new_assignments))
 
     def get_assigned_chss(self, obj_index, req, particle_num):
         robot_view = self.robot_views[obj_index]
@@ -386,8 +389,6 @@ class ContactShapeCompleter:
             self.update_belief_proposed(obj_index, known_free, req)
         elif self.method == "baseline_ignore_latent_prior":
             self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
-        if self.method == "proposed":
-            self.update_belief_proposed(obj_index, known_free, req)
         elif self.method == "VAE_GAN":
             self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
         elif self.method == "baseline_accept_failed_projections":

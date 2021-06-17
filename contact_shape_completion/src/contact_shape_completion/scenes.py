@@ -259,7 +259,7 @@ class SimulationMultiObject2(SimulationScene):
 
         self.scale = 0.007
         self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
-                        get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)
+                        get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale),
                         get_origin_in_voxel_coordinates((1.2, 2.3, 1.2), self.scale)
                         ]
 
