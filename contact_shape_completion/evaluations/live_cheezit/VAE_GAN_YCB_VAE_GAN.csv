@@ -1,0 +1,21 @@
+,request number,chs count,particle num,scene,method,chamfer distance,projection succeeded?
+0,0,0.0,0,live_cheezit,VAE_GAN,0.02046458035388647,True
+1,0,0.0,1,live_cheezit,VAE_GAN,0.02203886555868274,True
+2,0,0.0,2,live_cheezit,VAE_GAN,0.019927510476641857,True
+3,0,0.0,3,live_cheezit,VAE_GAN,0.020951472699840934,True
+4,0,0.0,4,live_cheezit,VAE_GAN,0.021418276164033415,True
+5,0,0.0,5,live_cheezit,VAE_GAN,0.01973661322744312,True
+6,0,0.0,6,live_cheezit,VAE_GAN,0.019853469919008434,True
+7,0,0.0,7,live_cheezit,VAE_GAN,0.020510076449558202,True
+8,0,0.0,8,live_cheezit,VAE_GAN,0.021262921153330408,True
+9,0,0.0,9,live_cheezit,VAE_GAN,0.02083844540951289,True
+10,1,0.0,0,live_cheezit,VAE_GAN,0.02046458035388647,True
+11,1,0.0,1,live_cheezit,VAE_GAN,0.02203886555868274,True
+12,1,0.0,2,live_cheezit,VAE_GAN,0.019927510476641857,True
+13,1,0.0,3,live_cheezit,VAE_GAN,0.020951472699840934,True
+14,1,0.0,4,live_cheezit,VAE_GAN,0.021418276164033415,True
+15,1,0.0,5,live_cheezit,VAE_GAN,0.01973661322744312,True
+16,1,0.0,6,live_cheezit,VAE_GAN,0.019853469919008434,True
+17,1,0.0,7,live_cheezit,VAE_GAN,0.020510076449558202,True
+18,1,0.0,8,live_cheezit,VAE_GAN,0.021262921153330408,True
+19,1,0.0,9,live_cheezit,VAE_GAN,0.02083844540951289,True

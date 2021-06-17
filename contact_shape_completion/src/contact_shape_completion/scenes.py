@@ -245,6 +245,7 @@ class LiveScene(Scene):
 
     def __init__(self):
         super().__init__()
+        self.scale = 0.007
         self.goal_generator = LiveCheezitGoalGenerator(x_bound=(-0.01, 0.01))
 
 

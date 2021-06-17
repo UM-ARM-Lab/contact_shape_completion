@@ -88,11 +88,12 @@ class ContactShapeCompleter:
 
     def get_visible_vg(self, load=False):
         if self.scene.scene_type == SceneType.LIVE:
-            raise RuntimeError("Live scene not updated after multiobject refactor")
-            # save_name = f"{self.scene.name}_latest_segmented_pts.msg"
-            # if load:
-            #     self.load_visible_vg(save_name)
-            # else:
+
+            save_name = f"{self.scene.name}_latest_segmented_pts.msg"
+            if load:
+                self.load_visible_vg(save_name)
+            else:
+                raise RuntimeError("Live scene not updated after multiobject refactor")
             #     if self.should_store_request:
             #         save_path = self.scene.get_save_path() / save_name
             #     else:
@@ -111,11 +112,13 @@ class ContactShapeCompleter:
 
     def load_visible_vg(self, filename):
         if self.scene.scene_type == SceneType.LIVE:
-            raise RuntimeError("Live scene not updated after multiobject refactor")
-            # pt_msg = PointCloud2()
-            # with (self.scene.get_save_path() / filename).open('rb') as f:
-            #     pt_msg.deserialize(f.read())
-            # self.last_visible_vg = self.robot_view.voxelize_visible_element(pt_msg)
+            # raise RuntimeError("Live scene not updated after multiobject refactor")
+            pt_msg = PointCloud2()
+            with (self.scene.get_save_path() / filename).open('rb') as f:
+                pt_msg.deserialize(f.read())
+            if len(self.robot_views) != 1:
+                raise RuntimeError("Live scene with multiple objects not yet supported")
+            self.robot_views[0].voxelize_visible_element(pt_msg)
         elif self.scene.scene_type == SceneType.SIMULATION:
             raise RuntimeError("What are you doing loading the visible_vg from a simulation scene?")
         else:
@@ -383,6 +386,10 @@ class ContactShapeCompleter:
             self.update_belief_proposed(obj_index, known_free, req)
         elif self.method == "baseline_ignore_latent_prior":
             self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
+        if self.method == "proposed":
+            self.update_belief_proposed(obj_index, known_free, req)
+        elif self.method == "VAE_GAN":
+            self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
         elif self.method == "baseline_accept_failed_projections":
             self.update_belief_proposed(obj_index, known_free, req)  # Difference comes when returning message
         elif self.method == "baseline_OOD_prediction":
@@ -452,7 +459,7 @@ class ContactShapeCompleter:
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.robot_views[obj_index].last_visible),
                                                          apply_sigmoid=True)['predicted_occ']
 
-            pts = self.transform_to_gpuvoxels(predicted_occ)
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
                 goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
@@ -513,8 +520,7 @@ class ContactShapeCompleter:
     #     self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss, obj_index, verbose=True):
-        if self.method == "proposed" or \
-                self.method == 'baseline_accept_failed_projections':
+        if self.method in ["proposed", "baseline_accept_failed_projections", "VAE_GAN"]:
             return enforce_contact(latent, known_free, chss, self.model_runner.model,
                                    self.belief.particle_beliefs[obj_index], self.robot_views[obj_index].VG_PUB, verbose)
         elif self.method == "baseline_ignore_latent_prior":

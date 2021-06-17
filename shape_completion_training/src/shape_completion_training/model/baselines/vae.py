@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow.keras.layers as tfl
 
 import shape_completion_training.model.nn_tools as nn
-from shape_completion_training.utils.tf_utils import stack_known
+from shape_completion_training.utils.tf_utils import stack_known, sample_gaussian
 from shape_completion_training.model.mykerasmodel import MyKerasModel
 
 
@@ -40,6 +40,7 @@ class VAE(MyKerasModel):
     def __init__(self, hparams, batch_size, *args, **kwargs):
         super(VAE, self).__init__(hparams, batch_size, *args, **kwargs)
         self.make_vae(inp_shape=[64, 64, 64, 2])
+        self.contact_optimizer = tf.optimizers.Adam(learning_rate=0.01)
 
     def get_model(self):
         return self
@@ -48,10 +49,14 @@ class VAE(MyKerasModel):
         self.encoder = make_encoder(inp_shape, self.hparams)
         self.generator = make_generator(self.hparams)
 
+    def sample_latent_from_mean_and_logvar(self, mean, logvar):
+        return sample_gaussian(mean, logvar)
+
+
     def predict(self, elem):
         return self(next(elem.__iter__()))
 
-    def call(self, inp):
+    def call(self, inp, **kwargs):
         known = stack_known(inp)
         mean, logvar = self.encode(known)
         z = self.reparameterize(mean, logvar)
@@ -101,6 +106,25 @@ class VAE(MyKerasModel):
         metrics = {k: tf.reduce_mean(metrics[k]) for k in metrics}
         metrics['loss'] = vae_loss
         return output, metrics
+
+    def grad_step_towards_output(self, latent, known_occ, known_free, belief):
+        #TODO: Pass in acceptable prob. Perhaps just the original prob
+        acceptable_prob = belief.quantiles_log_pdf[25]
+
+        with tf.GradientTape() as tape:
+            predicted_occ = self.decode(latent, apply_sigmoid=True)
+            #TODO: Remove hardcoded numbers and choose grad step size better
+            loss_known_occ = -tf.reduce_sum(known_occ * predicted_occ)
+            loss_known_free = tf.reduce_sum(tf.clip_by_value(known_free * predicted_occ - 0.4, 0.0, 1.0))
+
+            log_pdf = log_normal_pdf(latent, belief.latent_prior_mean, belief.latent_prior_logvar)
+            loss_latent_prob = -tf.clip_by_value(log_pdf, -10000, acceptable_prob)/10
+            loss = 1 + loss_known_occ + loss_known_free + loss_latent_prob
+
+        variables = [latent]
+        gradients = tape.gradient(loss, variables)
+        self.contact_optimizer.apply_gradients(zip(gradients, variables))
+        return loss
 
 
 class VAE_GAN(VAE):
