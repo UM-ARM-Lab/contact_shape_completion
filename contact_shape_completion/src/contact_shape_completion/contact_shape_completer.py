@@ -259,12 +259,22 @@ class ContactShapeCompleter:
 
     def get_assigned_chss(self, obj_index, req, particle_num):
         robot_view = self.robot_views[obj_index]
-        assigned_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
-                             for i, chs in enumerate(req.chss)
-                             if self.belief.sampled_assignments[particle_num][i] == obj_index]
-        if len(assigned_chs_list) == 0:
-            return None
-        return tf.concat(assigned_chs_list, axis=0)
+        if self.method == "proposed" or self.scene.num_objects == 1:
+            assigned_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
+                                 for i, chs in enumerate(req.chss)
+                                 if self.belief.sampled_assignments[particle_num][i] == obj_index]
+            if len(assigned_chs_list) == 0:
+                return None
+            return tf.concat(assigned_chs_list, axis=0)
+        elif self.method == "assign_all_CHS":
+            assigned_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
+                                 for i, chs in enumerate(req.chss)
+                                 if self.belief.particle_beliefs[obj_index].chs_possible[i]]
+            if len(assigned_chs_list) == 0:
+                return None
+            return tf.concat(assigned_chs_list, axis=0)
+        else:
+            raise RuntimeError(f"Not known how to assign CHSs to {self.scene.num_objects} using method {self.method}")
 
     def complete_shape_srv(self, req: CompleteShapeRequest):
         print(f"{Fore.GREEN}{req.num_samples} shape completions requested with {len(req.chss)} chss{Fore.RESET}")
@@ -385,14 +395,8 @@ class ContactShapeCompleter:
         # if chss is not None:
         #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
-        if self.method == "proposed":
+        if self.method in ["proposed", "baseline_ignore_latent_prior", "VAE_GAN", "baseline_accept_failed_projections", "assign_all_CHS"]:
             self.update_belief_proposed(obj_index, known_free, req)
-        elif self.method == "baseline_ignore_latent_prior":
-            self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
-        elif self.method == "VAE_GAN":
-            self.update_belief_proposed(obj_index, known_free, req)  # Ablation done in enforce_contact
-        elif self.method == "baseline_accept_failed_projections":
-            self.update_belief_proposed(obj_index, known_free, req)  # Difference comes when returning message
         elif self.method == "baseline_OOD_prediction":
             self.update_belief_OOD_prediction(obj_index, known_free, req)
         elif self.method == "baseline_rejection_sampling":
@@ -521,7 +525,7 @@ class ContactShapeCompleter:
     #     self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss, obj_index, verbose=True):
-        if self.method in ["proposed", "baseline_accept_failed_projections", "VAE_GAN"]:
+        if self.method in ["proposed", "baseline_accept_failed_projections", "VAE_GAN", "assign_all_CHS"]:
             return enforce_contact(latent, known_free, chss, self.model_runner.model,
                                    self.belief.particle_beliefs[obj_index], self.robot_views[obj_index].VG_PUB, verbose)
         elif self.method == "baseline_ignore_latent_prior":

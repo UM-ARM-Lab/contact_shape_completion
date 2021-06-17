@@ -1,0 +1,26 @@
+,request number,chs count,particle num,scene,method,chamfer distance,projection succeeded?
+0,0,0.0,0,multiobject,assign_all_CHS,0.007190570717056161,True
+1,0,0.0,1,multiobject,assign_all_CHS,0.012543060589713466,True
+2,0,0.0,2,multiobject,assign_all_CHS,0.01578605386945592,True
+3,0,0.0,3,multiobject,assign_all_CHS,0.014036176104535163,True
+4,0,0.0,4,multiobject,assign_all_CHS,0.01389704248911305,True
+5,0,0.0,5,multiobject,assign_all_CHS,0.012166347709216558,True
+6,0,0.0,6,multiobject,assign_all_CHS,0.012269872828707427,True
+7,0,0.0,7,multiobject,assign_all_CHS,0.01927775722458097,True
+8,0,0.0,8,multiobject,assign_all_CHS,0.013905375266020724,True
+9,0,0.0,9,multiobject,assign_all_CHS,0.01395742861162028,True
+10,1,0.0,0,multiobject,assign_all_CHS,0.007190570717056161,True
+11,1,0.0,1,multiobject,assign_all_CHS,0.012543060589713466,True
+12,1,0.0,2,multiobject,assign_all_CHS,0.01578605386945592,True
+13,1,0.0,3,multiobject,assign_all_CHS,0.014036176104535163,True
+14,1,0.0,4,multiobject,assign_all_CHS,0.01389704248911305,True
+15,1,0.0,5,multiobject,assign_all_CHS,0.012166347709216558,True
+16,1,0.0,6,multiobject,assign_all_CHS,0.012269872828707427,True
+17,1,0.0,7,multiobject,assign_all_CHS,0.01927775722458097,True
+18,1,0.0,8,multiobject,assign_all_CHS,0.013905375266020724,True
+19,1,0.0,9,multiobject,assign_all_CHS,0.01395742861162028,True
+20,2,1.0,0,multiobject,assign_all_CHS,0.007890713620481542,True
+21,2,1.0,1,multiobject,assign_all_CHS,0.011527111971454397,True
+22,3,1.0,0,multiobject,assign_all_CHS,0.007890713620481542,True
+23,3,1.0,1,multiobject,assign_all_CHS,0.011527111971454397,True
+24,3,1.0,2,multiobject,assign_all_CHS,0.007037829464335191,True

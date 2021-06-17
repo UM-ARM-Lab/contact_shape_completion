@@ -211,10 +211,11 @@ class SimulationMultiObject(SimulationScene):
         self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
         params = default_params.get_noiseless_params()
         params['apply_depth_sensor_noise'] = True
-        self.elems = [self.dataset_supervisor.get_element('019_pitcher_base-90_000_000', params=params).load(),
-                      # self.dataset_supervisor.get_element('003_cracker_box-90_000_000', params=params).load(),
-                      self.dataset_supervisor.get_element('006_mustard_bottle-90_000_000', params=params).load(),
-                      ]
+        self.elems = [
+            # self.dataset_supervisor.get_element('019_pitcher_base-90_000_000', params=params).load(),
+            self.dataset_supervisor.get_element('003_cracker_box-90_000_000', params=params).load(),
+            self.dataset_supervisor.get_element('035_power_drill-90_000_090', params=params).load(),
+        ]
 
         self.scale = 0.007
         self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
@@ -298,6 +299,7 @@ class LiveScene1(LiveScene):
     def __init__(self):
         super().__init__()
         self.name = "live_cheezit"
+        self.num_objects = 1
 
     def get_gt(self, density_factor=3):
         vg = np.ones((8, 8, 11))
@@ -322,6 +324,7 @@ class LivePitcher(LiveScene):
         self.origin = get_origin_in_voxel_coordinates((1.3, 1.67, 1.33), self.scale)
         self.goal_generator = LivePitcherGoalGenerator(x_bound=(-0.01, 0.01))
         self.segmented_object_categories = [11]
+        self.num_objects = 1
 
     def get_gt(self, density_factor=3):
         pts = visual_conversions.vox_to_pointcloud2_msg(self.elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
