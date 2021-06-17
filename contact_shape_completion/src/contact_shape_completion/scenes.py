@@ -30,6 +30,7 @@ def get_scene(scene_name: str):
                  "mug": SimulationMug,
                  "live_pitcher": LivePitcher,
                  "multiobject": SimulationMultiObject,
+                 "multiobject2": SimulationMultiObject2,
                  }
     if scene_name not in scene_map:
         print(f"{Fore.RED}Unknown scene name {scene_name}\nValid scene names are:")
@@ -226,6 +227,50 @@ class SimulationMultiObject(SimulationScene):
             return visual_conversions.vox_to_pointcloud2_msg(elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
                                                              origin=origin,
                                                              density_factor=density_factor)
+
+        pts_all_objects = [conv(elem, origin) for elem, origin in zip(self.elems, self.origins)]
+        return combine_pointcloud2s(pts_all_objects)
+
+    def get_segmented_points(self):
+        def conv(elem, origin):
+            return visual_conversions.vox_to_pointcloud2_msg(elem['known_occ'], scale=self.scale,
+                                                             frame='gpu_voxel_world',
+                                                             origin=origin,
+                                                             density_factor=3)
+
+        pts = [conv(elem, origin) for elem, origin in zip(self.elems, self.origins)]
+        return pts
+
+
+class SimulationMultiObject2(SimulationScene):
+    num_objects = 2
+
+    def __init__(self):
+        super().__init__()
+
+        self.name = "multiobject2"
+        self.dataset_supervisor = dataset_loader.get_dataset_supervisor('ycb_all')
+        params = default_params.get_noiseless_params()
+        params['apply_depth_sensor_noise'] = True
+        self.elems = [self.dataset_supervisor.get_element('019_pitcher_base-90_000_000', params=params).load(),
+                      self.dataset_supervisor.get_element('035_power_drill-90_000_000', params=params).load(),
+                      self.dataset_supervisor.get_element('003_cracker_box-90_000_000', params=params).load(),
+                      ]
+
+        self.scale = 0.007
+        self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
+                        get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)
+                        get_origin_in_voxel_coordinates((1.2, 2.3, 1.2), self.scale)
+                        ]
+
+        self.goal_generator = MultiObjectPitcherGoalGenerator(x_bound=(-0.01, 0.01))
+
+    def get_gt(self, density_factor=3):
+        def conv(elem, origin):
+            return visual_conversions.vox_to_pointcloud2_msg(elem['gt_occ'], scale=self.scale, frame='gpu_voxel_world',
+                                                             origin=origin,
+                                                             density_factor=density_factor)
+
         pts_all_objects = [conv(elem, origin) for elem, origin in zip(self.elems, self.origins)]
         return combine_pointcloud2s(pts_all_objects)
 

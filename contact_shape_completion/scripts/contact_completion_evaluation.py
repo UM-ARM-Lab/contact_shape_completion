@@ -265,7 +265,7 @@ def plot(group: List[EvaluationDetails]):
                      showfliers=False)
     # fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
     #                           err_key=['bar min', 'bar max'])
-    ax.set_title(f'{display_names_map[scene.name]}: {details.network}')
+    ax.set_title(f'{display_names_map[scene.name]}: {group[0].network}')
 
     plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
     plt.show()
