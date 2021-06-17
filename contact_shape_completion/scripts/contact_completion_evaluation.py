@@ -35,6 +35,11 @@ display_names_map = {
     'pitcher': 'Simulation Pitcher',
     'mug': 'Simulation Mug',
     'live_pitcher': 'Live Pitcher',
+    'proposed': 'CLASP',
+    'baseline_ignore_latent_prior': 'CLASP: ignore prior',
+    'baseline_accept_failed_projections': 'CLASP: accept failed projections',
+    'baseline_OOD_prediction': 'OOD',
+    'baseline_rejection_sampling': "Rejection Sampling",
 }
 
 
@@ -234,12 +239,13 @@ def plot(group: List[EvaluationDetails]):
     #                  yerr = df[['bar min', 'bar max']].T.to_numpy())
     df.rename(columns={'chamfer distance': y_label,
                        'request number': x_label}, inplace=True)
+    df['method'].replace(display_names_map, inplace=True)
     df[y_label] = 100 * df[y_label]
     ax = sns.boxplot(x=x_label, y=y_label, hue='method', data=df,
                      showfliers=False)
     # fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
     #                           err_key=['bar min', 'bar max'])
-    ax.set_title(f'{display_names_map[scene.name]}')
+    ax.set_title(f'{display_names_map[scene.name]}: {details.network}')
 
     plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
     plt.show()
