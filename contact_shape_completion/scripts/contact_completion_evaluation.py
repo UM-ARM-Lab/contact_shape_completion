@@ -46,104 +46,115 @@ display_names_map = {
     'assign_all_CHS': "PSSNet + Clasp: No contact disambiguation"
 }
 
+display_legends_for = [
+    'Simulation Cheezit (Shallow)',
+    'MultiObject'
+]
+
+observations_not_displayed = {
+    'Simulation Pitcher': [5, 7, 8, 9],
+    'Simulation Cheezit (Shallow)': [1, 7],
+    'Live Cheezit': [7, 8, 9]
+}
+
 
 def get_evaluation_trial_groups():
     d = [
-        # [
-        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-        #                       method='baseline_ignore_latent_prior'),
-        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-        #                       method='baseline_accept_failed_projections'),
-        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
-        #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='VAE_GAN_aab',
-        #                       method='VAE_GAN'),
-        # ],
-        # [
-        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-        #                       method='baseline_ignore_latent_prior'),
-        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-        #                       method='baseline_accept_failed_projections'),
-        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
-        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
-        #                       method='baseline_rejection_sampling'),
-        #     EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='VAE_GAN_aab',
-        #                       method='VAE_GAN'),
-        # ],
-        # [
-        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-        #                       method='baseline_ignore_latent_prior'),
-        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-        #                       method='baseline_accept_failed_projections'),
-        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
-        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
-        #                       method='baseline_rejection_sampling'),
-        #     EvaluationDetails(scene_type=scenes.SimulationPitcher, network='VAE_GAN_YCB',
-        #                       method='VAE_GAN'),
-        # ],
-        # [
-        #     # EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
-        #     #                   method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-        #                       method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-        #                       method='baseline_ignore_latent_prior'),
-        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-        #                       method='baseline_accept_failed_projections'),
-        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-        #                       method='baseline_OOD_prediction'),
-        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
-        #                       method='baseline_rejection_sampling'),
-        #     EvaluationDetails(scene_type=scenes.LiveScene1, network='VAE_GAN_YCB',
-        #                       method='VAE_GAN'),
-        # ],
-        # [
-        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-        #                       method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-        #                       method='baseline_ignore_latent_prior'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-        #                       method='baseline_accept_failed_projections'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-        #                       method='baseline_OOD_prediction'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
-        #                       method='baseline_rejection_sampling'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMug, network='VAE_GAN_mugs',
-        #                       method='VAE_GAN'),
-        # ],
-        # [
-        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-        #                       method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-        #                       method='baseline_ignore_latent_prior'),
-        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-        #                       method='baseline_accept_failed_projections'),
-        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-        #                       method='baseline_OOD_prediction'),
-        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
-        #                       method='baseline_rejection_sampling'),
-        #     EvaluationDetails(scene_type=scenes.LivePitcher, network='VAE_GAN_YCB',
-        #                       method='VAE_GAN'),
-        # ],
-        # [
-        #     EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
-        #                       method='proposed'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
-        #                       method='assign_all_CHS'),
-        #     EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
-        #                       method='VAE_GAN'),
-        # ]
         [
-            EvaluationDetails(scene_type=scenes.LiveMultiObject, network='YCB',
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='VAE_GAN_aab',
+                              method='VAE_GAN'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='VAE_GAN_aab',
+                              method='VAE_GAN'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationPitcher, network='VAE_GAN_YCB',
+                              method='VAE_GAN'),
+        ],
+        [
+            # EvaluationDetails(scene_type=scenes.LiveScene1, network='AAB',
+            #                   method='proposed'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
                               method='proposed'),
-            # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
-            #                   method='assign_all_CHS'),
-            # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
-            #                   method='VAE_GAN'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.LiveScene1, network='VAE_GAN_YCB',
+                              method='VAE_GAN'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                              method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                              method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationMug, network='VAE_GAN_mugs',
+                              method='VAE_GAN'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='proposed'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_ignore_latent_prior'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_accept_failed_projections'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                              method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.LivePitcher, network='VAE_GAN_YCB',
+                              method='VAE_GAN'),
+        ],
+        [
+            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+                              method='proposed'),
+            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+                              method='assign_all_CHS'),
+            EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
+                              method='VAE_GAN'),
         ]
+        # [
+        #     EvaluationDetails(scene_type=scenes.LiveMultiObject, network='YCB',
+        #                       method='proposed'),
+        #     # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='YCB',
+        #     #                   method='assign_all_CHS'),
+        #     # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
+        #     #                   method='VAE_GAN'),
+        # ]
     ]
     return d
 
@@ -153,6 +164,7 @@ def parse_command_line_args():
     # parser.add_argument('--trial')
     parser.add_argument('--regenerate', action='store_true')
     parser.add_argument('--plot', action='store_true')
+    parser.add_argument('--skip_generation', action='store_true')
     return parser.parse_args()
 
 
@@ -240,7 +252,7 @@ def plot(group: List[EvaluationDetails]):
     # error_key_lower = ('chamfer distance', 'min')
     error_key_upper = ('chamfer distance', 'percentile_75')
     y_label = "Chamfer Distance (cm)"
-    x_label = "Observation Number"
+    x_label = "Num Observations {Num Total Contacts}"
 
     grouped_dfs = dict()
     for details in group:
@@ -272,46 +284,66 @@ def plot(group: List[EvaluationDetails]):
     # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df)
     # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df,
     #                  yerr = df[['bar min', 'bar max']].T.to_numpy())
-    df.rename(columns={'chamfer distance': y_label,
-                       'request number': x_label}, inplace=True)
+
+    def make_x_ind(arg):
+        vals = [str(int(a)) for a in arg]
+        return f'{vals[0]} {{{vals[1]}}}'
+
+    # df[['request number', 'chs count']].aggregate(make_x_ind)
+
+    df[x_label] = df[['request number', 'chs count']].agg(make_x_ind, axis=1)
+    # df.rename(columns={'chamfer distance': y_label,
+    #                    'request number': x_label}, inplace=True)
+    df.rename(columns={'chamfer distance': y_label}, inplace=True)
     df['method'].replace(display_names_map, inplace=True)
     df[y_label] = 100 * df[y_label]
+
+    display_name = display_names_map[scene.name]
+
+    if display_name in observations_not_displayed:
+        remove_observations = lambda x: x not in observations_not_displayed[display_name]
+        df = df[df['request number'].map(remove_observations)]
+
+
     ax = sns.boxplot(x=x_label, y=y_label, hue='method', data=df,
                      showfliers=False)
     # fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
     #                           err_key=['bar min', 'bar max'])
-    ax.set_title(f'{display_names_map[scene.name]}: {group[0].network}')
+    ax.set_title(f'{display_name}: {group[0].network}')
+
+    if display_name not in display_legends_for:
+        ax._remove_legend(ax.legend())
 
     plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
     plt.show()
 
 
-def grouped_barplot(df, cat, subcat, val, err_key):
-    u = df[cat].unique()
-    x = np.arange(len(u))
-    subx = df[subcat].unique()
-    offsets = (np.arange(len(subx)) - np.arange(len(subx)).mean()) / (len(subx) + 1.)
-    width = np.diff(offsets).mean()
-    fig, ax = plt.subplots()
-    plt.rcParams['errorbar.capsize'] = 2
-    for i, gr in enumerate(subx):
-        dfg = df[df[subcat] == gr]
-        y = dfg[val].values
-        y = np.pad(y, (0, len(x) - len(y)))
-        err = dfg[err_key].values.T
-        err = np.pad(err, [(0, 0), (0, len(x) - len(err[0]))])
-        # ax.bar(x + offsets[i], y, width=width,
-        #        label="{} {}".format(subcat, gr), yerr=err)
-        ax.boxplot(x + offsets[i], usermedians=y)
-    plt.xlabel("Observation Number")
-    plt.ylabel('Chamfer Distance (m)')
-    plt.xticks(x, u)
-    legend = plt.legend()
-    for h in legend.get_texts():
-        txt = h.get_text()
-        ind = txt.find(')')
-        h.set_text(txt[ind+2:])
-    return fig, ax
+# def grouped_barplot(df, cat, subcat, val, err_key):
+#     u = df[cat].unique()
+#     x = np.arange(len(u))
+#     subx = df[subcat].unique()
+#     offsets = (np.arange(len(subx)) - np.arange(len(subx)).mean()) / (len(subx) + 1.)
+#     width = np.diff(offsets).mean()
+#     fig, ax = plt.subplots()
+#     plt.rcParams['errorbar.capsize'] = 2
+#     for i, gr in enumerate(subx):
+#         dfg = df[df[subcat] == gr]
+#         y = dfg[val].values
+#         y = np.pad(y, (0, len(x) - len(y)))
+#         err = dfg[err_key].values.T
+#         err = np.pad(err, [(0, 0), (0, len(x) - len(err[0]))])
+#         # ax.bar(x + offsets[i], y, width=width,
+#         #        label="{} {}".format(subcat, gr), yerr=err)
+#         ax.boxplot(x + offsets[i], usermedians=y)
+#     plt.xlabel("Observation Number")
+#     plt.ylabel('Chamfer Distance (m)')
+#     plt.xticks(x, u)
+#     legend = plt.legend()
+#     for h in legend.get_texts():
+#         txt = h.get_text()
+#         ind = txt.find(')')
+#         h.set_text(txt[ind+2:])
+#     return fig, ax
 
 
 def main():
@@ -321,16 +353,17 @@ def main():
     rospy.loginfo("Contact Completion Evaluation")
 
     # scene = scenes.SimulationCheezit()
-    for groups in get_evaluation_trial_groups():
-        for details in groups:
-            if ARGS.regenerate:
-                print(f'{Fore.CYAN}Regenerating {details}{Fore.RESET}')
-                generate_evaluation(details)
-            elif not get_evaluation_path(details).exists():
-                print(f'{Fore.CYAN}Generating {details}{Fore.RESET}')
-                generate_evaluation(details)
-            else:
-                print(f"{details} exists. Not generating")
+    if not ARGS.skip_generation:
+        for groups in get_evaluation_trial_groups():
+            for details in groups:
+                if ARGS.regenerate:
+                    print(f'{Fore.CYAN}Regenerating {details}{Fore.RESET}')
+                    generate_evaluation(details)
+                elif not get_evaluation_path(details).exists():
+                    print(f'{Fore.CYAN}Generating {details}{Fore.RESET}')
+                    generate_evaluation(details)
+                else:
+                    print(f"{details} exists. Not generating")
 
     for group in get_evaluation_trial_groups():
         if ARGS.plot:
