@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+from collections import defaultdict
 from pathlib import Path
 from typing import List
 
@@ -55,6 +56,10 @@ observations_not_displayed = {
     'Simulation Cheezit (Shallow)': [1, 7],
     'Live Cheezit': [7, 8, 9]
 }
+
+
+linesize = defaultdict(lambda: 1.0)
+linesize['PSSNet + CLASP'] = 2.0
 
 
 def get_evaluation_trial_groups():
@@ -318,24 +323,65 @@ def plot(group: List[EvaluationDetails]):
 
 
 def plot_likelihood(group: List[EvaluationDetails]):
-    y_label = "GT Likelihood"
-    x_label = "Observation Number"
+    y_key = ('chamfer distance', 'median')
+    error_key_lower = ('chamfer distance', 'percentile_25')
+    # error_key_lower = ('chamfer distance', 'min')
+    error_key_upper = ('chamfer distance', 'percentile_75')
+    y_label = "Chamfer Distance (cm)"
+    x_label = "Num Observations {Num Total Contacts}"
 
     grouped_dfs = dict()
     for details in group:
         scene = details.scene_type()
         df = pd.read_csv(get_evaluation_path(details))
+        # print(f"Plotting {scene.name}, {details.network}, {details.method}")
+        # df = df[['request number', 'chs count', 'chamfer distance', 'method']] \
+        #     .groupby('request number', as_index=False) \
+        #     .agg({'request number': 'first',
+        #           'method': 'first',
+        #           'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
+        # df.rename(columns={('chamfer distance', 'median'): y_key}, inplace=True, level=0)
+        # # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
+        # df['bar min'] = df[y_key] - df[error_key_lower]
+        # df['bar max'] = df[error_key_upper] - df[y_key]
         grouped_dfs[details.method] = df
     df = pd.concat(grouped_dfs)
-    df.rename(columns={'chamfer distance': y_label,
-                       'request number': x_label}, inplace=True)
+
+    def make_x_ind(arg):
+        vals = [str(int(a)) for a in arg]
+        return f'{vals[0]} {{{vals[1]}}}'
+
+    df[x_label] = df[['request number', 'chs count']].agg(make_x_ind, axis=1)
+    df.rename(columns={'chamfer distance': y_label}, inplace=True)
     df['method'].replace(display_names_map, inplace=True)
     df[y_label] = 100 * df[y_label]
-    ax = sns.boxplot(x=x_label, y=y_label, hue='method', data=df,
-                     showfliers=False)
-    ax.set_title(f'{display_names_map[scene.name]}: {group[0].network}')
 
-    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
+    display_name = display_names_map[scene.name]
+
+    # if display_name in observations_not_displayed:
+    #     remove_observations = lambda x: x not in observations_not_displayed[display_name]
+    #     df = df[df['request number'].map(remove_observations)]
+
+    # Apply kernel
+    def kernel(arg):
+        vals = [1/v for v in arg]
+        return np.mean(vals)
+
+    new_y_label = "True Scene Likelihood"
+    df = df[[x_label, y_label, 'method']].groupby(['method', x_label]).agg({y_label: kernel,
+                                                                                    'method': 'first',
+                                                                                    x_label: 'first'})
+
+    df.rename(columns={y_label: new_y_label}, inplace=True)
+    df['linesize'] = df['method'].agg(lambda x: linesize[x])
+
+    ax = sns.lineplot(x=x_label, y=new_y_label, hue='method', data=df, size='linesize')
+    ax.set_title(f'{display_name}: {group[0].network}')
+
+    if display_name not in display_legends_for:
+        ax._remove_legend(ax.legend())
+
+    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_prob_score')
     plt.show()
 
 
