@@ -3,8 +3,7 @@
 This package provides a neural network that takes in a grid of visible occupied voxels from a single view and outputs a grid of the estimated 3D voxels, thus "completing the shape". Running multiple inference passes with the same input will generate different, yet plausible completions. Depending on the ambiguity of the input the completions may all be quite similar, or vary noticably.
 
 
-## Notes to self
-These are notes to myself (Brad) for the current work-in-progress code
+## Misc Notes
 
 Launch latest version by
 - `roslaunch shape_completion_visualization shape_completion.launch`
