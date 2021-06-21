@@ -7,6 +7,7 @@ Constrained LAtent Shape Projection (CLASP) combines a shape completion neural n
 1. Set up ROS
 2. Clone this repo in your ROS path. Rebuild (e.g. catkin build), re-source
 3. Install dependencies
+4. Download datasets and pretrained models
 
 ### Data Analysis
 Trial results are in `./evaluations`
