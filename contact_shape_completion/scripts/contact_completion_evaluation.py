@@ -24,6 +24,11 @@ from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
 
+
+# YOUR_USERNAME = ???
+root_save_path = f'/home/{[YOUR_USER]}/Pictures/shape contact'
+
+
 default_dataset_params = default_params.get_default_params()
 
 NUM_PARTICLES_IN_TRIAL = 100
@@ -282,7 +287,7 @@ def plot(group: List[EvaluationDetails]):
     if display_name not in display_legends_for:
         ax._remove_legend(ax.legend())
 
-    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}')
+    plt.savefig(f'{root_save_path}/{scene.name}')
     plt.show()
 
 
@@ -327,7 +332,7 @@ def plot_likelihood(group: List[EvaluationDetails]):
     if display_name not in display_legends_for:
         ax._remove_legend(ax.legend())
 
-    plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_prob_score')
+    plt.savefig(f'{root_save_path}/{scene.name}_prob_score')
     plt.show()
 
 
