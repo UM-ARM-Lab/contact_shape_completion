@@ -16,8 +16,8 @@ except Exception as e:
     print("or manually download checkpoint from google drive")
     raise e
 
-data_id = '1dqOsf6zjf6dLIJ3xkjgPD7nam19LQ4Ev'
-trials_id = '1B-VE7stz-DPdS3lUkhHBXf2jbFpHJQF_'
+data_id = '1iqpDvhAGNA6SahrEsHtQYQw11MYSaJnx'
+trials_id = '15AZgbTf-rN4b47l0fGGqpsDHnJx7sqZz'
 
 if __name__ == "__main__":
     rospy.init_node("pretrained_downloader")
