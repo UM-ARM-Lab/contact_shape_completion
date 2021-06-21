@@ -151,15 +151,11 @@ class ContactShapeCompleter:
         return path
 
     def request_shape_srv(self, req: RequestShapeRequest):
-        # raise RuntimeError("request_shape_srv not updated after multiobject refactor")
-        # pt = self.transform_to_gpuvoxels(self.last_visible_vg['known_occ'])
-        # return RequestShapeResponse(points=pt)
         pts = [self.transform_from_gpuvoxels(view=view, pt_msg=view.last_visible) for view in self.robot_views]
         return RequestShapeResponse(points=combine_pointcloud2s(pts))
 
     def compute_known_occ(self):
         if isinstance(self.scene, LiveScene):
-            # all_pts = []
             self.known_obstacles = []
             # raise RuntimeError("Live scene not updated after multiobject refactor")
             for i in range(self.scene.num_objects):
@@ -180,13 +176,6 @@ class ContactShapeCompleter:
                 self.known_obstacles.append(visual_conversions.points_to_pointcloud2_msg(pts,
                                                                                          frame="gpu_voxel_world"))
 
-            # combined_pts = np.concatenate(all_pts)
-
-            # for i in range(self.scene.num_objects):
-            #     self.
-
-            # self.known_obstacles = visual_conversions.points_to_pointcloud2_msg(combined_pts, frame="gpu_voxel_world")
-
         elif isinstance(self.scene, SimulationScene):
             self.known_obstacles = self.scene.get_segmented_points()
 
@@ -194,9 +183,6 @@ class ContactShapeCompleter:
 
     def request_known_world_srv(self, req: RequestShapeRequest):
         return combine_pointcloud2s(self.known_obstacles)
-        # if len(self.known_obstacles) == 1:
-        #     return RequestShapeResponse(points=self.known_obstacles[0])
-        # raise RuntimeError("request known world not implemented for multiobject scenes")
 
     def request_true_world_srv(self, req: RequestShapeRequest):
         pt = self.scene.get_gt()
@@ -273,8 +259,6 @@ class ContactShapeCompleter:
         object_bel = deepcopy(self.belief.particle_beliefs[obj_index])
         for particle_num, particle in enumerate(object_bel.particles):
             self.scene.goal_generator.clear_goal_markers()
-            # particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
-            #                                                                        obj_index)
             _, successful_projection = self.enforce_contact(particle.latent, known_free, chss, obj_index, verbose=False)
             if successful_projection:
                 return True
@@ -334,54 +318,14 @@ class ContactShapeCompleter:
             robot_view = self.robot_views[obj_index]
             known_free = self.transform_from_gpuvoxels(robot_view, req.known_free)
 
-            # if len(req.chss) == 0:
-            #     chss = None
-            # else:
-            #     # chss = tf.concat(
-            #     #     [tf.expand_dims(self.transform_from_gpuvoxels(self.robot_views[obj_index], chs), axis=0) for chs in
-            #     #      req.chss], axis=0)
-            #
-            #     full_chs_list = [tf.expand_dims(self.transform_from_gpuvoxels(robot_view, chs), axis=0)
-            #                      for chs in req.chss]
-            #     if len(full_chs_list) > len(bel.chs_possible):
-            #         bel.chs_possible.append(np.sum(full_chs_list[-1]) > 0)
-            #     if not any(bel.chs_possible):
-            #         chss = None
-            #     else:
-            #         chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.chs_possible) if assigned],
-            #                          axis=0)
-            #
-            #         if tf.reduce_max(known_free * chss) > 0:
-            #             raise RuntimeError("Known free overlaps with CHSs")
-            #
-            #     print(f"{Fore.CYAN}CHSs assigned for object {obj_index}: {bel.chs_possible}{Fore.RESET}")
-            # chss = self.get_assigned_chss(obj_index, req)
-
             if not is_new_request:
                 continue
 
             self.update_belief(obj_index, known_free, req, req.num_samples)
-            # if all([not p.successful_projection for p in bel.particles]):
-            #     print(f"{Fore.CYAN} No successful completions. Removing last CHS{Fore.RESET}")
-            #     bel.chs_possible[-1] = False
-            #     if not any(bel.chs_possible):
-            #         chss = None
-            #     else:
-            #         chss = tf.concat([chs for chs, assigned in zip(full_chs_list, bel.chs_possible) if assigned],
-            #                          axis=0)
-            #     self.update_belief(obj_index, known_free, chss, req.num_samples)
 
         resp = CompleteShapeResponse()
 
-        # if len(self.belief.particle_beliefs) == 1:
-        #     for p in self.belief.particle_beliefs[0].particles:
-        #         if p.successful_projection or self.method == 'baseline_accept_failed_projections':
-        #             resp.sampled_completions.append(p.completion)
-        #             resp.goal_tsrs.append(p.goal)
-        # else:
-        #     raise RuntimeError("Not yet supporting multiple objects")
-        #     # TODO: Combine points from multiple particles into single return response
-        #     # TODO: Figure out goals from multiple particles
+        # TODO: Figure out goals from multiple particles. Currently, always assuming first object is the goal
         for particle_num in range(req.num_samples):
             full_scene_particle = [p.particles[particle_num] for p in self.belief.particle_beliefs]
             if all([p.successful_projection for p in full_scene_particle]) or \
@@ -423,11 +367,6 @@ class ContactShapeCompleter:
 
         if len(bel.particles) != num_particles:
             raise RuntimeError("Unexpected situation - number of particles does not match request")
-
-        # TODO: This is a debugging script only
-        # self.debug_repeated_sampling(self.belief, known_free, chss)
-        # if chss is not None:
-        #     self.debug_repeated_sampling(self.belief, known_free, chss)
 
         if self.method in ["proposed", "baseline_ignore_latent_prior", "VAE_GAN", "baseline_accept_failed_projections", "assign_all_CHS"]:
             self.update_belief_proposed(obj_index, known_free, req)
@@ -514,14 +453,6 @@ class ContactShapeCompleter:
             if not are_chss_satisfied(predicted_occ, chss):
                 particle.successful_projection = False
 
-    # def debug_repeated_sampling(self, bel: ParticleBelief, known_free, chss):
-    #     pssnet = self.model_runner.model
-    #     latent = tf.Variable(pssnet.sample_latent_from_mean_and_logvar(bel.latent_prior_mean, bel.latent_prior_logvar))
-    #     pred_occ = pssnet.decode(latent, apply_sigmoid=True)
-    #     # known_contact = contact_tools.get_assumed_occ(pred_occ, chss)
-    #     self.robot_view.VG_PUB.publish('predicted_occ', pred_occ)
-    #     # self.robot_view.VG_PUB.publish('known_contact', known_contact)
-    #     # latent = self.enforce_contact(latent, known_free, chss)
 
     @staticmethod
     def transform_from_gpuvoxels(view, pt_msg: PointCloud2):
@@ -536,8 +467,6 @@ class ContactShapeCompleter:
         return vg
 
     def transform_to_gpuvoxels(self, view, vg) -> PointCloud2:
-        # pt_cloud = conversions.voxelgrid_to_pointcloud(vg, scale=self.robot_view.scale,
-        #                                                origin=self.robot_view.origin)
 
         # TODO: It is odd that I use visual_conversions here, since I used conversions (not visual, different package
         #  of mine) get the pointcloud in the first place. However, visual_conversions has this nice function which
@@ -551,12 +480,6 @@ class ContactShapeCompleter:
 
         msg = view.transform_pts_to_target(msg, target_frame="gpu_voxel_world")
         return msg
-
-    # def do_some_completions_debug(self):
-    #     known_free = np.zeros((64, 64, 64, 1), dtype=np.float32)
-    #     self.update_belief(known_free, None, 10)
-    #     rospy.sleep(5)
-    #     self.update_belief(known_free, None, 10)
 
     def enforce_contact(self, latent, known_free, chss, obj_index, verbose=True):
         if self.method in ["proposed", "baseline_accept_failed_projections", "VAE_GAN", "assign_all_CHS"]:

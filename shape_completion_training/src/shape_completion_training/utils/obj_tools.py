@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+import os
+
 # import pymesh
 # import pywavefront
 import pyassimp
-import numpy as np
-import os
+
 from shape_completion_training.utils.matrix_math import rotzyx
 
 """
@@ -69,10 +70,6 @@ def transform(scene, x_rot, y_rot, z_rot, savepath):
     savename = os.path.join(savepath, fn)
     pyassimp.export(scene, savename, 'obj')
 
-
-# def load(filepath):
-#     scene = pywavefront.Wavefront(filepath, create_materials=True, parse=False, strict=True)
-#     IPython.embed()
 
 if __name__ == "__main__":
     print("hi")

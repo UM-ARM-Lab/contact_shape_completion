@@ -165,7 +165,6 @@ def get_evaluation_trial_groups():
 
 def parse_command_line_args():
     parser = argparse.ArgumentParser(description='Publish shape data to RViz for viewing')
-    # parser.add_argument('--trial')
     parser.add_argument('--regenerate', action='store_true')
     parser.add_argument('--plot', action='store_true')
     parser.add_argument('--plot_likelihood', action='store_true')
@@ -201,7 +200,6 @@ def generate_evaluation(details):
         resp = contact_shape_completer.complete_shape_srv(completion_req)
         dists = []
         for particle_num, completion_pts_msg in enumerate(resp.sampled_completions):
-            # dist = pt_cloud_distance(completion_pts_msg, gt).numpy()
             total_dist = 0
             for view in contact_shape_completer.robot_views:
                 dist = vg_chamfer_distance(contact_shape_completer.transform_from_gpuvoxels(view, completion_pts_msg),
@@ -251,10 +249,6 @@ def percentile_fun(n):
 
 
 def plot(group: List[EvaluationDetails]):
-    y_key = ('chamfer distance', 'median')
-    error_key_lower = ('chamfer distance', 'percentile_25')
-    # error_key_lower = ('chamfer distance', 'min')
-    error_key_upper = ('chamfer distance', 'percentile_75')
     y_label = "Chamfer Distance (cm)"
     x_label = "Num Observations {Num Total Contacts}"
 
@@ -262,43 +256,15 @@ def plot(group: List[EvaluationDetails]):
     for details in group:
         scene = details.scene_type()
         df = pd.read_csv(get_evaluation_path(details))
-        # print(f"Plotting {scene.name}, {details.network}, {details.method}")
-        # df = df[['request number', 'chs count', 'chamfer distance', 'method']] \
-        #     .groupby('request number', as_index=False) \
-        #     .agg({'request number': 'first',
-        #           'method': 'first',
-        #           'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
-        # df.rename(columns={('chamfer distance', 'median'): y_key}, inplace=True, level=0)
-        # # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
-        # df['bar min'] = df[y_key] - df[error_key_lower]
-        # df['bar max'] = df[error_key_upper] - df[y_key]
         grouped_dfs[details.method] = df
 
-        # err = df[['bar min', 'bar max']]
-        #
-        # plt.rcParams['errorbar.capsize'] = 10
-        # ax = sns.barplot(x=('request number', 'first'), y=bar_key, data=df, yerr=err.T.to_numpy())
-        # ax.set_xlabel('Number of observations')
-        # ax.set_ylabel('Chamfer Distance to True Scene')
-        # ax.set_title(f'{scene.name}: {details.method}')
-        # plt.savefig(f'/home/bsaund/Pictures/shape contact/{scene.name}_{details.method}')
-        # plt.show()
     df = pd.concat(grouped_dfs)
-
-    # tidy = df.melt(id_vars=[('method', 'first')])
-    # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df)
-    # ax = sns.barplot(x=('request number', 'first'), y=bar_key, hue=('method', 'first'), data=df,
-    #                  yerr = df[['bar min', 'bar max']].T.to_numpy())
 
     def make_x_ind(arg):
         vals = [str(int(a)) for a in arg]
         return f'{vals[0]} {{{vals[1]}}}'
 
-    # df[['request number', 'chs count']].aggregate(make_x_ind)
-
     df[x_label] = df[['request number', 'chs count']].agg(make_x_ind, axis=1)
-    # df.rename(columns={'chamfer distance': y_label,
-    #                    'request number': x_label}, inplace=True)
     df.rename(columns={'chamfer distance': y_label}, inplace=True)
     df['method'].replace(display_names_map, inplace=True)
     df[y_label] = 100 * df[y_label]
@@ -311,8 +277,6 @@ def plot(group: List[EvaluationDetails]):
 
     ax = sns.boxplot(x=x_label, y=y_label, hue='method', data=df,
                      showfliers=False)
-    # fig, ax = grouped_barplot(df, cat=('request number', 'first'), subcat=('method', 'first'), val=y_key,
-    #                           err_key=['bar min', 'bar max'])
     ax.set_title(f'{display_name}: {group[0].network}')
 
     if display_name not in display_legends_for:
@@ -323,10 +287,6 @@ def plot(group: List[EvaluationDetails]):
 
 
 def plot_likelihood(group: List[EvaluationDetails]):
-    y_key = ('chamfer distance', 'median')
-    error_key_lower = ('chamfer distance', 'percentile_25')
-    # error_key_lower = ('chamfer distance', 'min')
-    error_key_upper = ('chamfer distance', 'percentile_75')
     y_label = "Chamfer Distance (cm)"
     x_label = "Num Observations {Num Total Contacts}"
 
@@ -334,16 +294,6 @@ def plot_likelihood(group: List[EvaluationDetails]):
     for details in group:
         scene = details.scene_type()
         df = pd.read_csv(get_evaluation_path(details))
-        # print(f"Plotting {scene.name}, {details.network}, {details.method}")
-        # df = df[['request number', 'chs count', 'chamfer distance', 'method']] \
-        #     .groupby('request number', as_index=False) \
-        #     .agg({'request number': 'first',
-        #           'method': 'first',
-        #           'chamfer distance': ['mean', 'min', 'max', 'median', percentile_fun(25), percentile_fun(75)]})
-        # df.rename(columns={('chamfer distance', 'median'): y_key}, inplace=True, level=0)
-        # # err = df[[('chamfer distance', 'min'), ('chamfer distance', 'max')]]
-        # df['bar min'] = df[y_key] - df[error_key_lower]
-        # df['bar max'] = df[error_key_upper] - df[y_key]
         grouped_dfs[details.method] = df
     df = pd.concat(grouped_dfs)
 
@@ -357,10 +307,6 @@ def plot_likelihood(group: List[EvaluationDetails]):
     df[y_label] = 100 * df[y_label]
 
     display_name = display_names_map[scene.name]
-
-    # if display_name in observations_not_displayed:
-    #     remove_observations = lambda x: x not in observations_not_displayed[display_name]
-    #     df = df[df['request number'].map(remove_observations)]
 
     # Apply kernel
     def kernel(arg):
@@ -385,41 +331,12 @@ def plot_likelihood(group: List[EvaluationDetails]):
     plt.show()
 
 
-def grouped_barplot(df, cat, subcat, val, err_key):
-    u = df[cat].unique()
-    x = np.arange(len(u))
-    subx = df[subcat].unique()
-    offsets = (np.arange(len(subx)) - np.arange(len(subx)).mean()) / (len(subx) + 1.)
-    width = np.diff(offsets).mean()
-    fig, ax = plt.subplots()
-    plt.rcParams['errorbar.capsize'] = 2
-    for i, gr in enumerate(subx):
-        dfg = df[df[subcat] == gr]
-        y = dfg[val].values
-        y = np.pad(y, (0, len(x) - len(y)))
-        err = dfg[err_key].values.T
-        err = np.pad(err, [(0, 0), (0, len(x) - len(err[0]))])
-        # ax.bar(x + offsets[i], y, width=width,
-        #        label="{} {}".format(subcat, gr), yerr=err)
-        ax.boxplot(x + offsets[i], usermedians=y)
-    plt.xlabel("Observation Number")
-    plt.ylabel('Chamfer Distance (m)')
-    plt.xticks(x, u)
-    legend = plt.legend()
-    for h in legend.get_texts():
-        txt = h.get_text()
-        ind = txt.find(')')
-        h.set_text(txt[ind + 2:])
-    return fig, ax
-
-
 def main():
     ARGS = parse_command_line_args()
 
     rospy.init_node('contact_completion_evaluation')
     rospy.loginfo("Contact Completion Evaluation")
 
-    # scene = scenes.SimulationCheezit()
     if not ARGS.skip_generation:
         for groups in get_evaluation_trial_groups():
             for details in groups:

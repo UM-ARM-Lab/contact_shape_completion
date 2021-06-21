@@ -32,7 +32,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Kinect Victor Head
+    SyncSource: Debug pointcloud
   - Class: rviz_text_selection_panel/TextSelection
     InputTopic: /shapenet_options
     Name: TextSelection
@@ -464,7 +464,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.9938312768936157
+      Distance: 1.1446436643600464
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -472,17 +472,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.44755518436431885
-        Y: 0.10639301687479019
-        Z: 1.3228929042816162
+        X: 0.5711149573326111
+        Y: 0.14888013899326324
+        Z: 1.4110817909240723
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.19020143151283264
+      Pitch: 0.050201352685689926
       Target Frame: <Fixed Frame>
-      Yaw: 1.698272705078125
+      Yaw: 2.598302125930786
     Saved: ~
 Window Geometry:
   Displays:
