@@ -23,10 +23,12 @@ from contact_shape_completion.evaluation_params import EvaluationDetails
 from gpu_voxel_planning_msgs.srv import CompleteShapeRequest
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
+import os
+import pwd
 
 
-# YOUR_USERNAME = ???
-root_save_path = f'/home/{[YOUR_USER]}/Pictures/shape contact'
+YOUR_USERNAME = pwd.getpwuid(os.getuid())[0]
+root_save_path = f'/home/{YOUR_USERNAME}/Pictures/shape contact'
 
 
 default_dataset_params = default_params.get_default_params()
