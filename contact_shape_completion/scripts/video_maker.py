@@ -60,11 +60,27 @@ def make_mug_video_1():
         print("Up and running")
         rospy.spin()
 
+def make_pitcher_video_1():
+    scene = get_scene('pitcher')
+    trial = lookup_trial('YCB')
+
+    with WindowRecorder(["live_shape_completion.rviz* - RViz", "live_shape_completion.rviz - RViz"], frame_rate=30.0,
+                        name_suffix="rviz",
+                        save_dir=rviz_capture_path):
+        contact_shape_completer = ContactShapeCompleter(scene, trial,
+                                                        store_request=False)
+        contact_shape_completer.get_visible_vg()
+        contact_shape_completer.compute_known_occ()
+
+        print("Up and running")
+        rospy.spin()
+
 
 if __name__ == "__main__":
     rospy.init_node('video_maker')
     ARGS = parse_command_line_args()
 
     fun_map = {'aab': make_aab_video_1,
-               'mug': make_mug_video_1}
+               'mug': make_mug_video_1,
+               'pitcher': make_pitcher_video_1()}
     fun_map[ARGS.segment]()
