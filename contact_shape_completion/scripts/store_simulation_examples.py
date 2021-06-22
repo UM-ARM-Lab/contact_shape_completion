@@ -35,8 +35,6 @@ if __name__ == "__main__":
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial),
                                                     store_request=ARGS.store)
-    # contact_shape_completer.load_network(ARGS.trial)
-
     contact_shape_completer.get_visible_vg()
     contact_shape_completer.compute_known_occ()
 
