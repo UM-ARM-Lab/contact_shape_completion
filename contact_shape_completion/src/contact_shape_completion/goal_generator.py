@@ -235,7 +235,7 @@ class LivePitcherGoalGenerator(BasicGoalGenerator):
         centroid = np.mean(pts, axis=0)
         back = np.max(pts, axis=0)
 
-        goal_pt = [back[0] + 0.15, centroid[1], centroid[2]]
+        goal_pt = [back[0] + 0.2, centroid[1], centroid[2]]
 
         m = Marker(color=ColorRGBA(a=1.0, r=0.0, g=1.0, b=0.0),
                    header=Header(stamp=rospy.Time().now(), frame_id=state.header.frame_id),
