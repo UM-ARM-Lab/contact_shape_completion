@@ -22,7 +22,7 @@ The code is developed and tested on
 - [`numpy`](http://www.numpy.org/) 1.14.2
 - `ROS` [kinetic](http://wiki.ros.org/kinetic) or [melodic](http://wiki.ros.org/melodic)
 - python-pcl. This can be tricky, see below
-- For visualization in RViz: https://github.com/bsaund/rviz_text_selection_panel and https://github.com/bsaund/rviz_voxelgrid_visuals
+- For visualization in RViz: <anonymized>
 
 
 
