@@ -87,7 +87,6 @@ def make_live_cheezit_video_1():
     with WindowRecorder(["live_shape_completion.rviz* - RViz", "live_shape_completion.rviz - RViz"], frame_rate=30.0,
                         name_suffix="rviz",
                         save_dir=rviz_capture_path):
-
         with CameraRecorder(filename=f'{rviz_capture_path}/live_cheezit.mp4'):
             contact_shape_completer = ContactShapeCompleter(scene, trial,
                                                             store_request=False)
@@ -97,6 +96,7 @@ def make_live_cheezit_video_1():
             print("Up and running")
             rospy.spin()
 
+
 def make_live_pitcher_video_1():
     scene = get_scene('live_pitcher')
     trial = lookup_trial('YCB')
@@ -104,7 +104,6 @@ def make_live_pitcher_video_1():
     with WindowRecorder(["live_shape_completion.rviz* - RViz", "live_shape_completion.rviz - RViz"], frame_rate=30.0,
                         name_suffix="rviz",
                         save_dir=rviz_capture_path):
-
         with CameraRecorder(filename=f'{rviz_capture_path}/live_pitcher.mp4'):
             contact_shape_completer = ContactShapeCompleter(scene, trial,
                                                             store_request=False)
