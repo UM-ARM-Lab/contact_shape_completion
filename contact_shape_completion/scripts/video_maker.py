@@ -11,8 +11,7 @@ from contact_shape_completion.contact_shape_completer import ContactShapeComplet
 from contact_shape_completion.scenes import get_scene
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
-from arm_video_recorder.srv import TriggerVideoRecording, TriggerVideoRecordingRequest
-from arm_video_recorder.camera_recorder import CameraRecorder
+# <Some imports anonymized for corl review>
 
 """
 Publish object pointclouds for use in gpu_voxels planning

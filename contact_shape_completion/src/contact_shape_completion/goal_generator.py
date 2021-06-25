@@ -1,7 +1,7 @@
 import abc
 from random import random
 
-from arm_robots.victor import Victor
+# <Some imports anonymized for CoRL review>
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs import point_cloud2
 import numpy as np
