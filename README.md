@@ -1,5 +1,13 @@
 # CLASP
 
+THE CODE FOR THE INITIAL SUBMISSION TO CoRL: A note to the reviewers
+This repo will likely not run as is. Due to anonymity, some dependencies are not listed, and therefore it is unlikely you will be able to run all parts of the code without errors.
+The code exists on a github repo, which will be published after paper acceptance. The github repo includes these readmes, contact information, dependencies and install instructions for the lab-specific repositories.
+
+
+
+
+
 Constrained LAtent Shape Projection (CLASP) combines a shape completion neural network with contact measurements from a robot.
 
 
