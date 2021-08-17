@@ -380,6 +380,8 @@ class ContactShapeCompleter:
             self.update_belief_OOD_prediction(obj_index, known_free, req)
         elif self.method == "baseline_rejection_sampling":
             self.update_belief_rejection_sampling(obj_index, known_free, req)
+        elif self.method == "baseline_direct_edit":
+            self.update_belief_direct_edit(obj_index, known_free, req)
         else:
             raise RuntimeError(f"Unknown method {self.method}. Cannot update belief")
 
@@ -459,6 +461,26 @@ class ContactShapeCompleter:
             if not are_chss_satisfied(predicted_occ, chss):
                 particle.successful_projection = False
 
+    def update_belief_direct_edit(self, obj_index, known_free, req):
+        # First update current particles (If current particles exist, the prior mean and logvar must have been set
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
+            self.scene.goal_generator.clear_goal_markers()
+            self.robot_views[obj_index].VG_PUB.publish('known_free', known_free)
+            # particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
+            #                                                                        obj_index)
+            # predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
+            predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
+            predicted_occ = np.clip(predicted_occ - known_free, 0, 1)
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
+            try:
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts, publish=obj_index == 0)
+            except RuntimeError as e:
+                print(e)
+                continue
+            particle.goal = goal_tsr
+            particle.completion = pts
 
     @staticmethod
     def transform_from_gpuvoxels(view, pt_msg: PointCloud2):
