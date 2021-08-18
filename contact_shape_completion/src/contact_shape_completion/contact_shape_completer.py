@@ -471,7 +471,7 @@ class ContactShapeCompleter:
             #                                                                        obj_index)
             # predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
             predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
-            predicted_occ = np.clip(predicted_occ - known_free, 0, 1)
+            predicted_occ = np.clip(predicted_occ - inflate_voxelgrid(known_free, is_batched=False), 0, 1)
             pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
