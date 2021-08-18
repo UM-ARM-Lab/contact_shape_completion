@@ -303,9 +303,6 @@ class ContactShapeCompleter:
         if req.num_samples <= 0:
             raise ValueError(f"{req.num_samples} samples requested. Probably a mistake")
 
-        # TODO: Temporary for video making:
-        req.num_samples = 20
-
         is_new_request = self.is_new_request(req)
         if is_new_request:
             self.save_request(req)
@@ -328,8 +325,6 @@ class ContactShapeCompleter:
 
         resp = CompleteShapeResponse()
 
-        # TODO: Temporary for video making:
-        req.num_samples = 10
 
         # TODO: Figure out goals from multiple particles. Currently, always assuming first object is the goal
         for particle_num in range(req.num_samples):
