@@ -164,6 +164,9 @@ def get_evaluation_trial_groups():
             EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
             EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
                               method='baseline_direct_edit'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_soft_rejection'),
         ],
 
         # [

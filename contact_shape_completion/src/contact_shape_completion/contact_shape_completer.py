@@ -375,6 +375,8 @@ class ContactShapeCompleter:
             self.update_belief_OOD_prediction(obj_index, known_free, req)
         elif self.method == "baseline_rejection_sampling":
             self.update_belief_rejection_sampling(obj_index, known_free, req)
+        elif self.method == "baseline_soft_rejection":
+            self.update_belief_soft_rejection_sampling(obj_index, known_free, req)
         elif self.method == "baseline_direct_edit":
             self.update_belief_direct_edit(obj_index, known_free, req)
         else:
@@ -410,7 +412,7 @@ class ContactShapeCompleter:
             chss = self.get_assigned_chss(obj_index, req, particle_num)
 
             if chss is not None:
-                gt = self.transform_from_gpuvoxels(self.scene.get_gt())
+                gt = self.transform_from_gpuvoxels(self.robot_views[obj_index], self.scene.get_gt())
                 gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
                 contact_voxels = tf.reduce_sum(chss, axis=0)
                 self.robot_views[obj_index].VG_PUB.publish('chs', contact_voxels)
@@ -422,7 +424,7 @@ class ContactShapeCompleter:
             self.robot_views[obj_index].VG_PUB.publish('known_free', visible_vg['known_free'])
             predicted_occ = self.model_runner.model.call(add_batch_to_dict(visible_vg), apply_sigmoid=True)[
                 'predicted_occ']
-            pts = self.transform_to_gpuvoxels(predicted_occ)
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
             try:
                 goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
@@ -437,8 +439,9 @@ class ContactShapeCompleter:
             chss = self.get_assigned_chss(obj_index, req, particle_num)
             self.scene.goal_generator.clear_goal_markers()
             self.robot_views[obj_index].VG_PUB.publish('known_free', known_free)
-            predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.robot_views[obj_index].last_visible),
-                                                         apply_sigmoid=True)['predicted_occ']
+            # predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.robot_views[obj_index].last_visible),
+            #                                              apply_sigmoid=True)['predicted_occ']
+            predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
 
             pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
@@ -456,6 +459,35 @@ class ContactShapeCompleter:
             if not are_chss_satisfied(predicted_occ, chss):
                 particle.successful_projection = False
 
+
+    def update_belief_soft_rejection_sampling(self, obj_index, known_free, req):
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
+            self.scene.goal_generator.clear_goal_markers()
+            self.robot_views[obj_index].VG_PUB.publish('known_free', known_free)
+            # predicted_occ = self.model_runner.model.call(add_batch_to_dict(self.robot_views[obj_index].last_visible),
+            #                                              apply_sigmoid=True)['predicted_occ']
+            predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
+
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
+            try:
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts)
+            except RuntimeError as e:
+                print(e)
+                continue
+            particle.goal = goal_tsr
+            particle.completion = pts
+
+            particle.successful_projection = True
+            if tf.reduce_sum(known_free * predicted_occ) >= 1.0:
+                particle.successful_projection = False
+                particle.constraint_violation_count += tf.reduce_sum(known_free * predicted_occ)
+            if not (predicted_occ, chss):
+                particle.successful_projection = False
+                unsatisfied_chs_count = tf.reduce_max(chss * predicted_occ, axis=(1, 2, 3, 4)) #TODO This is what I was last working on
+                particle.constraint_violation_count += unsatisfied_chs_count
+
     def update_belief_direct_edit(self, obj_index, known_free, req):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
         for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
@@ -466,9 +498,23 @@ class ContactShapeCompleter:
             #                                                                        obj_index)
             # predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
             predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
+
+            # Directly remove any known free
             predicted_occ = np.clip(predicted_occ - inflate_voxelgrid(known_free, is_batched=False), 0, 1)
+
+            # Directly add any voxels in contact
+            if chss is not None:
+                gt = self.transform_from_gpuvoxels(self.robot_views[obj_index], self.scene.get_gt())
+                gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
+                contact_voxels = tf.reduce_sum(chss, axis=0)
+                self.robot_views[obj_index].VG_PUB.publish('chs', contact_voxels)
+                self.robot_views[obj_index].VG_PUB.publish('gt', gt)
+                predicted_occ = np.clip(contact_voxels * gt + predicted_occ, 0.0, 1.0)
+                self.robot_views[obj_index].VG_PUB.publish('known_contact', contact_voxels * gt)
+
             pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
             self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
+
             try:
                 goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts, publish=obj_index == 0)
             except RuntimeError as e:
