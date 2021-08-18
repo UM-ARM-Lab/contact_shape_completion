@@ -42,7 +42,7 @@ class ContactShapeCompleter:
         for i in range(scene.num_objects):
             self.robot_views.append(DepthCameraListener(voxelgrid_forward_shift=scene.forward_shift_for_voxelgrid,
                                                         object_categories=scene.segmented_object_categories[i],
-                                                        scale=scene.scale,
+                                                        scale=scene.depth_camera_listener_scale,
                                                         scene_type=scene.scene_type))
         self.model_runner = None
         if trial is not None:

@@ -66,6 +66,7 @@ class Scene(abc.ABC):
     def __init__(self):
         self.goal_generator = None
         self.scale = None
+        self.depth_camera_listener_scale = None
         self.name = None
         self.goal_generator: GoalGenerator
         self.forward_shift_for_voxelgrid = 0.1
@@ -99,6 +100,7 @@ class SimulationCheezit(SimulationScene):
         self.elem = self.dataset_supervisor.get_element('003_cracker_box-90_000_000',
                                                         params=params).load()
         self.scale = 0.01
+        self.depth_camera_listener_scale = 0.007
         self.origin = get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)
         self.goal_generator = CheezeitGoalGenerator()
 
@@ -130,6 +132,7 @@ class SimulationDeepCheezit(SimulationScene):
             gt = shift_voxelgrid(gt, 4, 0, 0, pad_value=0, max_x=4, max_y=0, max_z=0)
             self.elem['gt_occ'] = np.clip(self.elem['gt_occ'] + gt, 0.0, 1.0)
         self.scale = 0.01
+        self.depth_camera_listener_scale = 0.007
         self.origin = get_origin_in_voxel_coordinates((1.0, 1.6, 1.2), self.scale)
         self.goal_generator = CheezeitGoalGenerator()
         self.forward_shift_for_voxelgrid = 0.2
@@ -158,6 +161,7 @@ class SimulationPitcher(SimulationScene):
         self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_000',
                                                         params=params).load()
         self.scale = 0.007
+        self.depth_camera_listener_scale = self.scale
         self.origin = get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale)
         self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
 
@@ -185,6 +189,7 @@ class SimulationMug(SimulationScene):
         self.elem = self.dataset_supervisor.get_element('10c2b3eac377b9084b3c42e318f3affc000_260_000',
                                                         params=params).load()
         self.scale = 0.007
+        self.depth_camera_listener_scale = self.scale
         self.origin = get_origin_in_voxel_coordinates((1.2, 2.0, 1.2), self.scale)
         self.goal_generator = PitcherGoalGenerator(x_bound=(-0.01, 0.01))
 
@@ -219,6 +224,7 @@ class SimulationMultiObject(SimulationScene):
         ]
 
         self.scale = 0.007
+        self.depth_camera_listener_scale = self.scale
         self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
                         get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale)]
 
@@ -260,6 +266,7 @@ class SimulationMultiObject2(SimulationScene):
                       ]
 
         self.scale = 0.007
+        self.depth_camera_listener_scale = self.scale
         self.origins = [get_origin_in_voxel_coordinates((1.2, 1.9, 1.2), self.scale),
                         get_origin_in_voxel_coordinates((1.2, 1.6, 1.2), self.scale),
                         get_origin_in_voxel_coordinates((1.2, 2.3, 1.2), self.scale)
@@ -293,6 +300,7 @@ class LiveScene(Scene):
     def __init__(self):
         super().__init__()
         self.scale = 0.007
+        self.depth_camera_listener_scale = self.scale
         self.goal_generator = LiveCheezitGoalGenerator(x_bound=(-0.01, 0.01))
 
 
@@ -323,6 +331,7 @@ class LivePitcher(LiveScene):
         self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_330',
                                                         params=params).load()
         self.scale = 0.0065
+        self.depth_camera_listener_scale = self.scale
         self.origin = get_origin_in_voxel_coordinates((1.3, 1.67, 1.33), self.scale)
         self.goal_generator = LivePitcherGoalGenerator(x_bound=(-0.01, 0.01))
         self.segmented_object_categories = [[11]]
@@ -345,6 +354,8 @@ class LiveMultiObject(LiveScene):
         self.elem = self.dataset_supervisor.get_element('019_pitcher_base-90_000_330',
                                                         params=params).load()
         self.scale = 0.0055
+        self.depth_camera_listener_scale = self.scale
+
         # self.origin =
         self.goal_generator = LiveMultiObjectGoalGenerator(x_bound=(-0.01, 0.01))
         self.segmented_object_categories = [[1, 2], [11]]
