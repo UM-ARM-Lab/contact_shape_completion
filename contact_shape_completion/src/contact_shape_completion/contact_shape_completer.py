@@ -483,10 +483,45 @@ class ContactShapeCompleter:
             if tf.reduce_sum(known_free * predicted_occ) >= 1.0:
                 particle.successful_projection = False
                 particle.constraint_violation_count += tf.reduce_sum(known_free * predicted_occ)
-            if not (predicted_occ, chss):
+            if not are_chss_satisfied(predicted_occ, chss):
                 particle.successful_projection = False
-                unsatisfied_chs_count = tf.reduce_max(chss * predicted_occ, axis=(1, 2, 3, 4)) #TODO This is what I was last working on
+                unsatisfied_chs_count = np.sum(tf.reduce_max(chss * predicted_occ, axis=(1, 2, 3, 4)) < 0.5)
+                print(f"There are {unsatisfied_chs_count} unsatisfied chs(s)")
                 particle.constraint_violation_count += unsatisfied_chs_count
+
+        any_valid_particle = max([p.successful_projection for p in self.belief.particle_beliefs[obj_index].particles])
+        if any_valid_particle:
+            return
+
+        min_contact_violation = min([v.constraint_violation_count for v in
+                                     self.belief.particle_beliefs[obj_index].particles])
+
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            if particle.constraint_violation_count != min_contact_violation:
+                continue
+            print(f"Particle {particle_num} is one of the best particles")
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
+            predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
+
+            # Directly remove any known free
+            predicted_occ = np.clip(predicted_occ - inflate_voxelgrid(known_free, is_batched=False), 0, 1)
+
+            # Enforce CHS if necessary
+            if chss is not None:
+                gt = self.transform_from_gpuvoxels(self.robot_views[obj_index], self.scene.get_gt())
+                gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
+                contact_voxels = tf.reduce_sum(chss, axis=0)
+                self.robot_views[obj_index].VG_PUB.publish('chs', contact_voxels)
+                self.robot_views[obj_index].VG_PUB.publish('gt', gt)
+                predicted_occ = np.clip(contact_voxels * gt + predicted_occ, 0.0, 1.0)
+                self.robot_views[obj_index].VG_PUB.publish('known_contact', contact_voxels * gt)
+
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
+
+            particle.successful_projection = True
+            particle.completion = pts
+
 
     def update_belief_direct_edit(self, obj_index, known_free, req):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
