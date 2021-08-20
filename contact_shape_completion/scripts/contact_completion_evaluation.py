@@ -49,7 +49,10 @@ display_names_map = {
     'baseline_OOD_prediction': 'PSSNet OOD',
     'baseline_rejection_sampling': "PSSNet Rejection Sampling",
     'VAE_GAN': "VAE_GAN + CLASP",
-    'assign_all_CHS': "PSSNet + Clasp: No contact disambiguation"
+    'assign_all_CHS': "PSSNet + Clasp: No contact disambiguation",
+    'baseline_direct_edit': "Direct Edit",
+    'baseline_soft_rejection': "PSSNet Soft Rejection Sampling",
+    'proposed_with_skin': "PSSNet + CLASP with skin"
 }
 
 display_legends_for = [
@@ -311,6 +314,38 @@ def get_evaluation_trial_groups():
                                   method='baseline_accept_failed_projections'),
             ],
 
+
+        # Skin Trials
+        PlottingParams('With Skin Simulation Cheezit (Shallow): AAB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed_with_skin'),
+            ],
+        PlottingParams('With Skin Simulation Cheezit (Deep): AAB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed_with_skin'),
+            ],
+        PlottingParams('With Skin Simulation Pitcher: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed_with_skin'),
+            ],
+        PlottingParams('With Skin Simulation Mug: Shapenet mugs', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs', method='proposed_with_skin'),
+            ],
+        PlottingParams('With Skin Live Cheezit: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB', method='proposed_with_skin'),
+            ],
+        PlottingParams('Baselines for Live Pitcher: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB', method='proposed_with_skin'),
+            ],
 
     }
     return d

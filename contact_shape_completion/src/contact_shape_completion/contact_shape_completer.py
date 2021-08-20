@@ -370,7 +370,9 @@ class ContactShapeCompleter:
             raise RuntimeError("Unexpected situation - number of particles does not match request")
 
         if self.method in ["proposed", "baseline_ignore_latent_prior", "VAE_GAN", "baseline_accept_failed_projections", "assign_all_CHS"]:
-            self.update_belief_proposed(obj_index, known_free, req)
+            self.update_belief_CLASP(obj_index, known_free, req)
+        if self.method == "proposed_with_skin":
+            self.update_belief_CLASP_with_skin(obj_index, known_free, req)
         elif self.method == "baseline_OOD_prediction":
             self.update_belief_OOD_prediction(obj_index, known_free, req)
         elif self.method == "baseline_rejection_sampling":
@@ -386,10 +388,34 @@ class ContactShapeCompleter:
             for i, p in enumerate(bel.particles):
                 self.scene.goal_generator.publish_goal(p.goal, marker_id=i)
 
-    def update_belief_proposed(self, obj_index, known_free, req):
+    def update_belief_CLASP(self, obj_index, known_free, req):
         # First update current particles (If current particles exist, the prior mean and logvar must have been set
         for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
             chss = self.get_assigned_chss(obj_index, req, particle_num)
+            self.scene.goal_generator.clear_goal_markers()
+            particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
+                                                                                   obj_index)
+            predicted_occ = self.model_runner.model.decode(particle.latent, apply_sigmoid=True)
+            pts = self.transform_to_gpuvoxels(self.robot_views[obj_index], predicted_occ)
+            self.robot_views[obj_index].VG_PUB.publish('predicted_occ', predicted_occ)
+            try:
+                goal_tsr = self.scene.goal_generator.generate_goal_tsr(pts, publish=obj_index == 0)
+            except RuntimeError as e:
+                print(e)
+                continue
+            particle.goal = goal_tsr
+            particle.completion = pts
+
+    def update_belief_CLASP_with_skin(self, obj_index, known_free, req):
+        # First update current particles (If current particles exist, the prior mean and logvar must have been set
+        for particle_num, particle in enumerate(self.belief.particle_beliefs[obj_index].particles):
+            chss = self.get_assigned_chss(obj_index, req, particle_num)
+
+            if chss is not None:
+                gt = self.transform_from_gpuvoxels(self.robot_views[obj_index], self.scene.get_gt())
+                gt = inflate_voxelgrid(tf.expand_dims(gt, axis=0))[0, :, :, :, :]
+                chss = chss * gt
+
             self.scene.goal_generator.clear_goal_markers()
             particle.latent, particle.successful_projection = self.enforce_contact(particle.latent, known_free, chss,
                                                                                    obj_index)
@@ -586,7 +612,7 @@ class ContactShapeCompleter:
         return msg
 
     def enforce_contact(self, latent, known_free, chss, obj_index, verbose=True):
-        if self.method in ["proposed", "baseline_accept_failed_projections", "VAE_GAN", "assign_all_CHS"]:
+        if self.method in ["proposed", "proposed_with_skin", "baseline_accept_failed_projections", "VAE_GAN", "assign_all_CHS"]:
             return enforce_contact(latent, known_free, chss, self.model_runner.model,
                                    self.belief.particle_beliefs[obj_index], self.robot_views[obj_index].VG_PUB, verbose)
         elif self.method == "baseline_ignore_latent_prior":
