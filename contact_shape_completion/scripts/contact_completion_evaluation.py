@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import argparse
+import dataclasses
 from collections import defaultdict
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -26,10 +27,8 @@ from shape_completion_training.utils.config import lookup_trial
 import os
 import pwd
 
-
 YOUR_USERNAME = pwd.getpwuid(os.getuid())[0]
 root_save_path = f'/home/{YOUR_USERNAME}/Pictures/shape contact'
-
 
 default_dataset_params = default_params.get_default_params()
 
@@ -64,13 +63,18 @@ observations_not_displayed = {
     'Live Cheezit': [7, 8, 9]
 }
 
-
 linesize = defaultdict(lambda: 1.0)
 linesize['PSSNet + CLASP'] = 2.0
 
 
+@dataclasses.dataclass(frozen=True)
+class PlottingParams:
+    name: str
+    show_legend: bool
+
+
 def get_evaluation_trial_groups():
-    d = [
+    d = {
         # [
         #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
         #     EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
@@ -159,16 +163,6 @@ def get_evaluation_trial_groups():
         #                       method='VAE_GAN'),
         # ],
 
-        # CoRL Revisions: More Baselines
-        [
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
-                              method='baseline_direct_edit'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_rejection_sampling'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
-            EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_soft_rejection'),
-        ],
-
         # [
         #     EvaluationDetails(scene_type=scenes.LiveMultiObject, network='YCB',
         #                       method='proposed'),
@@ -177,7 +171,148 @@ def get_evaluation_trial_groups():
         # EvaluationDetails(scene_type=scenes.SimulationMultiObject, network='VAE_GAN_YCB',
         #                   method='VAE_GAN'),
         # ]
-    ]
+
+
+
+        ######################################
+        ### CoRL Revisions: More Baselines ###
+        ######################################
+
+        PlottingParams('Baselines for Simulation Cheezit (Shallow): AAB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                                  method='baseline_direct_edit'),
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                                  method='baseline_rejection_sampling'),
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_soft_rejection'),
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='baseline_OOD_prediction'),
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='VAE_GAN_aab',
+                                  method='VAE_GAN'),
+            ],
+        PlottingParams('Ablations for Simulation Cheezit (Shallow): AAB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB', method='proposed'),
+                    EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                                      method='baseline_ignore_latent_prior'),
+                    EvaluationDetails(scene_type=scenes.SimulationCheezit, network='AAB',
+                                      method='baseline_accept_failed_projections'),
+            ],
+        PlottingParams('Baselines for Simulation Cheezit (Deep): AAB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                                  method='baseline_direct_edit'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                                  method='baseline_rejection_sampling'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_soft_rejection'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='baseline_OOD_prediction'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='VAE_GAN_aab',
+                                  method='VAE_GAN'),
+            ],
+        PlottingParams('Ablations for Simulation Cheezit (Deep): AAB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                                  method='baseline_ignore_latent_prior'),
+                EvaluationDetails(scene_type=scenes.SimulationDeepCheezit, network='AAB',
+                                  method='baseline_accept_failed_projections'),
+            ],
+
+        PlottingParams('Baselines for Simulation Pitcher: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                                  method='baseline_direct_edit'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                                  method='baseline_rejection_sampling'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                                  method='baseline_soft_rejection'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                                  method='baseline_OOD_prediction'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='VAE_GAN_YCB',
+                                  method='VAE_GAN'),
+            ],
+        PlottingParams('Ablations for Simulation Pitcher: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                                  method='baseline_ignore_latent_prior'),
+                EvaluationDetails(scene_type=scenes.SimulationPitcher, network='YCB',
+                                  method='baseline_accept_failed_projections'),
+            ],
+
+        PlottingParams('Baselines for Simulation Mug: Shapenet mugs', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                                  method='baseline_direct_edit'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                                  method='baseline_rejection_sampling'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                                  method='baseline_soft_rejection'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                                  method='baseline_OOD_prediction'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='VAE_GAN_mugs',
+                                  method='VAE_GAN'),
+            ],
+        PlottingParams('Ablations for Simulation Mug: Shapenet mugs', True):
+            [
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs', method='proposed'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                                  method='baseline_ignore_latent_prior'),
+                EvaluationDetails(scene_type=scenes.SimulationMug, network='shapenet_mugs',
+                                  method='baseline_accept_failed_projections'),
+            ],
+
+        PlottingParams('Baselines for Live Cheezit: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                                  method='baseline_direct_edit'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                                  method='baseline_rejection_sampling'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                                  method='baseline_soft_rejection'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                                  method='baseline_OOD_prediction'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='VAE_GAN_YCB',
+                                  method='VAE_GAN'),
+            ],
+        PlottingParams('Ablations for Live Cheezit: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                                  method='baseline_ignore_latent_prior'),
+                EvaluationDetails(scene_type=scenes.LiveScene1, network='YCB',
+                                  method='baseline_accept_failed_projections'),
+            ],
+
+        PlottingParams('Baselines for Live Pitcher: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                                  method='baseline_direct_edit'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                                  method='baseline_rejection_sampling'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                                  method='baseline_soft_rejection'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                                  method='baseline_OOD_prediction'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='VAE_GAN_YCB',
+                                  method='VAE_GAN'),
+            ],
+        PlottingParams('Ablations for Live Pitcher: YCB', True):
+            [
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB', method='proposed'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                                  method='baseline_ignore_latent_prior'),
+                EvaluationDetails(scene_type=scenes.LivePitcher, network='YCB',
+                                  method='baseline_accept_failed_projections'),
+            ],
+
+
+    }
     return d
 
 
@@ -266,12 +401,12 @@ def percentile_fun(n):
     return percentile_
 
 
-def plot(group: List[EvaluationDetails]):
+def plot(group: Tuple[PlottingParams, List[EvaluationDetails]]):
     y_label = "Chamfer Distance (cm)"
     x_label = "Num Observations {Num Total Contacts}"
 
     grouped_dfs = dict()
-    for details in group:
+    for details in group[1]:
         scene = details.scene_type()
         df = pd.read_csv(get_evaluation_path(details))
         grouped_dfs[details.method] = df
@@ -295,13 +430,17 @@ def plot(group: List[EvaluationDetails]):
 
     ax = sns.boxplot(x=x_label, y=y_label, hue='method', data=df,
                      showfliers=False)
-    ax.set_title(f'{display_name}: {group[0].network}')
+    ax.set_title(f'{group[0].name}')
 
-    if display_name not in display_legends_for:
-        ax._remove_legend(ax.legend())
+    plt.savefig(f'{root_save_path}/{group[0].name.replace(" ", "_")}')
 
-    plt.savefig(f'{root_save_path}/{scene.name}')
-    plt.show()
+    # if display_name not in display_legends_for:
+    # if not group[0].show_legend:
+    ax._remove_legend(ax.legend())
+
+    plt.savefig(f'{root_save_path}/{group[0].name.replace(" ", "_") + "_no_legend"}')
+    # plt.show()
+    plt.clf()
 
 
 def plot_likelihood(group: List[EvaluationDetails]):
@@ -328,13 +467,13 @@ def plot_likelihood(group: List[EvaluationDetails]):
 
     # Apply kernel
     def kernel(arg):
-        vals = [1/v for v in arg]
+        vals = [1 / v for v in arg]
         return np.mean(vals)
 
     new_y_label = "True Scene Likelihood"
     df = df[[x_label, y_label, 'method']].groupby(['method', x_label]).agg({y_label: kernel,
-                                                                                    'method': 'first',
-                                                                                    x_label: 'first'})
+                                                                            'method': 'first',
+                                                                            x_label: 'first'})
 
     df.rename(columns={y_label: new_y_label}, inplace=True)
     df['linesize'] = df['method'].agg(lambda x: linesize[x])
@@ -356,7 +495,7 @@ def main():
     rospy.loginfo("Contact Completion Evaluation")
 
     if not ARGS.skip_generation:
-        for groups in get_evaluation_trial_groups():
+        for groups in get_evaluation_trial_groups().values():
             for details in groups:
                 if ARGS.regenerate:
                     print(f'{Fore.CYAN}Regenerating {details}{Fore.RESET}')
@@ -368,10 +507,10 @@ def main():
                     print(f"{details} exists. Not generating")
 
     if ARGS.plot:
-        for group in get_evaluation_trial_groups():
+        for group in get_evaluation_trial_groups().items():
             plot(group)
     if ARGS.plot_likelihood:
-        for group in get_evaluation_trial_groups():
+        for group in get_evaluation_trial_groups().items():
             plot_likelihood(group)
 
 

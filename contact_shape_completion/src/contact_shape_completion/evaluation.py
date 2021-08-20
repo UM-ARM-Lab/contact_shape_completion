@@ -32,4 +32,4 @@ def pt_cloud_distance(pt_msg_1, pt_msg_2):
 
 
 def vg_chamfer_distance(vg1, vg2, scale):
-    return chamfer_distance(vg1, vg2, scale, downsample=2)
+    return chamfer_distance(vg1, vg2, scale, downsample=3)
