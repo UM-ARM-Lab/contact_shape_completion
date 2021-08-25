@@ -371,7 +371,7 @@ class ContactShapeCompleter:
 
         if self.method in ["proposed", "baseline_ignore_latent_prior", "VAE_GAN", "baseline_accept_failed_projections", "assign_all_CHS"]:
             self.update_belief_CLASP(obj_index, known_free, req)
-        if self.method == "proposed_with_skin":
+        elif self.method == "proposed_with_skin":
             self.update_belief_CLASP_with_skin(obj_index, known_free, req)
         elif self.method == "baseline_OOD_prediction":
             self.update_belief_OOD_prediction(obj_index, known_free, req)
