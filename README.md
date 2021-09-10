@@ -1,6 +1,6 @@
 # CLASP
 
-Constrained LAtent Shape Projection (CLASP) combines a shape completion neural network with contact measurements from a robot.
+Constrained LAtent Shape Projection (CLASP) combines a shape completion neural network with contact measurements from a robot. This repo also contains the [full paper](https://github.com/UM-ARM-Lab/contact_shape_completion/blob/main/CLASP_full.pdf) and [additional plots](https://github.com/UM-ARM-Lab/contact_shape_completion/blob/main/CLASP_additional_details.pdf).
 
 
 # Quick Start
