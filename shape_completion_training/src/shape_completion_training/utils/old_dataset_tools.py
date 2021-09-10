@@ -20,10 +20,7 @@ ycb_load_path = filepath_tools.get_shape_completion_package_path() / "data" / "y
 ycb_record_path = ycb_load_path / "tfrecords" / "filepath"
 
 
-def get_dataset_path(dataset_name):
-    paths = {"shapenet": dataset_supervisor.get_shapenet_path(),
-             "ycb": ycb_load_path}
-    return paths[dataset_name]
+
 
 
 def load_dataset(dataset_name, metadata_only=True, shuffle=True):
@@ -242,14 +239,6 @@ def apply_slit_occlusion(dataset):
     return dataset.map(_apply_slit_occlusion)
 
 
-def helper_apply_sensor_noise(elem):
-    img = conversions.to_2_5D(elem['known_occ'])
-    noise = tf.random.normal(img.shape, stddev=1.0) * tf.cast(img < 64, tf.float32)
-    img = img + noise
-
-    ko = conversions.img_to_voxelgrid(img)
-    elem['known_occ'] = ko
-    return elem
 
 
 def apply_sensor_noise(dataset):
@@ -278,86 +267,3 @@ def apply_fixed_slit_occlusion(dataset, slit_min, slit_width):
     return dataset.map(_apply_slit_occlusion)
 
 
-def get_unique_name(datum, has_batch_dim=False):
-    """
-    Returns a unique name for the datum
-    @param datum:
-    @return:
-    """
-    if has_batch_dim:
-        return (datum['id'].numpy() + datum['augmentation'].numpy())[0].decode('UTF-8')
-    return (datum['id'].numpy() + datum['augmentation'].numpy()).decode('UTF-8')
-
-
-@memoize
-def get_addressible_dataset(**kwargs):
-    return AddressableDataset(**kwargs)
-
-
-class AddressableDataset:
-    """
-    Shape dataset where shapes can be looked up by name or index. Useful for
-    Manually visualizing and examining shapes
-    """
-
-    def __init__(self, use_test=True, use_train=True, dataset_name="shapenet"):
-        self.train_ds, self.test_ds = load_dataset(dataset_name=dataset_name,
-                                                   metadata_only=True,
-                                                   shuffle=False)
-        self.train_map = {}
-        self.test_map = {}
-        self.train_names = []
-        self.test_names = []
-
-        if use_train:
-            for i, elem in self.train_ds.enumerate():
-                self.train_map[get_unique_name(elem)] = i
-                self.train_names.append(get_unique_name(elem))
-        if use_test:
-            for i, elem in self.test_ds.enumerate():
-                self.test_map[get_unique_name(elem)] = i
-                self.test_names.append(get_unique_name(elem))
-
-    def get(self, unique_name, params=None):
-        if unique_name in self.train_map:
-            ds = self.train_ds.skip(self.train_map[unique_name])
-        elif unique_name in self.test_map:
-            ds = self.test_ds.skip(self.test_map[unique_name])
-        else:
-            raise Exception("No element {} in dataset".format(unique_name))
-
-        ds = load_voxelgrids(ds.take(1))
-        if params is None:
-            ds = simulate_input(ds, 0, 0, 0)
-            return next(ds.__iter__())
-
-        ds = preprocess_dataset(ds, params)
-        return next(ds.__iter__())
-
-    def get_metadata(self, unique_name):
-        if unique_name in self.train_map:
-            ds = self.train_ds.skip(self.train_map[unique_name])
-        elif unique_name in self.test_map:
-            ds = self.test_ds.skip(self.test_map[unique_name])
-        else:
-            raise Exception("No element {} in dataset".format(unique_name))
-        return next(ds.__iter__())
-
-
-@deprecated()
-def write_shapenet_to_filelist(test_ratio, shape_ids="all"):
-    all_files = get_all_shapenet_files(shape_ids)
-    train_files, test_files = _split_train_and_test(all_files, test_ratio)
-    # train_data = _list_of_shapenet_records_to_dict(train_files)
-    # test_data = _list_of_shapenet_records_to_dict(test_files)
-
-    print("Split shapenet into {} training and {} test shapes".format(len(train_files), len(test_files)))
-
-    # d = tf.data.Dataset.from_tensor_slices(utils.sequence_of_dicts_to_dict_of_sequences(test_files))
-    write_to_filelist(tf_utils.sequence_of_dicts_to_dict_of_sequences(train_files),
-                      get_shapenet_record_path / "train_filepaths.pkl")
-    write_to_filelist(tf_utils.sequence_of_dicts_to_dict_of_sequences(test_files),
-                      get_shapenet_record_path / "test_filepaths.pkl")
-    # write_to_tfrecord(tf.data.Dataset.from_tensor_slices(
-    #     utils.sequence_of_dicts_to_dict_of_sequences(test_files)),
-    #     shapenet_record_path / "test_filepaths.pkl")

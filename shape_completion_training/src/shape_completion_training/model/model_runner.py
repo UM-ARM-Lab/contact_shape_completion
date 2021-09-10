@@ -10,12 +10,11 @@ import tensorflow as tf
 from shape_completion_training.model import filepath_tools
 from shape_completion_training.model.other_model_architectures.auto_encoder import AutoEncoder
 from shape_completion_training.model.other_model_architectures.augmented_ae import Augmented_VAE
-# from voxelcnn import VoxelCNN, StackedVoxelCNN
 from shape_completion_training.model.other_model_architectures.voxelcnn import VoxelCNN
-from shape_completion_training.model.baselines.vae import VAE, VAE_GAN
 from shape_completion_training.model.other_model_architectures.conditional_vcnn import ConditionalVCNN
 from shape_completion_training.model.other_model_architectures.ae_vcnn import AE_VCNN
-from shape_completion_training.model.baselines.three_D_rec_gan import ThreeD_rec_gan
+from shape_completion_training.model.other_model_architectures.vae import VAE, VAE_GAN
+from shape_completion_training.model.other_model_architectures.three_D_rec_gan import ThreeD_rec_gan
 from shape_completion_training.model.flow import RealNVP
 import progressbar
 import datetime
@@ -42,7 +41,7 @@ class ModelRunner:
                                                                            params=params,
                                                                            trial_path=trial_path,
                                                                            write_summary=write_summary)
-        self.exists_required=exists_required
+        self.exists_required = exists_required
         self.group_name = self.trial_path.parts[-2]
 
         self.batch_size = 1 if not self.training else params['batch_size']
@@ -52,8 +51,6 @@ class ModelRunner:
 
         if self.params['network'] == 'VoxelCNN':
             self.model = VoxelCNN(self.params, batch_size=self.batch_size)
-        # if self.params['network'] == 'StackedVoxelCNN':
-        #     self.model = StackedVoxelCNN(self.params, batch_size=self.batch_size)
         elif self.params['network'] == 'AutoEncoder':
             self.model = AutoEncoder(self.params, batch_size=self.batch_size)
         elif self.params['network'] == 'VAE':
@@ -71,7 +68,8 @@ class ModelRunner:
         elif self.params['network'] == "PSSNet" or \
                 self.params['network'] == "NormalizingAE":  # NormalizingAE was legacy name
             self.model = PSSNet(self.params, batch_size=self.batch_size)
-            self.model.flow = ModelRunner(training=False, trial_path=self.params['flow'], exists_required=True).model.flow
+            self.model.flow = ModelRunner(training=False, trial_path=self.params['flow'],
+                                          exists_required=True).model.flow
         elif self.params['network'] == "3D_rec_gan":
             self.model = ThreeD_rec_gan(self.params, batch_size=self.batch_size)
         else:

@@ -1,0 +1,10 @@
+<launch>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="object_transform_publisher"
+          args="-.5 1.5 -1   0.70682518 0. 0. 0.70738827 world object" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="world_transform_publisher"
+          args="-1.0. -2.0. 0. 0. 0. 0. world gpu_voxel_world" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="victor_transform_publisher"
+      args="0. 0. 0. 0. 0. 0. gpu_voxel_world victor_root" />
+</launch>

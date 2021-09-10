@@ -6,11 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Predicted1
-        - /Known Free1
+        - /Active Robot1
         - /Kinect Victor Head2/Auto Size1
         - /Kinect Victor Head2/Occlusion Compensation1
-        - /Aux1
+        - /GVP_True1
         - /Goal1/Namespaces1
       Splitter Ratio: 0.5549019575119019
     Tree Height: 550
@@ -32,7 +31,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Kinect Victor Head
+    SyncSource: Debug pointcloud
   - Class: rviz_text_selection_panel/TextSelection
     InputTopic: /shapenet_options
     Name: TextSelection
@@ -89,7 +88,7 @@ Visualization Manager:
       Hide: false
       Name: Predicted
       Queue Size: 10
-      Threshold: 0.5
+      Threshold: 0.4000000059604645
       Topic: /predicted_occ_voxel_grid
       Value: true
     - Alpha Multiple: 1
@@ -107,13 +106,13 @@ Visualization Manager:
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
       Color: 204; 51; 204
-      Enabled: true
+      Enabled: false
       Hide: false
       Name: Known Free
       Queue Size: 10
       Threshold: 0.5
       Topic: /known_free_voxel_grid
-      Value: true
+      Value: false
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
@@ -125,7 +124,7 @@ Visualization Manager:
       Threshold: 0.5
       Topic: /plausible_voxel_grid
       Value: false
-    - Alpha Multiple: 0.4000000059604645
+    - Alpha Multiple: 0.5
       Binary Display: true
       Class: rviz_voxelgrid_visuals/VoxelGrid
       Color: 204; 0; 0
@@ -166,7 +165,7 @@ Visualization Manager:
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
-      Color: 238; 238; 236
+      Color: 245; 121; 0
       Enabled: true
       Hide: false
       Name: Active Robot
@@ -347,25 +346,25 @@ Visualization Manager:
     - Alpha Multiple: 0.30000001192092896
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
-      Color: 136; 138; 133
-      Enabled: false
+      Color: 0; 0; 0
+      Enabled: true
       Hide: false
       Name: GVP_True
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/true_obstacles
-      Value: false
+      Value: true
     - Alpha Multiple: 0.15000000596046448
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
       Color: 60; 0; 255
-      Enabled: false
+      Enabled: true
       Hide: false
       Name: "Robot Swept Freespace "
       Queue Size: 10
       Threshold: 0.5
       Topic: /voxelgrid/known_free
-      Value: false
+      Value: true
     - Alpha Multiple: 1
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -389,14 +388,13 @@ Visualization Manager:
       Topic: /voxelgrid/belief_obstacles
       Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /goal_pt
       Name: Goal
       Namespaces:
-        "": true
-        tsr: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Alpha Multiple: 0.30000001192092896
       Binary Display: true
       Class: rviz_voxelgrid_visuals/SparseVoxelGrid
@@ -420,7 +418,7 @@ Visualization Manager:
       Color: 0; 0; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -435,7 +433,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -464,7 +462,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.9938312768936157
+      Distance: 0.9630954265594482
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -472,17 +470,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.44755518436431885
-        Y: 0.10639301687479019
-        Z: 1.3228929042816162
+        X: 0.5487579703330994
+        Y: -0.07520218938589096
+        Z: 1.548945426940918
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.19020143151283264
+      Pitch: 0.619796633720398
       Target Frame: <Fixed Frame>
-      Yaw: 1.698272705078125
+      Yaw: 4.880912780761719
     Saved: ~
 Window Geometry:
   Displays:
@@ -504,5 +502,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1848
-  X: 72
+  X: 3912
   Y: 0

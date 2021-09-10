@@ -40,3 +40,4 @@ class Particle:
         self.completion = None
         self.associated_chs_inds = []
         self.successful_projection = True
+        self.constraint_violation_count = 0

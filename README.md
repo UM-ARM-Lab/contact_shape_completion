@@ -1,40 +1,33 @@
-# Predicting Diverse Plausible Shape Completions from Ambiguous Depth Images
+# CLASP
 
-This package provides a neural network that takes in a grid of visible occupied voxels from a single view and outputs a grid of the estimated 3D voxels, thus "completing the shape". Running multiple inference passes with the same input will generate different, yet plausible completions. Depending on the ambiguity of the input the completions may all be quite similar, or vary noticably.
-
-
-## Notes to self
-These are notes to myself (Brad) for the current work-in-progress code
-
-Launch latest version by
-- `roslaunch shape_completion_visualization shape_completion.launch`
-- `roslaunch gpu_voxel_planning fake_victor_setup.launch`
-- `rosrun shape_completion_visualization gpu_voxels_publisher.py --trial PSSNet_table/November_29_20-45-22_a91f6803c3`
-- Cycle through a few shapes on RViz to find one that is not in collision
-- `rosrun gpu_voxel_planning wip_shape_completion` (rerun if start or goal config in collision)
+Constrained LAtent Shape Projection (CLASP) combines a shape completion neural network with contact measurements from a robot.
 
 
-### Prerequisites
-The code is developed and tested on
-- [`CUDA`](https://developer.nvidia.com/cuda-toolkit) 10.2 
-- [`cuDNN`](https://developer.nvidia.com/rdp/cudnn-archive) 7.6
-- [`Python`](https://www.python.org) 2.7.12 and 3.8.5
-- [`TensorFlow`](https://github.com/tensorflow/tensorflow) 2.1
-- [`numpy`](http://www.numpy.org/) 1.14.2
-- `ROS` [kinetic](http://wiki.ros.org/kinetic) or [melodic](http://wiki.ros.org/melodic)
-- python-pcl. This can be tricky, see below
-- For visualization in RViz: https://github.com/bsaund/rviz_text_selection_panel and https://github.com/bsaund/rviz_voxelgrid_visuals
+# Quick Start
+1. Set up ROS
+2. Clone this repo in your ROS path. Rebuild (e.g. catkin build), re-source
+3. Install dependencies
+4. Download datasets and pretrained models by running `shape_completion_training/scripts/download_pretrained.py`
+
+### Data Analysis
+Trial results are in `./evaluations`
+To recreate the plots from the paper using the pre-run trials, `contact_completion_evaluation.py --plot`
 
 
+### Rerun shape completion experiments and visualize performance
+To rerun shape completion experiments using the robot motion and contacts as recorded from the paper, in separate terminals run:
+1. `roslaunch shape_completion_visualization live_shape_completion.launch` (Rviz will start)
+2. `roslaunch shape_completion_visualization transforms.launch` (Sets transforms between robot and shape objects)
+3. `contact_completion_evaluation.py --plot --regenerate`  (You will see many shape being generated and updates. Will take over an hour to complete)
 
-## Structure
- - `shape_completion_training`: Generating, training, evaluating the shape completion model and baselines
- - `shape_completion_visualization`: Scripts for viewing shape datasets and completions in RViz
 
+# Full Stack
+The full experimental setup requires running a simulated, or real robot, which moves and contacts objects.
+To build the software stack used in the experiments, set up the dependencies
 
-## Troubleshooting
+[[[ Dependencies omitted in CoRL submission due to double-blind review requirements ]]]
 
-### Installing python-pcl
-The pcl version you need to install depends on OS and python version
-Python 2, Ubuntu 18.04: `pip install python-pcl` I have sometimes found issues depending on `pcl` verion. see: https://github.com/strawlab/python-pcl/issues/317
-Python 3, Ubuntu 20.04: `sudo apt install python3-pcl`
+Then run
+1. `roslaunch shape_completion_visualization live_shape_completion.launch` (Rviz will start)
+2. [[[ Robot launch function omitted due to double-blind review requirements ]]]
+3. `store_simulation_examples --trial [PRETRAINED_NETWORK_NAME] --scene [SCENE_NAME] --store`

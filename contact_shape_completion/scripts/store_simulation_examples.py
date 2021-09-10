@@ -6,8 +6,7 @@ import argparse
 import rospy
 
 from contact_shape_completion.contact_shape_completer import ContactShapeCompleter
-from contact_shape_completion.goal_generator import CheezeitGoalGenerator
-from contact_shape_completion.scenes import SimulationCheezit, get_scene
+from contact_shape_completion.scenes import get_scene
 from shape_completion_training.model import default_params
 from shape_completion_training.utils.config import lookup_trial
 
@@ -32,13 +31,10 @@ if __name__ == "__main__":
     rospy.init_node('contact_shape_completer_service')
     rospy.loginfo("Data Publisher")
 
-    # scene = SimulationCheezit()
     scene = get_scene(ARGS.scene)
 
     contact_shape_completer = ContactShapeCompleter(scene, lookup_trial(ARGS.trial),
                                                     store_request=ARGS.store)
-    # contact_shape_completer.load_network(ARGS.trial)
-
     contact_shape_completer.get_visible_vg()
     contact_shape_completer.compute_known_occ()
 
