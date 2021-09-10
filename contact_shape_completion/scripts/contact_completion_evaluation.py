@@ -67,7 +67,7 @@ observations_not_displayed = {
 }
 
 linesize = defaultdict(lambda: 1.0)
-linesize['PSSNet + CLASP'] = 2.0
+linesize['PSSNet + CLASP'] = 2.5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -505,7 +505,7 @@ def plot_likelihood(group: List[EvaluationDetails]):
         vals = [1 / v for v in arg]
         return np.mean(vals)
 
-    new_y_label = "True Scene Likelihood"
+    new_y_label = "Likelihood of True Scene"
     df = df[[x_label, y_label, 'method']].groupby(['method', x_label]).agg({y_label: kernel,
                                                                             'method': 'first',
                                                                             x_label: 'first'})
@@ -516,9 +516,9 @@ def plot_likelihood(group: List[EvaluationDetails]):
     ax = sns.lineplot(x=x_label, y=new_y_label, hue='method', data=df, size='linesize')
     ax.set_title(f'{display_name}: {group[0].network}')
 
+
     if display_name not in display_legends_for:
         ax._remove_legend(ax.legend())
-
     plt.savefig(f'{root_save_path}/{scene.name}_prob_score')
     plt.show()
 
