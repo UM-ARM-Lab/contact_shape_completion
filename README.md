@@ -23,11 +23,11 @@ To rerun shape completion experiments using the robot motion and contacts as rec
 
 # Full Stack
 The full experimental setup requires running a simulated, or real robot, which moves and contacts objects.
-To build the software stack used in the experiments, set up the dependencies
+To build the software stack used in the experiments, set up the dependencies.
 
-[[[ Dependencies omitted in CoRL submission due to double-blind review requirements ]]]
+Detailed instructions are in the subfolder [https://github.com/UM-ARM-Lab/contact_shape_completion/tree/main/contact_shape_completion]
 
 Then run
 1. `roslaunch shape_completion_visualization live_shape_completion.launch` (Rviz will start)
-2. [[[ Robot launch function omitted due to double-blind review requirements ]]]
+2. Launch the robot stack (see detailed instructions in subfolder)
 3. `store_simulation_examples --trial [PRETRAINED_NETWORK_NAME] --scene [SCENE_NAME] --store`
